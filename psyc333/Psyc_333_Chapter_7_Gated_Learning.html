@@ -1,0 +1,2412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 7 – Nicotine</title>
+
+<style>
+/* ===================================================
+   GLOBAL / RESET
+=================================================== */
+:root{
+  --navy:#13294B;
+  --blue:#1D4F91;
+  --sky:#00A3E0;
+  --accent:#D3E3FF;
+  --bg:#F3F3F5;
+  --white:#FFFFFF;
+  --border:1px solid rgba(19,41,75,.15);
+  --shadow:0 10px 15px -3px rgba(0,0,0,.1);
+  --sidebar-w:300px;
+  --green-bg:#dcfce7;
+  --green-border:#14532d;
+  --red-bg:#fee2e2;
+  --red-border:#7f1d1d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',Tahoma,sans-serif;
+  background:var(--bg);
+  color:var(--navy);
+  display:flex;
+  justify-content:center;
+  overflow:hidden;
+  height:100vh;
+}
+#app-wrapper{
+  width:100%;
+  max-width:1200px;
+  height:100vh;
+  display:flex;
+  background:white;
+  box-shadow:0 25px 50px -12px rgba(0,0,0,.25);
+}
+/* SIDEBAR */
+#sidebar{
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  border-right:var(--border);
+  display:flex;
+  flex-direction:column;
+  transition:width .3s, min-width .3s;
+  overflow:hidden;
+}
+#sidebar.collapsed{width:0;min-width:0;border-right:none;}
+.sidebar-header{
+  background:var(--navy);
+  color:white;
+  padding:24px 20px;
+  font-weight:800;
+  font-size:1rem;
+  letter-spacing:.5px;
+  line-height:1.4;
+  flex-shrink:0;
+}
+.sidebar-header small{
+  display:block;
+  font-weight:400;
+  font-size:.75rem;
+  opacity:.75;
+  margin-top:4px;
+  letter-spacing:0;
+}
+.nav-list{overflow-y:auto;flex:1;}
+.nav-item{
+  padding:14px 18px;
+  border-bottom:1px solid rgba(0,0,0,.05);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+  font-size:.93rem;
+  transition:background .15s;
+  gap:8px;
+}
+.nav-item:hover:not(.locked){background:#f0f5ff}
+.nav-item:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.nav-item.active{background:var(--accent);font-weight:700}
+.nav-item.locked{opacity:.55;cursor:not-allowed}
+.nav-item.done .nav-title::after{content:' ✓';color:#16a34a;font-weight:700}
+.nav-title{flex:1}
+.lock-icon{font-size:.85rem;flex-shrink:0}
+.nav-progress{width:100%;height:4px;background:#e5e7eb;flex-shrink:0;}
+.nav-progress-fill{height:4px;background:var(--sky);transition:width .4s;}
+.sidebar-footer{padding:14px 18px;border-top:var(--border);font-size:.8rem;color:#666;}
+/* MAIN */
+#main-content{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.top-bar{
+  padding:12px 18px;
+  border-bottom:var(--border);
+  display:flex;align-items:center;gap:12px;
+  flex-shrink:0;background:white;
+}
+.menu-btn{
+  background:var(--blue);color:white;border:none;
+  padding:9px 16px;border-radius:6px;font-weight:bold;
+  cursor:pointer;font-size:.9rem;white-space:nowrap;touch-action:manipulation;
+}
+.menu-btn:focus{outline:3px solid var(--sky)}
+.top-bar-title{font-weight:700;color:var(--navy);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top-bar-title{font-weight:700;color:var(--navy);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+/* ── Step indicator dots ─────────────────────────────────── */
+.step-dots{
+  display:flex;align-items:center;gap:5px;
+  flex-shrink:0;
+}
+.step-dot{
+  width:12px;height:12px;border-radius:50%;
+  background:#e5e7eb;border:2px solid #d1d5db;
+  transition:background .3s,border-color .3s;flex-shrink:0;
+}
+.step-dot.done{background:#16a34a;border-color:#15803d;}
+.step-dot.active{background:var(--sky);border-color:#0284c7;}
+.step-dot.locked{background:#e5e7eb;border-color:#d1d5db;}
+.step-label{font-size:.75rem;color:#666;white-space:nowrap;margin-left:4px;}
+/* ── Fullscreen toggle ───────────────────────────────────── */
+.fs-btn{
+  background:none;border:1px solid rgba(19,41,75,.25);border-radius:6px;
+  padding:6px 10px;font-size:1rem;cursor:pointer;color:var(--navy);
+  line-height:1;flex-shrink:0;transition:background .15s,border-color .15s;
+  touch-action:manipulation;
+}
+.fs-btn:hover{background:var(--accent);border-color:var(--blue);}
+.fs-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+/* Pseudo-fullscreen: pins app over entire viewport — works inside Canvas iframes */
+body.pseudo-fs{overflow:auto;}
+body.pseudo-fs #app-wrapper{
+  position:fixed;inset:0;max-width:none;height:100%;
+  z-index:9999;box-shadow:none;
+}
+.content-scroll{flex:1;overflow-y:auto;padding:0;-webkit-overflow-scrolling:touch;}
+
+/* COVER */
+#cover-page{max-width:820px;margin:40px auto;padding:20px 20px 40px;}
+.cover-badge{
+  display:inline-block;background:var(--accent);color:var(--blue);
+  font-weight:700;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;
+  padding:5px 12px;border-radius:20px;margin-bottom:16px;
+}
+.cover-title{font-size:2rem;font-weight:800;color:var(--navy);line-height:1.2;margin-bottom:12px;}
+.cover-subtitle{font-size:1.05rem;color:#444;margin-bottom:32px;line-height:1.6;}
+.cover-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:36px;}
+.cover-card{
+  border:var(--border);border-radius:12px;padding:20px;background:white;
+  box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start;
+}
+.cover-card-num{
+  background:var(--navy);color:white;font-weight:800;font-size:.95rem;
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;
+}
+.cover-card-body h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:5px;}
+.cover-card-body p{font-size:.85rem;color:#555;line-height:1.5;}
+.cover-tag{
+  display:inline-block;background:#f0f5ff;color:var(--blue);font-size:.73rem;
+  font-weight:600;padding:2px 8px;border-radius:10px;margin-top:8px;border:1px solid var(--accent);
+}
+.cover-instructions{
+  background:#f8faff;border:var(--border);border-left:4px solid var(--sky);
+  border-radius:8px;padding:16px 20px;margin-bottom:28px;font-size:.9rem;line-height:1.7;color:#333;
+}
+.cover-instructions strong{display:block;margin-bottom:6px;color:var(--navy)}
+.get-started-btn{
+  display:inline-block;background:var(--navy);color:white;border:none;
+  padding:16px 40px;font-size:1.1rem;font-weight:700;border-radius:10px;cursor:pointer;
+  letter-spacing:.5px;touch-action:manipulation;transition:background .2s,transform .1s;
+}
+.get-started-btn:hover{background:var(--blue)}
+.get-started-btn:active{transform:scale(.98)}
+.get-started-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+
+/* INTERACTION */
+.interaction-wrapper{padding:24px 28px 44px;max-width:960px;margin:0 auto;width:100%;}
+.interaction-wrapper h1{margin-top:0;color:var(--navy);font-size:1.3rem;margin-bottom:14px;}
+
+/* SHARED INTERACTION STYLES */
+.ix-card{
+  background:linear-gradient(135deg,#1a3a6b 0%,#1D4F91 100%);
+  color:#fff;border:none;border-radius:8px;
+  padding:10px 14px;margin:6px 0;cursor:grab;font-size:.88rem;
+  user-select:none;-webkit-user-select:none;touch-action:none;
+  transition:box-shadow .15s,opacity .15s;font-weight:600;
+}
+.ix-card:focus{outline:3px solid var(--sky)}
+.ix-card.placed{opacity:.4;cursor:default;pointer-events:none}
+.ix-card.dragging{opacity:.35;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+
+.ix-dropzone{
+  border:2px dashed var(--accent);border-radius:10px;padding:10px;
+  min-height:80px;margin-bottom:14px;transition:background .15s,border-color .15s;
+}
+.ix-dropzone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.ix-dropzone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+
+.ix-option{
+  border:var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;
+  cursor:pointer;font-size:.93rem;transition:background .15s;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+.ix-option:hover{background:var(--accent)}
+.ix-option:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.ix-option.correct-opt{background:var(--green-bg);border-color:var(--green-border)}
+.ix-option.incorrect-opt{background:var(--red-bg);border-color:var(--red-border)}
+
+.ix-explanation{
+  margin-top:14px;padding:12px 14px;border-radius:8px;background:#eef6ff;
+  font-size:.9rem;line-height:1.6;display:none;
+}
+.ix-explanation.visible{display:block}
+
+.ix-feedback{
+  margin-top:14px;padding:12px 14px;border-radius:8px;
+  font-weight:600;font-size:.92rem;display:none;
+}
+.ix-feedback.visible{display:block}
+.ix-feedback.correct{background:var(--green-bg);color:#166534}
+.ix-feedback.incorrect{background:var(--red-bg);color:#991b1b}
+
+.ix-counter{font-weight:700;margin-bottom:8px;color:var(--blue);font-size:.88rem;}
+.ix-prompt{font-weight:600;margin-bottom:16px;font-size:.97rem;line-height:1.5;}
+
+.ix-continue-btn{
+  display:block;margin-top:22px;padding:12px 26px;font-size:.97rem;font-weight:700;
+  background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;
+  touch-action:manipulation;transition:background .15s,opacity .15s;
+}
+.ix-continue-btn:disabled{opacity:.35;cursor:default}
+.ix-continue-btn:not(:disabled):hover{background:var(--navy)}
+.ix-continue-btn:focus{outline:3px solid var(--sky)}
+
+/* col-sort (card sort columns) */
+.col-sort-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;}
+.col-sort-col{flex:1 1 160px;display:flex;flex-direction:column;gap:0;min-width:140px;}
+.col-sort-head{
+  background:var(--navy);color:#fff;font-weight:700;font-size:.82rem;
+  text-align:center;padding:8px 6px;border-radius:8px 8px 0 0;line-height:1.3;
+}
+.col-sort-zone{
+  border:2px dashed var(--accent);border-top:none;border-radius:0 0 8px 8px;
+  min-height:50px;padding:5px;display:flex;flex-direction:column;gap:4px;
+  transition:background .15s,border-color .15s;
+}
+.col-sort-zone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.col-sort-zone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.col-sort-zone .ix-card{font-size:.78rem;cursor:default;pointer-events:none;margin:0;line-height:1.3;}
+.col-sort-bank{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px;}
+.col-sort-bank .ix-card{font-size:.82rem;cursor:grab;}
+
+/* Sequence ordering */
+.seq-layout{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:14px;}
+.seq-col-title{font-size:.93rem;font-weight:700;margin-bottom:8px;color:var(--navy);}
+.seq-pool{display:flex;flex-direction:column;}
+.seq-slots{display:flex;flex-direction:column;gap:8px;}
+.seq-slot-row{display:flex;gap:8px;align-items:center;}
+.seq-num{min-width:22px;color:var(--sky);font-weight:800;font-size:.9rem;}
+.seq-drop{
+  flex:1;min-height:46px;border:2px dashed var(--accent);
+  border-radius:10px;padding:6px;
+}
+.seq-drop.drag-over{background:#eef6ff;border-color:var(--sky);}
+.seq-drop.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+
+/* Flip cards */
+.flip-deck{display:flex;flex-direction:column;align-items:center;gap:14px;}
+.flip-card-wrap{width:100%;max-width:540px;perspective:1000px;cursor:pointer;}
+.flip-card-inner{
+  position:relative;width:100%;height:185px;transition:transform .55s ease;
+  transform-style:preserve-3d;border-radius:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+}
+.flip-card-wrap.flipped .flip-card-inner{transform:rotateY(180deg);}
+.flip-face{
+  position:absolute;inset:0;backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:22px 26px;text-align:center;
+}
+.flip-front{background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);color:#fff;}
+.flip-back{background:#fff;color:var(--navy);transform:rotateY(180deg);border:2px solid var(--accent);}
+.flip-label{font-size:.68rem;letter-spacing:1.2px;text-transform:uppercase;opacity:.65;font-weight:600;margin-bottom:7px;}
+.flip-term{font-size:1.25rem;font-weight:800;line-height:1.2;}
+.flip-def{font-size:.86rem;line-height:1.55;color:#333;}
+.flip-why{font-size:.78rem;line-height:1.4;color:var(--blue);margin-top:7px;font-style:italic;}
+.flip-tap-hint{font-size:.72rem;opacity:.55;margin-top:8px;}
+.flip-nav{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.flip-nav-btn{
+  background:var(--navy);color:white;border:none;border-radius:999px;
+  padding:7px 18px;font-size:.86rem;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  transition:background .2s,transform .1s;
+}
+.flip-nav-btn:not(:disabled):hover{background:var(--blue);transform:translateY(-1px);}
+.flip-nav-btn:disabled{opacity:.35;cursor:default;}
+.flip-nav-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+.flip-counter{font-size:.83rem;color:#555;font-weight:600;}
+.flip-progress-row{display:flex;align-items:center;gap:10px;width:100%;max-width:540px;}
+.flip-progress-bar{flex:1;height:7px;background:#e5e7eb;border-radius:999px;overflow:hidden;}
+.flip-progress-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--blue));transition:width .3s;}
+.viewed-badge{
+  display:inline-flex;align-items:center;gap:5px;background:#f0f7ff;
+  border:1px solid var(--accent);border-radius:999px;padding:4px 10px;
+  font-size:.76rem;font-weight:600;color:var(--blue);
+}
+
+/* Branching scenario */
+.scenario-box{
+  background:#f8faff;border:var(--border);border-left:4px solid var(--sky);
+  border-radius:10px;padding:14px 18px;margin-bottom:16px;
+  font-size:.92rem;line-height:1.65;color:#333;
+}
+.scenario-box strong{color:var(--navy);}
+.branch-result{
+  margin-top:14px;padding:12px 14px;border-radius:10px;
+  font-size:.9rem;line-height:1.6;
+}
+.branch-result.optimal{background:#dcfce7;border:1px solid #14532d;color:#166534;}
+.branch-result.acceptable{background:#fef9c3;border:1px solid #92400e;color:#78350f;}
+.branch-result.poor{background:#fee2e2;border:1px solid #7f1d1d;color:#991b1b;}
+.branch-choices{display:flex;flex-direction:column;gap:9px;margin-top:14px;}
+.branch-choice{
+  border:var(--border);border-radius:8px;padding:12px 14px;
+  cursor:pointer;font-size:.9rem;line-height:1.5;
+  transition:background .15s,border-color .15s;user-select:none;touch-action:manipulation;
+}
+.branch-choice:hover{background:var(--accent);}
+.branch-choice:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.scenario-progress{font-size:.8rem;color:#555;margin-bottom:12px;}
+
+/* Knowledge check */
+.kc-question{
+  background:#f9fafb;border-radius:10px;padding:14px 16px;border:1px solid #dde3f0;
+  margin-bottom:14px;
+}
+.kc-question.kc-correct{border-color:var(--green-border);background:var(--green-bg);}
+.kc-question.kc-incorrect{border-color:var(--red-border);background:var(--red-bg);}
+.kc-qtext{font-size:.93rem;font-weight:600;color:var(--navy);margin-bottom:9px;line-height:1.5;}
+.kc-options{display:flex;flex-direction:column;gap:7px;}
+.kc-opt{
+  border:var(--border);border-radius:8px;padding:10px 13px;
+  cursor:pointer;font-size:.88rem;transition:background .15s;
+  user-select:none;touch-action:manipulation;
+}
+.kc-opt:hover{background:var(--accent);}
+.kc-opt:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.kc-opt.kc-opt-correct{background:var(--green-bg);border-color:var(--green-border);pointer-events:none;}
+.kc-opt.kc-opt-wrong{background:var(--red-bg);border-color:var(--red-border);pointer-events:none;}
+.kc-exp{font-size:.83rem;line-height:1.5;color:#333;margin-top:9px;display:none;}
+.kc-exp.visible{display:block;}
+
+/* two-part banner */
+.two-part-banner{
+  display:flex;align-items:center;gap:14px;
+  background:linear-gradient(135deg,#1a3a6b 0%,#2563eb 100%);
+  color:#fff;border-radius:12px;padding:12px 16px;
+  margin-bottom:16px;font-size:.9rem;line-height:1.5;
+}
+.two-part-banner .tpb-icon{font-size:1.5rem;flex-shrink:0;}
+.tpb-badge{
+  display:inline-block;background:#fff;color:#1a3a6b;
+  font-weight:800;font-size:.73rem;padding:2px 8px;
+  border-radius:20px;margin-right:6px;
+}
+@keyframes fadeOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-12px)}}
+@keyframes fadeIn {from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.part-fade-out{animation:fadeOut .35s ease forwards;}
+.part-fade-in {animation:fadeIn .35s ease forwards;}
+@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-9px)}35%{transform:translateX(9px)}55%{transform:translateX(-6px)}75%{transform:translateX(6px)}90%{transform:translateX(-3px)}}
+.card-shake{animation:shake .48s ease;}
+@keyframes cardPop{0%{transform:scale(1)}50%{transform:scale(1.07)}100%{transform:scale(1)}}
+.card-correct-pop{animation:cardPop .32s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-8px)}35%{transform:translateX(8px)}55%{transform:translateX(-6px)}75%{transform:translateX(6px)}90%{transform:translateX(-3px)}}
+.card-shake{animation:shake .45s ease;}
+@keyframes cardCorrect{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+.card-correct-pop{animation:cardCorrect .3s ease;}
+
+/* nav sub-items */
+.nav-sublist{display:flex;flex-direction:column;gap:1px;margin:2px 0 4px 16px;}
+.nav-subitem{
+  font-size:.75rem;padding:4px 10px;border-radius:6px;color:var(--navy);cursor:pointer;
+  display:flex;align-items:center;gap:6px;transition:background .1s;
+  border-left:2px solid var(--accent);
+}
+.nav-subitem:hover{background:#e8f0fe;}
+.nav-subitem.sub-done::after{content:' ✓';color:#16a34a;font-weight:700;}
+.nav-subitem.sub-pending{color:#888;cursor:default;}
+
+/* Timeline activity */
+.timeline-pool{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.timeline-slots{display:flex;flex-direction:column;gap:8px;}
+.timeline-slot-row{display:flex;gap:10px;align-items:center;}
+.timeline-dot{width:20px;height:20px;border-radius:50%;background:var(--sky);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.timeline-dot span{width:8px;height:8px;border-radius:50%;background:white;display:block;}
+.timeline-drop{
+  flex:1;min-height:44px;border:2px dashed var(--accent);
+  border-radius:8px;padding:6px;font-size:.82rem;
+}
+.timeline-drop.drag-over{background:#eef6ff;border-color:var(--sky);}
+.timeline-drop.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.timeline-label{font-size:.78rem;color:#888;min-width:36px;font-weight:600;}
+
+/* Matrix activity */
+.matrix-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:10px;}
+.matrix-table th{background:var(--navy);color:white;padding:9px 10px;text-align:left;font-size:.78rem;}
+.matrix-table td{padding:8px 10px;border:1px solid #e5e7eb;vertical-align:top;}
+.matrix-table tr:nth-child(even) td{background:#f8faff;}
+.matrix-drop{min-height:36px;border:2px dashed var(--accent);border-radius:6px;padding:4px 6px;}
+.matrix-drop.drag-over{background:#eef6ff;border-color:var(--sky);}
+.matrix-drop.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.matrix-pool{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+
+/* Hint system */
+.hint-area{margin-top:10px;}
+.hint-btn{
+  background:#f0f5ff;border:1px solid var(--accent);color:var(--blue);
+  padding:7px 14px;border-radius:20px;font-size:.82rem;font-weight:600;
+  cursor:pointer;transition:background .15s;touch-action:manipulation;
+}
+.hint-btn:hover{background:var(--accent);}
+.hint-btn:disabled{opacity:.4;cursor:default;}
+.hint-btn:focus{outline:3px solid var(--sky);}
+.hint-text{
+  margin-top:8px;background:#fef9c3;border:1px solid #f59e0b;
+  border-radius:8px;padding:9px 12px;font-size:.83rem;line-height:1.5;color:#78350f;
+  display:none;
+}
+.hint-text.visible{display:block;}
+
+/* Modals */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;
+  justify-content:center;
+  align-items:flex-start;
+  z-index:2000;
+  padding:20px;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.modal-overlay.visible{display:flex}
+.modal-box{
+  background:white;
+  padding:40px 36px;
+  max-width:520px;
+  width:100%;
+  border-radius:16px;
+  box-shadow:0 30px 60px rgba(0,0,0,.3);
+  text-align:center;
+  position:relative;
+  max-height:calc(100vh - 40px);
+  overflow-y:auto;
+  margin:auto;
+}
+.modal-icon{font-size:3.5rem;margin-bottom:14px}
+.modal-box h2{color:var(--navy);font-size:1.55rem;font-weight:800;margin-bottom:12px;}
+.modal-box p{color:#444;line-height:1.7;margin-bottom:22px;font-size:.95rem;}
+.download-btn{
+  display:inline-block;background:var(--navy);color:white;
+  padding:13px 30px;font-size:.97rem;font-weight:700;border:none;
+  border-radius:10px;cursor:pointer;text-decoration:none;touch-action:manipulation;
+}
+.download-btn:hover{background:var(--blue)}
+.download-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+.modal-close{
+  position:sticky;
+  float:right;
+  top:0;
+  margin:-24px -16px 0 0;
+  background:none;
+  border:none;
+  font-size:1.4rem;
+  cursor:pointer;
+  color:#888;
+  line-height:1;
+  padding:4px 8px;
+  z-index:1;
+}
+.modal-close:hover{color:var(--navy)}
+.modal-close:focus{outline:3px solid var(--sky)}
+/* ── Completion warning banner ── */
+.completion-warning{
+  display:flex;gap:12px;align-items:flex-start;
+  background:#fef2f2;border:1px solid #fecaca;border-left:5px solid #dc2626;
+  border-radius:10px;padding:14px 16px;margin:6px 0 20px;
+  font-size:.92rem;line-height:1.55;color:#7f1d1d;text-align:left;
+}
+.completion-warning-icon{font-size:1.4rem;flex-shrink:0;line-height:1.2;}
+/* ── Reflection question block ── */
+.reflection-block{
+  background:#f0f5ff;border:1px solid var(--accent);border-left:5px solid var(--blue);
+  border-radius:10px;padding:16px 18px;margin-bottom:18px;text-align:left;
+}
+.reflection-label{
+  font-size:.78rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--blue);margin-bottom:8px;
+}
+.reflection-question{
+  font-size:1rem;line-height:1.55;color:var(--navy);font-weight:600;margin:0;
+}
+.reflection-instructions{font-size:.9rem;color:#333;line-height:1.6;text-align:left;}
+.reflection-instructions ol{margin:10px 0 0;padding-left:22px;}
+.reflection-instructions li{margin-bottom:8px;}
+.reflection-note{
+  margin-top:14px;background:#fffbeb;border:1px solid #fcd34d;
+  border-radius:8px;padding:10px 14px;font-size:.86rem;color:#92400e;font-weight:600;
+}
+.completion-divider{height:1px;background:rgba(19,41,75,.12);margin:24px 0 4px;}
+.modal-checklist{text-align:left;background:#f8faff;border-radius:10px;padding:14px 18px;margin-bottom:22px;}
+.modal-checklist li{list-style:none;padding:5px 0;font-size:.88rem;color:#333;}
+.modal-checklist li::before{content:'✅ ';margin-right:4px}
+#instructionsModal .modal-box{text-align:left}
+#instructionsModal h2{text-align:center}
+.instr-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;font-size:.92rem;line-height:1.5;}
+.instr-icon{font-size:1.4rem;flex-shrink:0;margin-top:1px;}
+.reset-btn{
+  display:block;width:calc(100% - 28px);margin:10px 14px 0;padding:10px 0;
+  background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5;border-radius:8px;
+  font-size:.85rem;font-weight:600;cursor:pointer;transition:background .15s;touch-action:manipulation;
+}
+.reset-btn:hover{background:#fecaca;}
+.reset-btn:focus{outline:3px solid var(--sky);}
+.confirm-btn-row{display:flex;gap:10px;justify-content:center;margin-top:18px;}
+.confirm-yes{background:#dc2626;color:white;border:none;padding:11px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.95rem;}
+.confirm-yes:hover{background:#b91c1c;}
+.confirm-no{background:#e5e7eb;color:#333;border:none;padding:11px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.95rem;}
+.confirm-no:hover{background:#d1d5db;}
+
+/* Rush guard */
+#rushModal .modal-box{max-width:480px;border-top:5px solid #f59e0b;}
+.activity-locked-overlay{
+  position:absolute;inset:0;background:rgba(255,255,255,.88);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;z-index:100;border-radius:12px;padding:30px;text-align:center;
+}
+.activity-locked-overlay h3{color:#dc2626;font-size:1.1rem;margin:0;}
+.activity-locked-overlay p{font-size:.9rem;color:#555;margin:0;line-height:1.5;}
+.lock-countdown{font-size:2rem;font-weight:800;color:#dc2626;}
+/* Review page */
+.review-screen{max-width:820px;margin:0 auto;padding:30px 28px 50px;}
+.review-badge{display:inline-block;background:#dcfce7;color:#166534;font-weight:700;font-size:.8rem;letter-spacing:.5px;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:14px;border:1px solid #bbf7d0;}
+.review-screen h2{color:var(--navy);font-size:1.4rem;font-weight:800;margin-bottom:16px;}
+.review-section{background:#f8faff;border:var(--border);border-left:4px solid var(--sky);border-radius:10px;padding:16px 20px;margin-bottom:16px;}
+.review-section h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:10px;}
+.review-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
+.review-list li{font-size:.88rem;color:#333;line-height:1.5;padding-left:18px;position:relative;}
+.review-list li::before{content:'•';position:absolute;left:0;color:var(--sky);font-weight:700;}
+
+#aria-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+
+@media(max-width:640px){
+  #sidebar{width:260px;min-width:260px}
+  .cover-title{font-size:1.5rem}
+  .seq-layout{grid-template-columns:1fr}
+  .interaction-wrapper{padding:18px 14px 36px}
+  #cover-page{padding:16px 16px 36px}
+  .flip-card-inner{height:210px;}
+}
+</style>
+</head>
+<body>
+
+<div id="aria-live" aria-live="polite" aria-atomic="true"></div>
+
+<!-- INSTRUCTIONS MODAL -->
+<div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+  <div class="modal-box">
+    <h2 id="instrTitle">How to Use This Module</h2><br>
+    <div class="instr-row"><span class="instr-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Click or tap to interact. Drag and drop cards where required. Press Continue to advance.</div></div>
+    <div class="instr-row"><span class="instr-icon">⌨️</span><div><strong>Keyboard:</strong> Use <kbd>Tab</kbd> to move, <kbd>Enter</kbd> or <kbd>Space</kbd> to select. Arrow keys navigate flip cards.</div></div>
+    <div class="instr-row"><span class="instr-icon">🔒</span><div><strong>Gated Progress:</strong> Each activity must be completed correctly before the next unlocks. Your progress saves automatically.</div></div>
+    <div class="instr-row"><span class="instr-icon">⚠️</span><div><strong>Rush Guard:</strong> Dragging cards rapidly without reading them may trigger warnings and temporary locks.</div></div><br>
+    <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
+  </div>
+</div>
+
+<!-- RESET MODAL -->
+<div class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <h2 id="resetTitle">Reset All Progress?</h2>
+    <p>This will <strong>erase all completed activities</strong> and re-lock everything except Activity 1. This cannot be undone.</p>
+    <div class="confirm-btn-row">
+      <button class="confirm-no" id="resetCancelBtn">Cancel</button>
+      <button class="confirm-yes" id="resetConfirmBtn">Yes, Reset Everything</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
+  <div class="modal-box" style="max-width:600px;text-align:left;">
+    <button class="modal-close" id="closeCompletion" aria-label="Close">✕</button>
+
+    <!-- Not-done-yet warning -->
+    <div class="completion-warning" role="alert">
+      <span class="completion-warning-icon">⚠️</span>
+      <div><strong>You're not done yet!</strong> Finishing the activities is only part of this assignment. To receive credit, you must still answer the reflection question below in the Canvas text box.</div>
+    </div>
+
+    <!-- Icon + title -->
+    <div class="modal-icon" style="text-align:center;">🚬</div>
+    <h2 id="complTitle" style="text-align:center;">Activities Complete — One Step Left</h2>
+    <p style="text-align:center;">You've completed all five Chapter 7 activities on nicotine — from key terms to treatment evaluation. Answer the reflection below to finish the assignment.</p>
+
+    <!-- Randomly populated reflection question (filled by JS) -->
+    <div class="reflection-block">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question" id="reflectionQuestion">&nbsp;</p>
+    </div>
+
+    <!-- Assignment directions -->
+    <div class="reflection-instructions">
+      <strong>To complete this assignment:</strong>
+      <ol>
+        <li><strong>Copy and paste the question above</strong> into the Canvas text box below this activity.</li>
+        <li>Answer the question in your <strong>own words</strong> — a minimum of <strong>one full paragraph of at least five sentences</strong>.</li>
+        <li><strong>Do not use AI</strong> to write or generate any part of your answer. The reflection must be entirely your own thinking.</li>
+      </ol>
+      <p class="reflection-note">
+        ⬇ Scroll down to the Canvas text box beneath this activity to submit your written response.
+      </p>
+    </div>
+
+    <!-- Divider -->
+    <div class="completion-divider"></div>
+
+    <!-- Study guide / review link -->
+    <div style="text-align:center;margin-top:18px;">
+      <button class="download-btn" id="downloadGuideBtn">⬇ Download Study Notes</button>
+      <p style="font-size:.82rem;color:#666;margin-top:8px;">
+        You can also access the full <strong>Review &amp; Study Guide</strong> from the sidebar menu at any time.
+      </p>
+    </div>
+
+  </div>
+</div>
+<!-- END COMPLETION MODAL ─────────────────────────────────────────── -->
+
+<!-- RUSH GUARD MODAL -->
+<div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
+  <div class="modal-box" style="border-top:5px solid #f59e0b;">
+    <div class="modal-icon" id="rushIcon">⚠️</div>
+    <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
+    <p id="rushMsg"></p>
+    <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
+    <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
+    <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app-wrapper">
+  <aside id="sidebar" aria-label="Activity navigation">
+    <div class="sidebar-header">
+      Chapter 7
+      <small>Nicotine</small>
+    </div>
+    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="5" id="overallProgressBar">
+      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
+    </div>
+    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
+    <div class="sidebar-footer" id="sidebar-footer">0 of 5 activities complete</div>
+    <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">↺ Reset Progress</button>
+  </aside>
+
+  <main id="main-content">
+    <div class="top-bar">
+      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
+      <span class="top-bar-title" id="topBarTitle">Chapter 7 – Nicotine</span>
+      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="img"></div>
+      <span class="step-label" id="stepLabel"></span>
+      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
+    </div>
+    <div class="content-scroll" id="content-area" tabindex="-1"></div>
+  </main>
+</div>
+
+<script>
+/* ==========================================================
+   RUSH GUARD  (escalating-timeout model)
+   A rush event = 2 wrong answers within a 5-second window.
+   Each step: dismissable warning -> rush again -> timed lockout.
+   Lockout durations escalate: 60s -> 3 min -> 4 min -> 5 min -> ...
+   (+1 minute per lockout). A fresh dismissable warning precedes
+   every lockout. There is no permanent lock and no password.
+========================================================== */
+const rushGuard = (() => {
+  const WINDOW_MS = 5000;   // rush detection window
+  const THRESHOLD = 2;      // wrong answers within the window = 1 rush event
+
+  let wrongTimestamps = [];
+  let strikes         = 0;  // strikes within the current step (1 = warned, 2 = lock)
+  let lockCount       = 0;  // lockouts triggered so far this session
+  let locked          = false;
+  let cooldownTimer   = null;
+  let currentWrapper  = null;
+  let flipRushCount   = 0;
+  let flipStrikes     = 0;
+
+  const $modal     = () => document.getElementById('rushModal');
+  const $icon      = () => document.getElementById('rushIcon');
+  const $title     = () => document.getElementById('rushTitle');
+  const $msg       = () => document.getElementById('rushMsg');
+  const $detail    = () => document.getElementById('rushDetail');
+  const $countdown = () => document.getElementById('rushCountdown');
+  const $dismiss   = () => document.getElementById('rushDismissBtn');
+
+  /* Duration (seconds) of the k-th lockout, k = 1,2,3,...
+     k=1 -> 60s, k=2 -> 180s (3 min), then +60s each subsequent lock. */
+  function durFor(k){ return k <= 1 ? 60 : 180 + (k - 2) * 60; }
+  function fmtLong(secs){
+    if(secs < 60) return secs + ' seconds';
+    const m = Math.round(secs / 60);
+    return m + ' minute' + (m !== 1 ? 's' : '');
+  }
+  function fmtAdj(secs){
+    return secs < 60 ? secs + '-Second' : Math.round(secs / 60) + '-Minute';
+  }
+  function fmtClock(secs){
+    if(secs < 60) return secs + 's';
+    const m = Math.floor(secs / 60), s = secs % 60;
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  function setModal(iconTxt,titleTxt,titleColor,borderColor,msgTxt,detailHTML,cdVisible,btnVisible,btnTxt){
+    const m=$modal();
+    m.querySelector('.modal-box').style.borderTopColor=borderColor;
+    $icon().textContent=iconTxt; $title().textContent=titleTxt; $title().style.color=titleColor;
+    $msg().textContent=msgTxt; $detail().innerHTML=detailHTML;
+    $countdown().style.display=cdVisible?'block':'none';
+    $dismiss().style.display=btnVisible?'':'none';
+    if(btnVisible) $dismiss().textContent=btnTxt;
+    m.classList.add('visible');
+    if(btnVisible) setTimeout(()=>$dismiss().focus(),50);
+  }
+
+  function showWarning(){
+    const nextLock = durFor(lockCount + 1);
+    if(lockCount===0){
+      setModal('⚠️','Slow Down!','#92400e','#f59e0b',
+        "You're answering too quickly without reading carefully. Take a moment to think before selecting.",
+        `Tip: Read each item fully before dragging or clicking. Think before you answer.<br><br>Rush again and this activity locks for <strong>${fmtLong(nextLock)}</strong>.`,
+        false,true,"I'll Read More Carefully");
+    } else {
+      setModal('🚨','Slow Down — Again!','#dc2626','#dc2626',
+        "You're still rushing. Read carefully before answering.",
+        `Rush again and this activity locks for <strong>${fmtLong(nextLock)}</strong>.<br><br>⚠️ Each additional rush <strong>adds another minute</strong> to the next lockout.`,
+        false,true,"I Understand — I'll Think First");
+    }
+  }
+
+  function showTimeout(){
+    lockCount++;
+    const dur=durFor(lockCount);
+    setModal('🔒',`Activity Locked — ${fmtAdj(dur)} Timeout`,'#dc2626','#dc2626',
+      `You rushed again immediately after a warning. This activity is locked for ${fmtLong(dur)}.`,
+      `Use this time to carefully study the content before continuing.<br><br>⚠️ Each additional rush adds <strong>another minute</strong> to the next lockout.`,
+      true,false,'');
+    startCooldown(dur);
+  }
+
+  function startCooldown(durSecs){
+    locked=true;
+    let secs=durSecs;
+    $countdown().textContent=fmtClock(secs);
+    if(currentWrapper){
+      currentWrapper.style.position='relative';
+      let ov=document.getElementById('rush-lock-overlay');
+      if(!ov){ ov=document.createElement('div'); ov.className='activity-locked-overlay'; ov.id='rush-lock-overlay'; currentWrapper.appendChild(ov); }
+      ov.innerHTML=`<h3>🔒 Activity Locked</h3><p>Take ${fmtLong(durSecs)} to study the content.</p><div class="lock-countdown" id="lock-secs">${fmtClock(secs)}</div><p style="font-size:.82rem;">Cards will reshuffle when the timer ends.</p>`;
+    }
+    if(cooldownTimer){ clearInterval(cooldownTimer); }
+    cooldownTimer=setInterval(()=>{
+      secs--;
+      const cd=$countdown(), ls=document.getElementById('lock-secs');
+      if(cd) cd.textContent=fmtClock(secs);
+      if(ls) ls.textContent=fmtClock(secs);
+      if(secs<=0){
+        clearInterval(cooldownTimer); cooldownTimer=null;
+        locked=false; strikes=0; wrongTimestamps=[];
+        $modal().classList.remove('visible');
+        const ov=document.getElementById('rush-lock-overlay');
+        if(ov) ov.remove();
+        if(typeof currentView==='number') showActivity(currentView);
+      }
+    },1000);
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('rushDismissBtn').addEventListener('click',()=>{
+      $modal().classList.remove('visible');
+      wrongTimestamps=[];
+      flipRushCount=0;
+    });
+  });
+
+  return {
+    reset(){
+      wrongTimestamps=[]; strikes=0; locked=false;
+      flipRushCount=0; flipStrikes=0;
+      if(cooldownTimer){clearInterval(cooldownTimer);cooldownTimer=null;}
+      const ov=document.getElementById('rush-lock-overlay');
+      if(ov) ov.remove();
+    },
+    hardReset(){
+      this.reset();
+      lockCount=0;
+    },
+    clearTimestamps(){
+      wrongTimestamps=[];
+    },
+    recordWrong(wrapper){
+      if(locked) return;
+      currentWrapper=wrapper;
+      const now=Date.now();
+      wrongTimestamps.push(now);
+      wrongTimestamps=wrongTimestamps.filter(t=>now-t<WINDOW_MS);
+      if(wrongTimestamps.length<THRESHOLD) return;
+      wrongTimestamps=[]; strikes++;
+      if(strikes===1){ showWarning(); }
+      else { strikes=0; showTimeout(); }
+    },
+    recordFlipRush(wrapper){
+      if(locked) return;
+      currentWrapper=wrapper;
+      flipRushCount++;
+      if(flipRushCount<3) return;
+      flipRushCount=0; flipStrikes++;
+      if(flipStrikes===1){ showWarning(); }
+      else { flipStrikes=0; showTimeout(); }
+    },
+    isLocked(){ return locked; }
+  };
+})();
+
+/* ==========================================================
+   UTILITY
+========================================================== */
+function announce(msg){
+  const el=document.getElementById('aria-live');
+  el.textContent='';
+  setTimeout(()=>el.textContent=msg,60);
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+function qs(sel,root=document){return root.querySelector(sel)}
+function qsa(sel,root=document){return [...root.querySelectorAll(sel)]}
+
+function makeDraggable(cardEl){
+  cardEl.setAttribute('draggable','true');
+  cardEl.addEventListener('dragstart',e=>{
+    e.dataTransfer.setData('text/plain',cardEl.id);
+    cardEl.classList.add('dragging');
+  });
+  cardEl.addEventListener('dragend',()=>cardEl.classList.remove('dragging'));
+}
+
+function showPartB(partAEl,partBEl,initFn){
+  partAEl.classList.add('part-fade-out');
+  setTimeout(()=>{
+    partAEl.style.display='none';
+    partBEl.style.display='block';
+    partBEl.classList.add('part-fade-in');
+    if(initFn) initFn();
+  },360);
+}
+
+/* ==========================================================
+   ACTIVITIES DEFINITION
+   Activity 1 = gate 1 (1A flip + 1B sort)
+   Activity 2 = gate 2 (timeline)
+   Activity 3 = gate 3 (sequence)
+   Activity 4 = gate 4 (branching)
+   Activity 5 = gate 5 (matrix eval)
+========================================================== */
+const ACTIVITIES=[
+  {id:'act1',title:'Activity 1',subtitle:'Key Terms + Classification',type:'FLIPCARD',locked:false,done:false},
+  {id:'act2',title:'Activity 2',subtitle:'History & Prevalence Timeline',type:'TIMELINE',locked:true,done:false},
+  {id:'act3',title:'Activity 3',subtitle:'Pharmacology Pathway Builder',type:'SEQUENCE',locked:true,done:false},
+  {id:'act4',title:'Activity 4',subtitle:'Dependence & Health Effects',type:'BRANCHING',locked:true,done:false},
+  {id:'act5',title:'Activity 5',subtitle:'Treatment Evaluation Matrix',type:'MATRIX',locked:true,done:false}
+];
+
+let currentView='cover';
+let currentSubView=null; // '1a' | '1b' | null
+
+/* ==========================================================
+   STORAGE
+========================================================== */
+const STORAGE_KEY='ch7-shell-v1';
+const partADone=new Array(5).fill(false);
+
+function saveProgress(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({
+    currentView,
+    currentSubView,
+    done:ACTIVITIES.map(a=>a.done),
+    locked:ACTIVITIES.map(a=>a.locked),
+    partADone:[...partADone]
+  }));
+}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(!d||!Array.isArray(d.done)||d.done.length!==ACTIVITIES.length) return;
+    currentView=d.currentView!==undefined?d.currentView:'cover';
+    currentSubView=d.currentSubView||null;
+    ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
+    ACTIVITIES[0].locked=false;
+    if(Array.isArray(d.partADone)) d.partADone.forEach((v,i)=>{if(i<partADone.length) partADone[i]=!!v;});
+    announce('Your previous progress has been restored.');
+  }catch(e){}
+}
+function doneCount(){return ACTIVITIES.filter(a=>a.done).length;}
+
+/* ==========================================================
+   SIDEBAR
+========================================================== */
+function renderSidebar(){
+  const nav=document.getElementById('nav-list');
+  nav.innerHTML='';
+  const done=doneCount();
+  const pct=Math.round((done/ACTIVITIES.length)*100);
+  document.getElementById('overallProgressFill').style.width=pct+'%';
+  document.getElementById('overallProgressBar').setAttribute('aria-valuenow',done);
+  document.getElementById('sidebar-footer').textContent=`${done} of ${ACTIVITIES.length} activities complete`;
+  renderStepDots();
+
+  const cover=document.createElement('div');
+  cover.className='nav-item'+(currentView==='cover'?' active':'');
+  cover.tabIndex=0; cover.setAttribute('role','button'); cover.setAttribute('aria-label','Cover page');
+  cover.innerHTML=`<span class="nav-title">📋 Cover Page</span>`;
+  cover.onclick=()=>showCover();
+  cover.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cover.click();}};
+  nav.appendChild(cover);
+
+  ACTIVITIES.forEach((act,i)=>{
+    const isAct1=(i===0);
+    const isActive=(currentView===i);
+    const item=document.createElement('div');
+    item.className='nav-item'+
+      (isActive&&!currentSubView?' active':'')+
+      (act.locked?' locked':'')+
+      (act.done?' done':'');
+    item.tabIndex=act.locked?-1:0;
+    item.setAttribute('role','button');
+    item.setAttribute('aria-label',`${act.title}: ${act.subtitle}${act.locked?' (locked)':act.done?' (complete)':''}`);
+    item.setAttribute('aria-disabled',act.locked?'true':'false');
+    item.innerHTML=`<span class="nav-title">${act.title}: ${act.subtitle}</span><span class="lock-icon">${act.locked?'🔒':act.done?'✓':''}</span>`;
+    if(!act.locked){
+      item.onclick=()=>showActivity(i);
+      item.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();item.click();}};
+    }
+    nav.appendChild(item);
+
+    // Submenu for Activity 1 when unlocked
+    if(isAct1 && !act.locked){
+      const sub=document.createElement('div');
+      sub.className='nav-sublist';
+      sub.setAttribute('role','list');
+
+      // 1A sub-item — always accessible once act1 is unlocked
+      const sub1a=document.createElement('div');
+      sub1a.className='nav-subitem'+(currentView===0&&currentSubView==='1a'?' active':'')+' '+(partADone[0]?'sub-done':'');
+      sub1a.tabIndex=0;
+      sub1a.setAttribute('role','listitem');
+      sub1a.setAttribute('aria-label','Activity 1A: Key Terms Flip Cards'+(partADone[0]?' (complete)':''));
+      sub1a.innerHTML=`<span style="font-size:.7rem;opacity:.6;">↳</span> 1A – Key Terms`;
+      sub1a.onclick=()=>showSubActivity('1a');
+      sub1a.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();sub1a.click();}};
+      sub.appendChild(sub1a);
+
+      // 1B sub-item — accessible once 1A is done
+      const sub1b=document.createElement('div');
+      const b_locked=!partADone[0];
+      sub1b.className='nav-subitem'+(currentView===0&&currentSubView==='1b'?' active':'')+' '+(act.done?'sub-done':'')+(b_locked?' sub-pending':'');
+      sub1b.tabIndex=b_locked?-1:0;
+      sub1b.setAttribute('role','listitem');
+      sub1b.setAttribute('aria-label','Activity 1B: Classification & Routes'+(act.done?' (complete)':b_locked?' (locked)':''));
+      sub1b.innerHTML=`<span style="font-size:.7rem;opacity:.6;">↳</span> 1B – Classification &amp; Routes ${b_locked?'🔒':''}`;
+      if(!b_locked){
+        sub1b.onclick=()=>showSubActivity('1b');
+        sub1b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();sub1b.click();}};
+      }
+      sub.appendChild(sub1b);
+      nav.appendChild(sub);
+    }
+  });
+
+  // ── Review menu item — appears only once every activity is complete ──
+  if(done===ACTIVITIES.length){
+    const review=document.createElement('div');
+    review.className='nav-item'+(currentView==='review'?' active':'');
+    review.tabIndex=0;
+    review.setAttribute('role','button');
+    review.setAttribute('aria-label','Review and study guide');
+    review.innerHTML='<span class="nav-title">⭐ Review &amp; Study Guide</span>';
+    review.onclick=()=>showReviewSummary();
+    review.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();review.click();}};
+    nav.appendChild(review);
+  }
+}
+
+/* ==========================================================
+   STEP DOTS
+========================================================== */
+function renderStepDots(){
+  const dots=document.getElementById('stepDots');
+  dots.innerHTML='';
+  ACTIVITIES.forEach((a,i)=>{
+    const dot=document.createElement('div');
+    dot.className='step-dot';
+    if(a.done)             dot.classList.add('done');
+    else if(currentView===i) dot.classList.add('active');
+    else if(a.locked)      dot.classList.add('locked');
+    dot.title=`${a.title}: ${a.done?'Complete':a.locked?'Locked':'In Progress'}`;
+    dot.setAttribute('aria-label',dot.title);
+    dots.appendChild(dot);
+  });
+  document.getElementById('stepLabel').textContent=`${doneCount()}/${ACTIVITIES.length}`;
+}
+
+/* ==========================================================
+   REVIEW & STUDY GUIDE
+========================================================== */
+function showReviewSummary(){
+  currentView='review';
+  document.getElementById('topBarTitle').textContent='Chapter 7 – Review & Study Guide';
+  renderSidebar();
+  saveProgress();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  const page=document.createElement('div');
+  page.className='review-screen';
+  page.innerHTML=`
+    <div class="review-badge">⭐ All Activities Complete</div>
+    <h2>Chapter 7 – Nicotine: Study Guide</h2>
+    <p style="font-size:.9rem;color:#555;margin-bottom:20px;line-height:1.6;">Review the key concepts from each activity below. Use this page to study before the quiz.</p>
+
+    <div class="review-section">
+      <h3>🃏 Activity 1A – Key Terms</h3>
+      <ul class="review-list">
+        <li><strong>Nicotine:</strong> A naturally occurring psychoactive drug found in tobacco; acts as a cholinergic agonist.</li>
+        <li><strong>Cholinergic Agonist:</strong> A drug that mimics acetylcholine by stimulating its receptors.</li>
+        <li><strong>Tolerance:</strong> Reduced drug response after repeated use; requires higher doses for same effect.</li>
+        <li><strong>Physical Dependence:</strong> Physiological state where withdrawal symptoms occur if use stops.</li>
+        <li><strong>Withdrawal:</strong> Unpleasant physical and psychological symptoms when nicotine use stops.</li>
+        <li><strong>Tar:</strong> Tobacco smoke residue containing most cancer-causing substances.</li>
+        <li><strong>Carbon Monoxide:</strong> Toxic gas from tobacco combustion; reduces oxygen delivery; linked to heart disease.</li>
+      </ul>
+    </div>
+
+    <div class="review-section">
+      <h3>🗂️ Activity 1B – Classification & Routes</h3>
+      <ul class="review-list">
+        <li>Nicotine is classified as a <strong>Stimulant</strong> (biphasic effects — low doses stimulate CNS).</li>
+        <li>Routes of administration: cigarette smoking, cigar smoking, pipe smoking, chewing tobacco, snuff (smokeless).</li>
+        <li>IV injection is <strong>NOT</strong> a real-world route of administration for nicotine.</li>
+        <li>Not every drug classification type applies to nicotine — only one does.</li>
+      </ul>
+    </div>
+
+    <div class="review-section">
+      <h3>📅 Activity 2 – History & Prevalence Timeline</h3>
+      <ul class="review-list">
+        <li>Tobacco used as medicine in early Europe <em>(earliest event)</em>.</li>
+        <li>Nicotine isolated in a laboratory <strong>(1828)</strong>.</li>
+        <li>Smoking peaks in the U.S. <strong>(1963)</strong>.</li>
+        <li>Surgeon General's report released <strong>(1964)</strong> — directly followed peak smoking rates.</li>
+        <li>Decline in smoking prevalence — the long-term result of public health campaigns following the 1964 report.</li>
+      </ul>
+    </div>
+
+    <div class="review-section">
+      <h3>🔬 Activity 3 – Pharmacology Pathway (in sequence)</h3>
+      <ul class="review-list">
+        <li><strong>1.</strong> Absorption through lungs — nicotine enters the bloodstream.</li>
+        <li><strong>2.</strong> Rapid transport to brain (~7 seconds) — faster than nearly any other drug.</li>
+        <li><strong>3.</strong> Binding to nicotinic acetylcholine receptors.</li>
+        <li><strong>4.</strong> Dopamine release (reward/reinforcement) — drives addiction.</li>
+        <li><strong>5.</strong> Metabolism in the liver.</li>
+        <li><strong>6.</strong> Excretion in urine.</li>
+      </ul>
+    </div>
+
+    <div class="review-section">
+      <h3>🩺 Activity 4 – Dependence & Health Effects</h3>
+      <ul class="review-list">
+        <li>Tolerance develops quickly — explains escalating cigarette use.</li>
+        <li><strong>Craving</strong> is the most commonly reported nicotine withdrawal symptom and the primary driver of relapse.</li>
+        <li>Nicotine withdrawal is primarily <strong>psychological/behavioral</strong> — NOT characterized by severe physical symptoms like seizures or fever.</li>
+        <li>Both <strong>secondhand smoke</strong> (inhaled) and <strong>thirdhand smoke</strong> (residue on surfaces) pose health risks.</li>
+        <li>Smoking near a window does NOT fully protect others from secondhand or thirdhand smoke.</li>
+      </ul>
+    </div>
+
+    <div class="review-section">
+      <h3>💊 Activity 5 – Treatment Evaluation Matrix</h3>
+      <ul class="review-list">
+        <li><strong>Behavioral Programs:</strong> Teach coping skills and relapse prevention; most effective when combined with pharmacological treatment.</li>
+        <li><strong>NRT (Nicotine Replacement Therapy):</strong> Reduces withdrawal by supplying low-dose nicotine; doubles quit rates vs. unaided attempts; best for smokers with strong physical withdrawal.</li>
+        <li><strong>Bupropion:</strong> Inhibits dopamine/norepinephrine reuptake; comparable effectiveness to NRT; best for smokers with co-occurring depression or anxiety.</li>
+        <li><strong>Varenicline:</strong> Partial agonist — competes with nicotine at receptors; the <strong>most effective single pharmacotherapy</strong>; best for smokers seeking the most effective drug option.</li>
+      </ul>
+    </div>
+
+    <button class="download-btn" id="reviewDownloadBtn" style="margin-top:8px;">⬇ Download Study Notes</button>
+  `;
+  area.appendChild(page);
+  page.querySelector('#reviewDownloadBtn').addEventListener('click',()=>{
+    document.getElementById('downloadGuideBtn').click();
+  });
+  area.scrollTop=0;
+  announce('Review and study guide loaded.');
+}
+
+/* ==========================================================
+   COVER
+========================================================== */
+function showCover(){
+  currentView='cover';
+  saveProgress();
+  renderSidebar();
+  document.getElementById('topBarTitle').textContent='Chapter 7 – Nicotine';
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  const pg=document.createElement('div');
+  pg.id='cover-page';
+  pg.innerHTML=`
+    <div class="cover-badge">Chapter 7</div>
+    <h1 class="cover-title">Nicotine</h1>
+    <p class="cover-subtitle">Work through 5 gated activities — from key terms to treatment evaluation — building a complete picture of nicotine's pharmacology, dependence mechanisms, and cessation therapies.</p>
+    <div class="cover-instructions">
+      <strong>📋 How this works</strong>
+      Complete each activity to unlock the next. Activities must be finished correctly — you cannot skip ahead. Your progress is saved automatically.
+    </div>
+    <div class="cover-cards">
+      <div class="cover-card"><div class="cover-card-num">1</div><div class="cover-card-body"><h3>Key Terms + Classification</h3><p>Flip-card vocabulary carousel + drug classification & routes of administration sort.</p><span class="cover-tag">Remember → Understand</span></div></div>
+      <div class="cover-card"><div class="cover-card-num">2</div><div class="cover-card-body"><h3>History & Prevalence Timeline</h3><p>Place key tobacco history events in correct chronological order.</p><span class="cover-tag">Understand</span></div></div>
+      <div class="cover-card"><div class="cover-card-num">3</div><div class="cover-card-body"><h3>Pharmacology Pathway Builder</h3><p>Sequence nicotine's journey through the body from absorption to excretion.</p><span class="cover-tag">Apply</span></div></div>
+      <div class="cover-card"><div class="cover-card-num">4</div><div class="cover-card-body"><h3>Dependence & Health Effects</h3><p>Follow a branching scenario tracking a student's smoking progression and its consequences.</p><span class="cover-tag">Analyze</span></div></div>
+      <div class="cover-card"><div class="cover-card-num">5</div><div class="cover-card-body"><h3>Treatment Evaluation Matrix</h3><p>Match cessation treatments to their mechanism, effectiveness, and best-fit scenario.</p><span class="cover-tag">Evaluate</span></div></div>
+    </div>
+    <button class="get-started-btn" id="startBtn">Start Activity 1 →</button>
+  `;
+  area.appendChild(pg);
+  document.getElementById('startBtn').addEventListener('click',()=>showActivity(0));
+  announce('Chapter 7 cover page loaded.');
+}
+
+/* ==========================================================
+   SHOW ACTIVITY
+========================================================== */
+function showActivity(index){
+  if(ACTIVITIES[index].locked){ announce('This activity is locked. Complete the previous activity first.'); return; }
+  currentView=index;
+  currentSubView=(index===0)?'1a':null;
+  saveProgress();
+  renderSidebar();
+  document.getElementById('topBarTitle').textContent=`${ACTIVITIES[index].title}: ${ACTIVITIES[index].subtitle}`;
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  rushGuard.reset();
+  const fns=[renderAct1,renderAct2,renderAct3,renderAct4,renderAct5];
+  fns[index](area);
+  area.scrollTop=0;
+  announce(`Now viewing ${ACTIVITIES[index].title}: ${ACTIVITIES[index].subtitle}`);
+}
+
+// Navigate directly to 1A or 1B within activity 1
+function showSubActivity(sub){
+  if(ACTIVITIES[0].locked) return;
+  if(sub==='1b' && !partADone[0]){ announce('Complete Activity 1A first.'); return; }
+  currentView=0;
+  currentSubView=sub;
+  saveProgress();
+  renderSidebar();
+  const label=sub==='1a'?'Activity 1A: Key Terms Flip Cards':'Activity 1B: Classification & Routes';
+  document.getElementById('topBarTitle').textContent=label;
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  rushGuard.reset();
+  renderAct1(area, sub);
+  area.scrollTop=0;
+  announce(`Now viewing ${label}`);
+}
+
+/* ==========================================================
+   REFLECTION QUESTIONS
+   Five randomized prompts — one chosen at random when the
+   completion modal opens. Same questions for every chapter.
+========================================================== */
+const REFLECTION_QUESTIONS=[
+  'What was the most important concept in this chapter? Describe the concept in your own words and why it matters.',
+  'How does this chapter connect to something you already know? Explain both the new idea and the old idea and how they connect.',
+  'What part of the chapter seemed most useful or relevant to real life? Explain the idea or concept in your own words. How is it relevant or useful?',
+  'How could the information in this chapter apply to your future coursework or your future career? Select at least 1 idea or concept and describe it in your own words. How does it apply to your future?',
+  'What is one takeaway from this chapter that you will remember later? Describe the takeaway in your own words. Why will you remember it later?'
+];
+
+/* ==========================================================
+   SHOW COMPLETION MODAL
+========================================================== */
+function showCompletionModal(){
+  const q=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+  const qEl=document.getElementById('reflectionQuestion');
+  if(qEl) qEl.textContent=q;
+  document.getElementById('completionModal').classList.add('visible');
+  document.getElementById('closeCompletion').focus();
+  announce('Congratulations! You have completed all 5 Chapter 7 activities. A reflection question is now shown. Copy it into the Canvas text box below and answer in your own words.');
+}
+
+function completeActivity(index){
+  ACTIVITIES[index].done=true;
+  if(index+1<ACTIVITIES.length){ ACTIVITIES[index+1].locked=false; }
+  saveProgress();
+  renderSidebar();
+  if(index===ACTIVITIES.length-1){
+    setTimeout(()=>showCompletionModal(),800);
+  }
+}
+
+/* ==========================================================
+   ACTIVITY 1 – FLIP CARDS (1A) + CARD SORT (1B)
+========================================================== */
+function renderAct1(area, startAt){
+  const cards=[
+    {term:'Nicotine',def:'A naturally occurring psychoactive drug found in tobacco that acts as a cholinergic agonist.',why:'Explains why tobacco use leads rapidly to dependence.'},
+    {term:'Cholinergic Agonist',def:'A drug that mimics the neurotransmitter acetylcholine by stimulating its receptors.',why:"Explains nicotine's mechanism of action."},
+    {term:'Tolerance',def:'A reduction in response to a drug after repeated use, requiring higher doses to achieve the same effect.',why:'Explains escalating cigarette use.'},
+    {term:'Physical Dependence',def:'A physiological state in which withdrawal symptoms occur when drug use stops.',why:'Explains the difficulty of quitting smoking.'},
+    {term:'Withdrawal',def:'Unpleasant physical and psychological symptoms that occur when nicotine use stops.',why:'Drives relapse.'},
+    {term:'Tar',def:'The residue of tobacco smoke that contains most cancer-causing substances.',why:'Explains disease risk beyond nicotine.'},
+    {term:'Carbon Monoxide',def:'A toxic gas produced by tobacco combustion that reduces oxygen delivery in the body.',why:'Links smoking to heart disease.'}
+  ];
+  shuffle(cards);
+
+  const visited=new Array(cards.length).fill(false);
+  let visitedCount=0;
+  let currentIdx=0;
+  let isFlipped=false;
+  const BACK_READ_MS = 2500;  // must spend ≥2.5s on the back before navigating
+  let backRevealTime = null;  // timestamp when the current card's back was shown
+
+  function recordNavAttempt(){
+    // Only flag as a rush if the definition side was shown and left too quickly
+    if(rushGuard.isLocked()) return;
+    if(backRevealTime !== null){
+      const elapsed = Date.now() - backRevealTime;
+      if(elapsed < BACK_READ_MS) rushGuard.recordFlipRush(wA);
+    }
+    backRevealTime = null; // reset — next card hasn't been flipped yet
+  }
+
+  // Part A
+  const wA=document.createElement('div');
+  wA.className='interaction-wrapper';
+  wA.innerHTML=`
+    <h1>Activity 1A – Key Terms Flip-Card Carousel</h1>
+    <div class="two-part-banner">
+      <div class="tpb-icon">🃏</div>
+      <div><span class="tpb-badge">Part A of 2</span>Study each term and definition. Spend at least <strong>6 seconds per card</strong>. View all ${cards.length} cards to unlock the sorting activity.</div>
+    </div>
+    <div class="flip-deck">
+      <div class="flip-progress-row">
+        <span class="ix-counter" style="margin:0;">Viewed: <span id="a1-viewed">0</span>/${cards.length}</span>
+        <div class="flip-progress-bar"><div class="flip-progress-fill" id="a1-prog-fill" style="width:0%"></div></div>
+      </div>
+      <div class="flip-counter" id="a1-counter" aria-live="polite">Card 1 of ${cards.length}</div>
+      <div class="flip-card-wrap" id="a1-card" tabindex="0" role="button"
+           aria-label="Flip card. Press Enter to flip." aria-roledescription="flip card">
+        <div class="flip-card-inner">
+          <div class="flip-face flip-front">
+            <div class="flip-label">Term</div>
+            <div class="flip-term" id="a1-term"></div>
+            <div class="flip-tap-hint">Click, tap, or press Enter to flip</div>
+          </div>
+          <div class="flip-face flip-back">
+            <div class="flip-label" style="color:var(--sky);">Definition</div>
+            <div class="flip-def" id="a1-def"></div>
+            <div class="flip-why" id="a1-why"></div>
+            <div class="flip-tap-hint" style="color:#888;">Click or press Enter to flip back</div>
+          </div>
+        </div>
+      </div>
+      <div class="viewed-badge" id="a1-badge"><span style="width:7px;height:7px;border-radius:50%;background:var(--sky);display:inline-block;"></span><span id="a1-badge-text">Not yet viewed</span></div>
+      <div class="flip-nav">
+        <button class="flip-nav-btn" id="a1-prev" aria-label="Previous card">⟨ Previous</button>
+        <button class="flip-nav-btn" id="a1-next" aria-label="Next card">Next ⟩</button>
+      </div>
+    </div>
+    <button id="act1a-continue" class="ix-continue-btn" disabled>Continue to Sorting Activity →</button>
+  `;
+  area.appendChild(wA);
+
+  // Part B – built fresh by initSortActivity; placeholder div added to area now
+  const wB=document.createElement('div');
+  wB.className='interaction-wrapper';
+  wB.style.display='none';
+  area.appendChild(wB);
+
+  // --- FLIP CARD LOGIC ---
+  function updateCard(){
+    const c=cards[currentIdx];
+    qs('#a1-term',wA).textContent=c.term;
+    qs('#a1-def',wA).textContent=c.def;
+    qs('#a1-why',wA).textContent='Why it matters: '+c.why;
+    qs('#a1-counter',wA).textContent=`Card ${currentIdx+1} of ${cards.length}`;
+    qs('#a1-card',wA).classList.remove('flipped');
+    qs('#a1-prev',wA).disabled=currentIdx===0;
+    qs('#a1-next',wA).disabled=currentIdx===cards.length-1;
+    isFlipped=false;
+    backRevealTime=null; // new card — back not yet shown
+    updateBadge();
+  }
+  function updateBadge(){
+    const done=visited[currentIdx];
+    const badge=qs('#a1-badge',wA);
+    const dot=badge.querySelector('span');
+    qs('#a1-badge-text',wA).textContent=done?'Viewed ✓':'Not yet viewed';
+    badge.style.background=done?'#e6f9ee':'#f0f7ff';
+    badge.style.borderColor=done?'#a3e4bc':'#D3E3FF';
+    dot.style.background=done?'#34c759':'#00A3E0';
+  }
+  function markViewed(){
+    if(!visited[currentIdx]){
+      visited[currentIdx]=true;
+      visitedCount++;
+      qs('#a1-viewed',wA).textContent=visitedCount;
+      qs('#a1-prog-fill',wA).style.width=(visitedCount/cards.length*100)+'%';
+      if(visitedCount===cards.length){
+        qs('#act1a-continue',wA).disabled=false;
+        announce('All cards viewed! You can now continue to the sorting activity.');
+      }
+    }
+    updateBadge();
+  }
+
+  const cardEl=qs('#a1-card',wA);
+  cardEl.addEventListener('click',()=>{
+    cardEl.classList.toggle('flipped');
+    isFlipped=!isFlipped;
+    if(isFlipped){
+      backRevealTime=Date.now(); // start the reading timer when back is shown
+      markViewed();
+    } else {
+      backRevealTime=null; // flipped back to front — stop counting
+    }
+  });
+  cardEl.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();cardEl.click();}
+    if(e.key==='ArrowRight'){ recordNavAttempt(); nav(1); }
+    if(e.key==='ArrowLeft'){ recordNavAttempt(); nav(-1); }
+  });
+
+  function nav(dir){
+    const ni=currentIdx+dir;
+    if(ni<0||ni>=cards.length) return;
+    currentIdx=ni;
+    updateCard();
+  }
+  qs('#a1-next',wA).addEventListener('click',()=>{ recordNavAttempt(); nav(1); });
+  qs('#a1-prev',wA).addEventListener('click',()=>{ recordNavAttempt(); nav(-1); });
+  qs('#act1a-continue',wA).addEventListener('click',()=>{
+    partADone[0]=true;
+    currentSubView='1b';
+    saveProgress();
+    renderSidebar();
+    document.getElementById('topBarTitle').textContent='Activity 1B: Classification & Routes';
+    showPartB(wA,wB,initSortActivity);
+  });
+  updateCard();
+
+  // If navigating directly to 1B (e.g. via sidebar submenu click), skip straight there
+  if(startAt==='1b' && partADone[0]){
+    wA.style.display='none';
+    wB.style.display='block';
+    initSortActivity();
+  }
+
+  // --- SORT ACTIVITY — builds DOM directly into wB after it is shown ---
+  function initSortActivity(){
+    const allCards=[
+      {label:'Stimulant',      panel:'class'},
+      {label:'Depressant',     panel:'class'},
+      {label:'Hallucinogen',   panel:'class'},
+      {label:'Opioid',         panel:'class'},
+      {label:'Cigarette smoking',  panel:'route'},
+      {label:'Cigar smoking',      panel:'route'},
+      {label:'Pipe smoking',       panel:'route'},
+      {label:'Chewing tobacco',    panel:'route'},
+      {label:'Snuff (smokeless)',  panel:'route'},
+      {label:'IV injection',       panel:'route'}
+    ];
+    shuffle(allCards);
+
+    const correctClassSet  = new Set(['Stimulant']);
+    const correctRoutesSet = new Set(['Cigarette smoking','Cigar smoking','Pipe smoking','Chewing tobacco','Snuff (smokeless)']);
+    const wrongCounts = {};
+    let correctClassCount  = 0;
+    let correctRoutesCount = 0;
+    let hintClassIdx  = 0;
+    let hintRouteIdx  = 0;
+    const classHints  = ['Think about nicotine\'s effects on alertness and heart rate.','Low doses increase CNS activity.','The chapter describes nicotine as biphasic, but still classifies it as a stimulant.'];
+    const routeHints  = ['All correct answers involve tobacco products.','Which routes involve inhalation or oral/nasal absorption?','Nicotine is not administered medically via injection.'];
+
+    // Build the full HTML into wB now that it is visible
+    wB.innerHTML=`
+      <h1>Activity 1B – Drug Classification &amp; Routes</h1>
+      <div class="two-part-banner" style="padding:10px 14px;margin-bottom:12px;">
+        <div class="tpb-icon">🗂️</div>
+        <div><span class="tpb-badge">Part B of 2</span>Drag each card from the stack into the correct drop zone. Wrong cards shake and return automatically. <strong>Note: not all cards in the stack will be sorted</strong> — some items are distractors that do not belong in either zone.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start;">
+
+        <!-- SHARED CARD STACK -->
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="font-weight:700;font-size:.84rem;color:var(--navy);">📦 Card Stack</div>
+          <div style="font-size:.74rem;color:#666;margin-bottom:4px;">Drag each card to a zone →</div>
+          <div id="b1-stack" style="display:flex;flex-direction:column;gap:5px;min-height:40px;"></div>
+        </div>
+
+        <!-- PANEL A -->
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="font-weight:700;font-size:.84rem;color:var(--navy);">Panel A – Classification</div>
+          <div style="font-size:.74rem;color:#666;margin-bottom:4px;">Which type of drug is nicotine?</div>
+          <div style="font-size:.78rem;font-weight:700;background:var(--navy);color:#fff;padding:7px 8px;border-radius:6px 6px 0 0;text-align:center;">Nicotine is a…</div>
+          <div id="b1-class-zone" style="border:2px dashed var(--accent);border-top:none;border-radius:0 0 6px 6px;min-height:50px;padding:6px;display:flex;flex-direction:column;gap:4px;transition:background .15s,border-color .15s;"></div>
+          <div class="hint-area">
+            <button class="hint-btn" id="b1-hint-class" style="font-size:.74rem;padding:5px 11px;">💡 Hint</button>
+            <div class="hint-text" id="b1-hint-class-txt"></div>
+          </div>
+        </div>
+
+        <!-- PANEL B -->
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="font-weight:700;font-size:.84rem;color:var(--navy);">Panel B – Routes</div>
+          <div style="font-size:.74rem;color:#666;margin-bottom:4px;">Which are real routes for nicotine?</div>
+          <div style="font-size:.78rem;font-weight:700;background:var(--navy);color:#fff;padding:7px 8px;border-radius:6px 6px 0 0;text-align:center;">Routes of Administration</div>
+          <div id="b1-route-zone" style="border:2px dashed var(--accent);border-top:none;border-radius:0 0 6px 6px;min-height:80px;padding:6px;display:flex;flex-direction:column;gap:4px;transition:background .15s,border-color .15s;"></div>
+          <div class="hint-area">
+            <button class="hint-btn" id="b1-hint-route" style="font-size:.74rem;padding:5px 11px;">💡 Hint</button>
+            <div class="hint-text" id="b1-hint-route-txt"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="b1-status" style="margin-top:10px;font-size:.82rem;font-weight:600;min-height:20px;color:var(--blue);"></div>
+      <button id="b1-continue" class="ix-continue-btn" disabled style="margin-top:8px;background:#16a34a;">✅ Continue to Activity 2</button>
+    `;
+
+    // --- Build cards into the shared stack ---
+    const stack = wB.querySelector('#b1-stack');
+    let cardSeq = 0;
+    allCards.forEach(({label})=>{
+      const el = document.createElement('div');
+      el.className = 'ix-card';
+      el.id = 'b1c-'+(cardSeq++);
+      el.textContent = label;
+      el.dataset.label = label;
+      wrongCounts[label] = 0;
+      el.setAttribute('draggable','true');
+      el.addEventListener('dragstart',e=>{
+        e.dataTransfer.setData('text/plain', el.id);
+        el.classList.add('dragging');
+      });
+      el.addEventListener('dragend',()=>el.classList.remove('dragging'));
+      stack.appendChild(el);
+    });
+
+    // --- Drop zone logic ---
+    function setupZone(zoneEl, isClassPanel){
+      zoneEl.addEventListener('dragover',e=>{e.preventDefault();zoneEl.style.background='#eef6ff';zoneEl.style.borderColor='var(--sky)';});
+      zoneEl.addEventListener('dragleave',()=>{zoneEl.style.background='';zoneEl.style.borderColor='';});
+      zoneEl.addEventListener('drop',e=>{
+        e.preventDefault();
+        zoneEl.style.background='';
+        zoneEl.style.borderColor='';
+        const id = e.dataTransfer.getData('text/plain');
+        const card = document.getElementById(id);
+        if(!card) return;
+        const lbl = card.dataset.label;
+        const isCorrect = isClassPanel ? correctClassSet.has(lbl) : correctRoutesSet.has(lbl);
+
+        if(isCorrect){
+          // Lock card into zone
+          zoneEl.appendChild(card);
+          card.style.background='linear-gradient(135deg,#14532d 0%,#16a34a 100%)';
+          card.style.cursor='default';
+          card.removeAttribute('draggable');
+          card.classList.add('card-correct-pop');
+          setTimeout(()=>card.classList.remove('card-correct-pop'),350);
+          if(isClassPanel) correctClassCount++;
+          else correctRoutesCount++;
+          const status=wB.querySelector('#b1-status');
+          status.style.color='#166534';
+          status.textContent=`✔ "${lbl}" is correct!`;
+          rushGuard.reset();
+          checkDone();
+        } else {
+          // Drop into zone briefly, shake, return to stack
+          zoneEl.appendChild(card);
+          card.classList.remove('card-shake');
+          void card.offsetWidth;
+          card.classList.add('card-shake');
+          card.style.background='linear-gradient(135deg,#7f1d1d 0%,#dc2626 100%)';
+          wrongCounts[lbl]=(wrongCounts[lbl]||0)+1;
+          const status=wB.querySelector('#b1-status');
+          status.style.color='#dc2626';
+          status.textContent=`❌ "${lbl}" doesn't go here.${wrongCounts[lbl]>=2?' Moved to bottom of stack.':''}`;
+          rushGuard.recordWrong(wB);
+          setTimeout(()=>{
+            card.classList.remove('card-shake');
+            card.style.background='';
+            // 1st wrong → top of stack; 2nd+ wrong → bottom
+            if(wrongCounts[lbl]>=2){
+              stack.appendChild(card);
+            } else {
+              stack.insertBefore(card, stack.firstChild);
+            }
+            setTimeout(()=>{ status.style.color='var(--blue)'; status.textContent=''; },1200);
+          },520);
+        }
+      });
+    }
+
+    setupZone(wB.querySelector('#b1-class-zone'), true);
+    setupZone(wB.querySelector('#b1-route-zone'), false);
+
+    // Stack accepts cards back via drag
+    stack.addEventListener('dragover',e=>e.preventDefault());
+    stack.addEventListener('drop',e=>{
+      e.preventDefault();
+      const id=e.dataTransfer.getData('text/plain');
+      const card=document.getElementById(id);
+      if(card) stack.appendChild(card);
+    });
+
+    function checkDone(){
+      if(correctClassCount===1 && correctRoutesCount===5){
+        const status=wB.querySelector('#b1-status');
+        status.style.color='#166534';
+        status.textContent='✅ All cards correctly sorted!';
+        wB.querySelector('#b1-continue').disabled=false;
+        rushGuard.reset();
+        announce('All cards correctly sorted. Continue button is now available.');
+      }
+    }
+
+    // Hints
+    wB.querySelector('#b1-hint-class').addEventListener('click',()=>{
+      const btn=wB.querySelector('#b1-hint-class');
+      const txt=wB.querySelector('#b1-hint-class-txt');
+      if(hintClassIdx<classHints.length){
+        txt.textContent=`Hint ${hintClassIdx+1}: ${classHints[hintClassIdx]}`;
+        txt.classList.add('visible');
+        hintClassIdx++;
+        if(hintClassIdx>=classHints.length) btn.disabled=true;
+      }
+    });
+    wB.querySelector('#b1-hint-route').addEventListener('click',()=>{
+      const btn=wB.querySelector('#b1-hint-route');
+      const txt=wB.querySelector('#b1-hint-route-txt');
+      if(hintRouteIdx<routeHints.length){
+        txt.textContent=`Hint ${hintRouteIdx+1}: ${routeHints[hintRouteIdx]}`;
+        txt.classList.add('visible');
+        hintRouteIdx++;
+        if(hintRouteIdx>=routeHints.length) btn.disabled=true;
+      }
+    });
+
+    wB.querySelector('#b1-continue').addEventListener('click',()=>{
+      partADone[0]=true;
+      completeActivity(0);
+      showActivity(1);
+    });
+  }
+}
+
+/* ==========================================================
+   ACTIVITY 2 – TIMELINE: History & Prevalence of Tobacco
+========================================================== */
+function renderAct2(area){
+  const events=[
+    {id:'ev1',text:'Tobacco used as medicine in early Europe',hint:'Does this happen before or after nicotine was isolated?',order:0},
+    {id:'ev2',text:'Nicotine isolated in a laboratory',hint:'This is a laboratory milestone, not a social trend.',order:1},
+    {id:'ev3',text:'Smoking peaks in the U.S.',hint:'Which event caused smoking rates to decline after this?',order:2},
+    {id:'ev4',text:"Surgeon General's report released",hint:'This event immediately follows peak smoking rates.',order:3},
+    {id:'ev5',text:'Decline in smoking prevalence',hint:'What would cause a long-term decline after a major health warning?',order:4}
+  ];
+
+  let hintIdx=0;
+  const hints=[
+    "Think about what came first — European medicine using tobacco, or scientists isolating nicotine in a lab.",
+    "The Surgeon General's report was a direct response to high smoking rates. Which came first?",
+    "Smoking peaked one year before the Surgeon General warned the public.",
+    "The decline follows directly from the 1964 report and ongoing public health campaigns.",
+    "All events are in the correct order if you've placed them chronologically from earliest to latest."
+  ];
+
+  const shuffled=[...events];
+  shuffle(shuffled);
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Activity 2 – History & Prevalence Timeline</h1>
+    <div class="ix-explanation visible">
+      <strong>Drag the events into chronological order</strong> — earliest at the top, most recent at the bottom. Place each event card into a numbered slot.
+    </div>
+    <div class="timeline-pool" id="tl-pool"></div>
+    <div class="timeline-slots" id="tl-slots"></div>
+    <div class="hint-area" style="margin-top:12px;">
+      <button class="hint-btn" id="tl-hint-btn">💡 Hint</button>
+      <div class="hint-text" id="tl-hint-text"></div>
+    </div>
+    <div class="ix-feedback" id="tl-feedback"></div>
+    <button class="ix-continue-btn" id="tl-check" style="margin-top:14px;">Check My Timeline</button>
+    <button class="ix-continue-btn" id="act2-continue" disabled style="margin-top:10px;background:#16a34a;">✅ Continue to Activity 3</button>
+  `;
+  area.appendChild(w);
+
+  // Build pool cards
+  const pool=qs('#tl-pool',w);
+  shuffled.forEach((ev,i)=>{
+    const card=document.createElement('div');
+    card.className='ix-card';
+    card.id='tl-card-'+ev.id;
+    card.textContent=ev.text;
+    card.dataset.order=ev.order;
+    makeDraggable(card);
+    pool.appendChild(card);
+  });
+
+  // Build slots
+  const slotsEl=qs('#tl-slots',w);
+  for(let s=0;s<events.length;s++){
+    const row=document.createElement('div');
+    row.className='timeline-slot-row';
+    row.innerHTML=`
+      <div class="timeline-dot"><span></span></div>
+      <span class="timeline-label">${s===0?'Earliest':s===events.length-1?'Latest':(s+1)+'.'}</span>
+      <div class="timeline-drop ix-dropzone" id="tl-slot-${s}" data-slot="${s}"></div>
+    `;
+    slotsEl.appendChild(row);
+  }
+
+  // Drop logic
+  qsa('.timeline-drop',w).forEach(zone=>{
+    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+    zone.addEventListener('drop',e=>{
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      const id=e.dataTransfer.getData('text/plain');
+      const card=document.getElementById(id);
+      if(!card) return;
+      // If slot occupied, move existing card back to pool
+      const existing=zone.querySelector('.ix-card');
+      if(existing) pool.appendChild(existing);
+      zone.appendChild(card);
+    });
+  });
+  pool.addEventListener('dragover',e=>{e.preventDefault();});
+  pool.addEventListener('drop',e=>{
+    e.preventDefault();
+    const id=e.dataTransfer.getData('text/plain');
+    const card=document.getElementById(id);
+    if(card) pool.appendChild(card);
+  });
+
+  qs('#tl-hint-btn',w).addEventListener('click',()=>{
+    const btn=qs('#tl-hint-btn',w);
+    const txt=qs('#tl-hint-text',w);
+    if(hintIdx<hints.length){
+      txt.textContent=`Hint ${hintIdx+1}: ${hints[hintIdx]}`;
+      txt.classList.add('visible');
+      hintIdx++;
+      if(hintIdx>=hints.length) btn.disabled=true;
+    }
+  });
+
+  qs('#tl-check',w).addEventListener('click',()=>{
+    let allFilled=true;
+    let allCorrect=true;
+    for(let s=0;s<events.length;s++){
+      const slot=document.getElementById('tl-slot-'+s);
+      const card=slot.querySelector('.ix-card');
+      if(!card){ allFilled=false; break; }
+      if(parseInt(card.dataset.order)!==s){ allCorrect=false; slot.style.borderColor='#dc2626'; }
+      else { slot.classList.add('correct-zone'); }
+    }
+    const fb=qs('#tl-feedback',w);
+    fb.style.display='block';
+    if(!allFilled){
+      fb.className='ix-feedback visible incorrect';
+      fb.textContent='⚠️ Please place an event in every slot before checking.';
+    } else if(allCorrect){
+      fb.className='ix-feedback visible correct';
+      fb.innerHTML='✅ Correct order! Here are the dates: Tobacco used as medicine in early Europe → Nicotine isolated <strong>(1828)</strong> → Smoking peaks in the U.S. <strong>(1963)</strong> → Surgeon General\'s report released <strong>(1964)</strong> → Decline in smoking prevalence.';
+      qs('#act2-continue',w).disabled=false;
+      rushGuard.reset();
+    } else {
+      fb.className='ix-feedback visible incorrect';
+      fb.textContent='❌ Some events are out of order. Red slots are incorrect — move those cards and try again.';
+      rushGuard.recordWrong(w);
+    }
+  });
+
+  qs('#act2-continue',w).addEventListener('click',()=>{ completeActivity(1); showActivity(2); });
+}
+
+/* ==========================================================
+   ACTIVITY 3 – PATHWAY BUILDER: Pharmacology Sequence
+========================================================== */
+function renderAct3(area){
+  const steps=[
+    {id:'ph1',text:'Absorption through lungs',order:0},
+    {id:'ph2',text:'Rapid transport to brain (~7 seconds)',order:1},
+    {id:'ph3',text:'Binding to nicotinic acetylcholine receptors',order:2},
+    {id:'ph4',text:'Dopamine release (reward/reinforcement)',order:3},
+    {id:'ph5',text:'Metabolism in the liver',order:4},
+    {id:'ph6',text:'Excretion in urine',order:5}
+  ];
+
+  let hintIdx=0;
+  const hints=[
+    "Which step must occur first for any drug to have an effect?",
+    "What explains nicotine's strong reinforcing effects — what neurotransmitter is released?",
+    "The quiz asks how nicotine leaves the body — use that knowledge for the final slot.",
+    "Nicotine reaches the brain faster than almost any other drug — how does that happen?",
+    "After binding receptors, what pathway is activated that makes nicotine rewarding?",
+    "The liver processes nicotine before the kidneys eliminate it."
+  ];
+
+  const shuffled=[...steps]; shuffle(shuffled);
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Activity 3 – Pharmacology Pathway Builder</h1>
+    <div class="ix-explanation visible">
+      <strong>Drag the steps into the correct sequence</strong> showing nicotine's journey through the body when someone is smoking a cigarette, with the first step at the top and last at the bottom.
+    </div>
+    <div class="seq-layout">
+      <div>
+        <div class="seq-col-title">📦 Steps to Place</div>
+        <div class="seq-pool col-sort-bank" id="ph-pool" style="flex-direction:column;gap:7px;"></div>
+      </div>
+      <div>
+        <div class="seq-col-title">🔢 Correct Sequence</div>
+        <div class="seq-slots" id="ph-slots"></div>
+      </div>
+    </div>
+    <div class="hint-area" style="margin-top:12px;">
+      <button class="hint-btn" id="ph-hint-btn">💡 Hint</button>
+      <div class="hint-text" id="ph-hint-text"></div>
+    </div>
+    <div class="ix-feedback" id="ph-feedback"></div>
+    <button class="ix-continue-btn" id="ph-check" style="margin-top:14px;">Check My Sequence</button>
+    <button class="ix-continue-btn" id="act3-continue" disabled style="margin-top:10px;background:#16a34a;">✅ Continue to Activity 4</button>
+  `;
+  area.appendChild(w);
+
+  const pool=qs('#ph-pool',w);
+  shuffled.forEach(step=>{
+    const card=document.createElement('div');
+    card.className='ix-card';
+    card.id='ph-card-'+step.id;
+    card.textContent=step.text;
+    card.dataset.order=step.order;
+    makeDraggable(card);
+    pool.appendChild(card);
+  });
+
+  const slotsEl=qs('#ph-slots',w);
+  for(let s=0;s<steps.length;s++){
+    const row=document.createElement('div');
+    row.className='seq-slot-row';
+    row.innerHTML=`<span class="seq-num">${s+1}.</span><div class="seq-drop" id="ph-slot-${s}" data-slot="${s}"></div>`;
+    slotsEl.appendChild(row);
+  }
+
+  qsa('.seq-drop',w).forEach(zone=>{
+    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+    zone.addEventListener('drop',e=>{
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      const id=e.dataTransfer.getData('text/plain');
+      const card=document.getElementById(id);
+      if(!card) return;
+      const existing=zone.querySelector('.ix-card');
+      if(existing) pool.appendChild(existing);
+      zone.appendChild(card);
+    });
+  });
+  pool.addEventListener('dragover',e=>e.preventDefault());
+  pool.addEventListener('drop',e=>{
+    e.preventDefault();
+    const id=e.dataTransfer.getData('text/plain');
+    const card=document.getElementById(id);
+    if(card) pool.appendChild(card);
+  });
+
+  qs('#ph-hint-btn',w).addEventListener('click',()=>{
+    const btn=qs('#ph-hint-btn',w);
+    const txt=qs('#ph-hint-text',w);
+    if(hintIdx<hints.length){
+      txt.textContent=`Hint ${hintIdx+1}: ${hints[hintIdx]}`;
+      txt.classList.add('visible');
+      hintIdx++;
+      if(hintIdx>=hints.length) btn.disabled=true;
+    }
+  });
+
+  qs('#ph-check',w).addEventListener('click',()=>{
+    let allFilled=true, allCorrect=true;
+    for(let s=0;s<steps.length;s++){
+      const slot=document.getElementById('ph-slot-'+s);
+      const card=slot.querySelector('.ix-card');
+      if(!card){ allFilled=false; break; }
+      if(parseInt(card.dataset.order)!==s){ allCorrect=false; slot.style.borderColor='#dc2626'; }
+      else { slot.classList.add('correct-zone'); }
+    }
+    const fb=qs('#ph-feedback',w);
+    fb.style.display='block';
+    if(!allFilled){
+      fb.className='ix-feedback visible incorrect';
+      fb.textContent='⚠️ Please fill all six slots before checking.';
+    } else if(allCorrect){
+      fb.className='ix-feedback visible correct';
+      fb.innerHTML='✅ Perfect sequence! Absorption → Brain transport → Receptor binding → Dopamine release → Liver metabolism → Urine excretion.';
+      qs('#act3-continue',w).disabled=false;
+      rushGuard.reset();
+    } else {
+      fb.className='ix-feedback visible incorrect';
+      fb.textContent='❌ Some steps are out of order. Red slots are incorrect. Try rearranging and check again.';
+      rushGuard.recordWrong(w);
+    }
+  });
+
+  qs('#act3-continue',w).addEventListener('click',()=>{ completeActivity(2); showActivity(3); });
+}
+
+/* ==========================================================
+   ACTIVITY 4 – BRANCHING SCENARIO: Dependence & Health Effects
+========================================================== */
+function renderAct4(area){
+  const scenarios=[
+    {
+      title:'Decision Point 1 – Early Effects vs. Tolerance',
+      context:'<strong>Alex</strong>, a first-year college student, starts smoking socially at parties. After two months, Alex notices that one cigarette no longer produces the same relaxed, focused feeling it once did. Alex has begun smoking 5–6 cigarettes per day.',
+      question:'What best explains why Alex needs more cigarettes to get the same effect?',
+      choices:[
+        {text:'Tolerance — Alex\'s body has adapted, reducing response to the same dose.',type:'optimal',feedback:'✅ Correct! Tolerance is the reduction in drug response requiring higher doses for the same effect. Nicotine tolerance develops quickly, explaining escalating use.'},
+        {text:'Addiction has fully developed and Alex is now physically dependent.',type:'acceptable',feedback:'⚠️ Partially correct — dependence may be developing, but the specific mechanism described here is tolerance, not full physical dependence yet.'},
+        {text:'Alex is experiencing withdrawal symptoms and needs nicotine to feel normal.',type:'poor',feedback:'❌ Not yet — withdrawal occurs after stopping use. Alex is still smoking regularly; the issue is tolerance reducing the rewarding effects.'}
+      ]
+    },
+    {
+      title:'Decision Point 2 – Withdrawal After Stopping',
+      context:'Three months later, Alex decides to quit. Within 24 hours of stopping, Alex reports intense cigarette cravings, difficulty concentrating, irritability, and restlessness.',
+      question:'Which of Alex\'s symptoms is the most commonly reported withdrawal symptom for nicotine?',
+      choices:[
+        {text:'Intense cravings (craving nicotine)',type:'optimal',feedback:'✅ Correct! Craving is the most commonly reported nicotine withdrawal symptom. It is the primary driver of relapse.'},
+        {text:'Difficulty concentrating and irritability',type:'acceptable',feedback:'⚠️ These are real withdrawal symptoms, but craving is the most frequently reported and the primary relapse driver.'},
+        {text:'Physical symptoms like fever, sweating, and nausea',type:'poor',feedback:'❌ Nicotine withdrawal is primarily psychological/behavioral. Dramatic physical symptoms like fever are characteristic of opioid or alcohol withdrawal, not nicotine.'}
+      ]
+    },
+    {
+      title:'Decision Point 3 – Secondhand & Thirdhand Smoke',
+      context:"Alex's roommate has never smoked but lives in the same room. Alex smokes near the window, believing this protects the roommate. Residue from smoke has settled on furniture, clothing, and surfaces throughout the room.",
+      question:"What is the most accurate statement about Alex's roommate's risk?",
+      choices:[
+        {text:'Both secondhand smoke inhalation and thirdhand smoke residue increase health risk.',type:'optimal',feedback:'✅ Correct! Secondhand smoke (inhaled directly) and thirdhand smoke (residue on surfaces) both pose health risks. Smoking near a window does not fully protect others.'},
+        {text:'Only direct inhalation of smoke is harmful — surface residue is not a concern.',type:'poor',feedback:"❌ Incorrect. Thirdhand smoke — the residue that settles on surfaces — contains toxic chemicals and poses health risks, especially for children and others who contact those surfaces."},
+        {text:'The roommate is at some risk from secondhand smoke but thirdhand smoke is not well-established.',type:'acceptable',feedback:'⚠️ Partially correct — the chapter emphasizes that thirdhand smoke is a real and recognized concern, though secondhand smoke is the more extensively studied risk.'}
+      ]
+    }
+  ];
+
+  let scenIdx=0;
+  let answers=[];
+  let totalScore=0;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Activity 4 – Dependence & Health Effects</h1>
+    <div class="ix-explanation visible" style="margin-bottom:14px;">
+      <strong>Follow Alex's story</strong> through three decision points. Choose the best answer at each step. Feedback is immediate.
+    </div>
+    <div id="a4-area"></div>
+    <button class="ix-continue-btn" id="act4-continue" disabled style="margin-top:14px;">✅ Continue to Activity 5</button>
+  `;
+  area.appendChild(w);
+
+  function loadScenario(idx){
+    const sc=scenarios[idx];
+    const a4=qs('#a4-area',w);
+    a4.innerHTML=`
+      <div class="scenario-progress">Decision Point ${idx+1} of ${scenarios.length}</div>
+      <div class="scenario-box"><strong>${sc.title}</strong><br><br>${sc.context}</div>
+      <div style="font-weight:600;font-size:.93rem;color:var(--navy);margin-bottom:10px;">${sc.question}</div>
+      <div class="branch-choices" id="a4-choices"></div>
+      <div id="a4-result" style="display:none;"></div>
+      <div id="a4-next-wrap"></div>
+    `;
+    const choicesEl=qs('#a4-choices',w);
+    sc.choices.forEach((choice,ci)=>{
+      const btn=document.createElement('div');
+      btn.className='branch-choice';
+      btn.tabIndex=0;
+      btn.setAttribute('role','button');
+      btn.textContent=choice.text;
+      btn.addEventListener('click',()=>selectChoice(idx,choice));
+      btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();btn.click();}});
+      choicesEl.appendChild(btn);
+    });
+    announce(`Decision point ${idx+1} of ${scenarios.length}: ${sc.question}`);
+  }
+
+  function selectChoice(scenIdx,choice){
+    // Disable all choices
+    qsa('.branch-choice',w).forEach(b=>{b.style.pointerEvents='none';});
+    answers.push({scenario:scenIdx,choice});
+    const pts=choice.type==='optimal'?2:choice.type==='acceptable'?1:0;
+    totalScore+=pts;
+    const resultEl=qs('#a4-result',w);
+    resultEl.style.display='block';
+    resultEl.className='branch-result '+choice.type;
+    resultEl.innerHTML=`<strong>${choice.type==='optimal'?'✅ Best Choice':choice.type==='acceptable'?'⚠️ Acceptable but not ideal':'❌ Not the best choice'}</strong><br><br>${choice.feedback}`;
+    const nextWrap=qs('#a4-next-wrap',w);
+    nextWrap.style.display='block';
+    const btn=document.createElement('button');
+    btn.className='flip-nav-btn';
+    btn.style.marginTop='12px';
+    if(scenIdx<scenarios.length-1){
+      btn.textContent='Next Decision Point ⟩';
+      btn.addEventListener('click',()=>{scenIdx++;loadScenario(scenIdx);});
+    } else {
+      btn.textContent='See Results';
+      btn.addEventListener('click',()=>showResults());
+    }
+    nextWrap.appendChild(btn);
+    announce(choice.feedback);
+  }
+
+  function showResults(){
+    const a4=qs('#a4-area',w);
+    const maxScore=scenarios.length*2;
+    const pct=Math.round(totalScore/maxScore*100);
+    let msg='';
+    if(pct>=85) msg='Excellent analysis! You correctly identified tolerance, craving as the key withdrawal symptom, and the dual risks of secondhand and thirdhand smoke.';
+    else if(pct>=60) msg='Good work. Review the decision points where you chose an acceptable rather than optimal answer, particularly around withdrawal symptoms.';
+    else msg='Keep studying! Review Chapter 7 sections on tolerance, withdrawal symptoms, and the health effects of secondhand/thirdhand smoke before the quiz.';
+    a4.innerHTML=`
+      <div class="scenario-box" style="border-left-color:var(--navy);">
+        <strong>Activity 4 Complete</strong><br><br>
+        Score: ${totalScore}/${maxScore} (${pct}%)<br><br>${msg}
+      </div>
+      <div style="margin-top:14px;">
+        ${answers.map((a,i)=>`
+          <div class="branch-result ${a.choice.type}" style="margin-bottom:10px;">
+            <strong>Decision Point ${i+1}:</strong> ${a.choice.type==='optimal'?'✅ Best choice':a.choice.type==='acceptable'?'⚠️ Acceptable':'❌ Incorrect'}<br>
+            <span style="font-size:.86rem;">${a.choice.feedback}</span>
+          </div>`).join('')}
+      </div>
+    `;
+    qs('#act4-continue',w).disabled=false;
+    announce('Activity 4 complete. Continue button now available.');
+  }
+
+  qs('#act4-continue',w).addEventListener('click',()=>{ completeActivity(3); showActivity(4); });
+  loadScenario(0);
+}
+
+/* ==========================================================
+   ACTIVITY 5 – TREATMENT EVALUATION MATRIX
+========================================================== */
+function renderAct5(area){
+  /* ---- data ---- */
+  const treatments=[
+    {id:'beh', name:'Behavioral Programs'},
+    {id:'nrt', name:'NRT'},
+    {id:'bup', name:'Bupropion'},
+    {id:'var', name:'Varenicline'}
+  ];
+
+  // correct answer lookup: label → {treatment, col}
+  const correct={
+    'Teaches coping skills & relapse prevention':                        {t:'beh',col:'mechanism'},
+    'Effective; improves success when combined with pharmacological treatment': {t:'beh',col:'effectiveness'},
+    'Patients who prefer non-pharmacological approaches':                {t:'beh',col:'best_fit'},
+    'Reduces withdrawal by supplying low-dose nicotine':    {t:'nrt',col:'mechanism'},
+    'Doubles quit rates vs. unaided attempts':              {t:'nrt',col:'effectiveness'},
+    'Smokers experiencing strong physical withdrawal':      {t:'nrt',col:'best_fit'},
+    'Inhibits dopamine/norepinephrine reuptake; reduces cravings': {t:'bup',col:'mechanism'},
+    'Comparable to NRT; may cause sleep disturbance':       {t:'bup',col:'effectiveness'},
+    'Smokers with co-occurring depression or anxiety':      {t:'bup',col:'best_fit'},
+    'Partial agonist — competes with nicotine at receptors':{t:'var',col:'mechanism'},
+    'Most effective single pharmacotherapy':                {t:'var',col:'effectiveness'},
+    'Smokers seeking the most effective single drug':       {t:'var',col:'best_fit'}
+  };
+
+  const mechanismLabels=[
+    'Teaches coping skills & relapse prevention',
+    'Reduces withdrawal by supplying low-dose nicotine',
+    'Inhibits dopamine/norepinephrine reuptake; reduces cravings',
+    'Partial agonist — competes with nicotine at receptors'
+  ];
+  const effectivenessLabels=[
+    'Effective; improves success when combined with pharmacological treatment',
+    'Doubles quit rates vs. unaided attempts',
+    'Comparable to NRT; may cause sleep disturbance',
+    'Most effective single pharmacotherapy'
+  ];
+  const bestFitLabels=[
+    'Patients who prefer non-pharmacological approaches',
+    'Smokers experiencing strong physical withdrawal',
+    'Smokers with co-occurring depression or anxiety',
+    'Smokers seeking the most effective single drug'
+  ];
+
+  let hintIdx=0;
+  const hints=[
+    "Does this treatment replace nicotine with a lower dose? That's the mechanism for NRT.",
+    "Which drug partially occupies nicotine's own receptors, blocking its reward?",
+    "Which approach works best when combined with pharmacotherapy rather than used alone?",
+    "Bupropion treats depression — which patient population matches best?"
+  ];
+
+  // track correct placements and wrong counts
+  const wrongCounts={};
+  let correctCount=0;
+  const TOTAL_CORRECT=12;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.style.padding='20px 24px 36px';
+  w.innerHTML=`
+    <h1>Activity 5 – Treatment Evaluation</h1>
+    <div class="ix-explanation visible" style="margin-bottom:12px;font-size:.85rem;">
+      Each stack below contains cards for one category. Drag each card to the correct drop zone (treatment row) in that column. Cards that don't belong will shake and return.
+    </div>
+
+    <!-- ROW LABELS + DROP ZONES -->
+    <div style="display:grid;grid-template-columns:90px 1fr 1fr 1fr;gap:6px;align-items:start;margin-bottom:14px;">
+
+      <!-- header row -->
+      <div></div>
+      <div style="font-weight:700;font-size:.78rem;color:var(--navy);text-align:center;background:var(--accent);padding:6px 4px;border-radius:6px;">⚙️ Mechanism</div>
+      <div style="font-weight:700;font-size:.78rem;color:var(--navy);text-align:center;background:var(--accent);padding:6px 4px;border-radius:6px;">📊 Effectiveness</div>
+      <div style="font-weight:700;font-size:.78rem;color:var(--navy);text-align:center;background:var(--accent);padding:6px 4px;border-radius:6px;">🎯 Best-Fit Scenario</div>
+
+      <!-- treatment rows -->
+      ${treatments.map(tr=>`
+        <div style="font-weight:700;font-size:.75rem;color:var(--navy);padding:4px 2px;line-height:1.3;">${tr.name}</div>
+        <div id="z-${tr.id}-mechanism"   class="a5-drop" data-t="${tr.id}" data-col="mechanism"></div>
+        <div id="z-${tr.id}-effectiveness" class="a5-drop" data-t="${tr.id}" data-col="effectiveness"></div>
+        <div id="z-${tr.id}-best_fit"    class="a5-drop" data-t="${tr.id}" data-col="best_fit"></div>
+      `).join('')}
+    </div>
+
+    <!-- THREE CARD STACKS 1x3 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px;">
+      <div>
+        <div style="font-weight:700;font-size:.78rem;color:var(--navy);text-align:center;background:#f0f5ff;border:1px solid var(--accent);border-radius:6px 6px 0 0;padding:5px;">⚙️ Mechanism Cards</div>
+        <div id="stack-mechanism" class="a5-stack"></div>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:.78rem;color:var(--navy);text-align:center;background:#f0f5ff;border:1px solid var(--accent);border-radius:6px 6px 0 0;padding:5px;">📊 Effectiveness Cards</div>
+        <div id="stack-effectiveness" class="a5-stack"></div>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:.78rem;color:var(--navy);text-align:center;background:#f0f5ff;border:1px solid var(--accent);border-radius:6px 6px 0 0;padding:5px;">🎯 Best-Fit Cards</div>
+        <div id="stack-best_fit" class="a5-stack"></div>
+      </div>
+    </div>
+
+    <div class="hint-area" style="margin-top:10px;">
+      <button class="hint-btn" id="a5-hint-btn">💡 Hint</button>
+      <div class="hint-text" id="a5-hint-txt"></div>
+    </div>
+    <div id="a5-status" style="margin-top:8px;font-size:.82rem;font-weight:600;min-height:18px;color:var(--blue);"></div>
+    <button class="ix-continue-btn" id="act5-continue" disabled style="margin-top:8px;background:#16a34a;">✅ Complete Chapter 7</button>
+  `;
+  area.appendChild(w);
+
+  /* ---- inline styles for drop zones and stacks ---- */
+  const styleTag=document.createElement('style');
+  styleTag.textContent=`
+    .a5-drop{
+      border:2px dashed var(--accent);border-radius:6px;
+      min-height:42px;padding:4px;display:flex;flex-direction:column;gap:3px;
+      transition:background .15s,border-color .15s;
+    }
+    .a5-drop.over{background:#eef6ff;border-color:var(--sky);}
+    .a5-drop.locked{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+    .a5-stack{
+      border:2px dashed var(--accent);border-top:none;border-radius:0 0 6px 6px;
+      padding:6px;display:flex;flex-direction:column;gap:4px;min-height:36px;
+    }
+    .a5-card{
+      background:linear-gradient(135deg,#1a3a6b 0%,#1D4F91 100%);
+      color:#fff;border-radius:6px;padding:6px 9px;font-size:.72rem;font-weight:600;
+      cursor:grab;user-select:none;line-height:1.35;
+    }
+    .a5-card.dragging{opacity:.35;}
+    .a5-card.correct{background:linear-gradient(135deg,#14532d 0%,#16a34a 100%);cursor:default;}
+    .a5-card.wrong-flash{background:linear-gradient(135deg,#7f1d1d 0%,#dc2626 100%);}
+  `;
+  document.head.appendChild(styleTag);
+
+  /* ---- build cards into stacks ---- */
+  function buildStack(stackId, labels){
+    const stackEl=w.querySelector('#'+stackId);
+    const shuffled=[...labels]; shuffle(shuffled);
+    shuffled.forEach((lbl,i)=>{
+      const card=document.createElement('div');
+      card.className='a5-card';
+      card.id='a5c-'+stackId+'-'+i;
+      card.textContent=lbl;
+      card.dataset.label=lbl;
+      card.dataset.stack=stackId;
+      wrongCounts[lbl]=0;
+      card.setAttribute('draggable','true');
+      card.addEventListener('dragstart',e=>{
+        e.dataTransfer.setData('text/plain',card.id);
+        card.classList.add('dragging');
+      });
+      card.addEventListener('dragend',()=>card.classList.remove('dragging'));
+      stackEl.appendChild(card);
+    });
+    // stack accepts cards back
+    stackEl.addEventListener('dragover',e=>e.preventDefault());
+    stackEl.addEventListener('drop',e=>{
+      e.preventDefault();
+      const id=e.dataTransfer.getData('text/plain');
+      const c=document.getElementById(id);
+      if(c && !c.classList.contains('correct')) stackEl.appendChild(c);
+    });
+  }
+  buildStack('stack-mechanism',   mechanismLabels);
+  buildStack('stack-effectiveness',effectivenessLabels);
+  buildStack('stack-best_fit',    bestFitLabels);
+
+  /* ---- drop zone logic ---- */
+  w.querySelectorAll('.a5-drop').forEach(zone=>{
+    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('over');});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('over'));
+    zone.addEventListener('drop',e=>{
+      e.preventDefault();
+      zone.classList.remove('over');
+      if(zone.classList.contains('locked')) return; // already filled correctly
+
+      const id=e.dataTransfer.getData('text/plain');
+      const card=document.getElementById(id);
+      if(!card || card.classList.contains('correct')) return;
+
+      const lbl=card.dataset.label;
+      const ans=correct[lbl];
+      const tId=zone.dataset.t;
+      const col=zone.dataset.col;
+      const originStack=w.querySelector('#'+card.dataset.stack);
+
+      if(ans && ans.t===tId && ans.col===col){
+        // ✅ correct
+        zone.appendChild(card);
+        card.classList.add('correct','card-correct-pop');
+        card.removeAttribute('draggable');
+        setTimeout(()=>card.classList.remove('card-correct-pop'),350);
+        zone.classList.add('locked');
+        correctCount++;
+        const status=w.querySelector('#a5-status');
+        status.style.color='#166534';
+        status.textContent=`✔ Correct match!`;
+        rushGuard.reset();
+        if(correctCount===TOTAL_CORRECT){
+          status.textContent='✅ All matches correct! You can complete Chapter 7.';
+          w.querySelector('#act5-continue').disabled=false;
+          announce('All matches correct. Complete Chapter 7 button is now available.');
+        }
+      } else {
+        // ❌ wrong — shake then return to stack
+        zone.appendChild(card);
+        card.classList.remove('card-shake');
+        void card.offsetWidth;
+        card.classList.add('card-shake','wrong-flash');
+        wrongCounts[lbl]=(wrongCounts[lbl]||0)+1;
+        const status=w.querySelector('#a5-status');
+        status.style.color='#dc2626';
+        status.textContent=`❌ That card doesn't belong in that row.${wrongCounts[lbl]>=2?' Moved to bottom of stack.':''}`;
+        rushGuard.recordWrong(w);
+        setTimeout(()=>{
+          card.classList.remove('card-shake','wrong-flash');
+          if(wrongCounts[lbl]>=2){
+            originStack.appendChild(card);
+          } else {
+            originStack.insertBefore(card, originStack.firstChild);
+          }
+          setTimeout(()=>{ status.style.color='var(--blue)'; status.textContent=''; },1200);
+        },520);
+      }
+    });
+  });
+
+  /* ---- hints ---- */
+  w.querySelector('#a5-hint-btn').addEventListener('click',()=>{
+    const btn=w.querySelector('#a5-hint-btn');
+    const txt=w.querySelector('#a5-hint-txt');
+    if(hintIdx<hints.length){
+      txt.textContent=`Hint ${hintIdx+1}: ${hints[hintIdx]}`;
+      txt.classList.add('visible');
+      hintIdx++;
+      if(hintIdx>=hints.length) btn.disabled=true;
+    }
+  });
+
+  w.querySelector('#act5-continue').addEventListener('click',()=>{
+    completeActivity(4);
+    showActivity(4);
+  });
+}
+
+/* ==========================================================
+   SIDEBAR TOGGLE
+========================================================== */
+document.getElementById('toggleBtn').addEventListener('click',()=>{
+  const sb=document.getElementById('sidebar');
+  const btn=document.getElementById('toggleBtn');
+  sb.classList.toggle('collapsed');
+  btn.setAttribute('aria-expanded',!sb.classList.contains('collapsed'));
+});
+
+/* ==========================================================
+   MODALS & RESET
+========================================================== */
+document.getElementById('instrStartBtn').addEventListener('click',()=>{
+  document.getElementById('instructionsModal').classList.remove('visible');
+  if(currentView==='cover') showCover();
+  else if(typeof currentView==='number'){
+    if(currentView===0 && currentSubView==='1b') showSubActivity('1b');
+    else showActivity(currentView);
+  }
+  else showCover();
+});
+
+document.getElementById('resetProgressBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.add('visible');
+});
+document.getElementById('resetCancelBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.remove('visible');
+});
+document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.remove('visible');
+  ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i>0);});
+  partADone.fill(false);
+  currentView='cover';
+  currentSubView=null;
+  localStorage.removeItem(STORAGE_KEY);
+  rushGuard.hardReset();
+  renderSidebar();
+  showCover();
+  announce('Progress has been reset. Activity 1 is now unlocked.');
+});
+
+/* ── COMPLETION MODAL WIRING ─────────────────────────────────────── */
+document.getElementById('closeCompletion')
+  .addEventListener('click',()=>{
+    document.getElementById('completionModal').classList.remove('visible');
+  });
+document.getElementById('closeCompletion')
+  .addEventListener('keydown',e=>{
+    if(e.key==='Escape')
+      document.getElementById('completionModal').classList.remove('visible');
+  });
+
+function downloadStudyGuide(){
+  const guide=`Chapter 7 – Nicotine: Study Notes
+
+KEY TERMS
+• Nicotine: naturally occurring psychoactive drug in tobacco; acts as a cholinergic agonist
+• Cholinergic Agonist: drug that mimics acetylcholine by stimulating its receptors
+• Tolerance: reduced drug response after repeated use; requires higher doses for same effect
+• Physical Dependence: physiological state where withdrawal occurs if use stops
+• Withdrawal: unpleasant physical/psychological symptoms when nicotine use stops
+• Tar: tobacco smoke residue containing most cancer-causing substances
+• Carbon Monoxide: toxic gas from tobacco combustion; reduces oxygen delivery; links to heart disease
+
+DRUG CLASSIFICATION
+• Nicotine: classified as a STIMULANT (with biphasic effects — low doses stimulate CNS)
+• Routes of administration: cigarette smoking, cigar smoking, pipe smoking, chewing tobacco, snuff (smokeless)
+• NOT a route: intravenous injection (nicotine is not administered medically via IV)
+
+HISTORY & PREVALENCE TIMELINE
+1. Tobacco used as medicine in early Europe
+2. Nicotine isolated (1828)
+3. Smoking peaks in U.S. (1963)
+4. Surgeon General's report released (1964)
+5. Decline in smoking prevalence
+
+PHARMACOLOGY OF NICOTINE (in sequence)
+1. Absorption through lungs
+2. Rapid transport to brain (~7 seconds)
+3. Binding to nicotinic acetylcholine receptors
+4. Dopamine release (reward/reinforcement)
+5. Metabolism in the liver
+6. Excretion in urine
+
+DEPENDENCE & HEALTH EFFECTS
+• Tolerance develops quickly — explains escalating cigarette use
+• Withdrawal symptoms: craving (most common), irritability, difficulty concentrating, restlessness
+• Craving is the primary driver of relapse
+• Withdrawal is primarily psychological — NOT characterized by severe physical symptoms (no seizures/fever)
+• Secondhand smoke: inhaled by non-smokers; established health risk
+• Thirdhand smoke: residue on surfaces; also a recognized health risk
+• Smoking near a window does NOT fully protect others
+
+TREATMENT OPTIONS
+• Behavioral Programs: coping skills, relapse prevention; work best combined with pharmacological treatment
+• Nicotine Replacement Therapy (NRT): reduces withdrawal by supplying low-dose nicotine; doubles quit rates vs. unaided
+• Bupropion: inhibits dopamine/norepinephrine reuptake; reduces cravings; best for smokers with co-occurring depression/anxiety
+• Varenicline: partial agonist — competes with nicotine at receptors; most effective single pharmacotherapy
+
+QUIZ MISCONCEPTIONS TO REMEMBER
+✗ Nicotine is NOT classified as a depressant — it is a stimulant
+✗ IV injection is NOT a route of administration for nicotine in real-world use
+✗ Craving — not seizures — is the most common nicotine withdrawal symptom
+✗ Thirdhand smoke IS a real health concern, not just secondhand smoke
+✗ Varenicline is the MOST effective single drug treatment, not NRT
+✗ Behavioral programs work BEST in combination with pharmacological treatment
+`;
+  const blob=new Blob([guide],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='Chapter7_Study_Notes.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('downloadGuideBtn').addEventListener('click',()=>downloadStudyGuide());
+
+/* ==========================================================
+   INIT
+========================================================== */
+loadProgress();
+renderSidebar();
+document.getElementById('instructionsModal').classList.add('visible');
+if(currentView==='review') showReviewSummary();
+else if(currentView==='cover') showCover();
+else if(typeof currentView==='number'){
+  if(currentView===0 && currentSubView==='1b') showSubActivity('1b');
+  else showActivity(currentView);
+}
+else showCover();
+
+/* ==========================================================
+   FULLSCREEN TOGGLE
+   Strategy 1 — Real Fullscreen API (works when Canvas iframe
+                has allow="fullscreen").
+   Strategy 2 — Pseudo-fullscreen via CSS (position:fixed,
+                always works inside any iframe / Canvas embed).
+========================================================== */
+(function(){
+  const btn=document.getElementById('fsBtn');
+  let pseudoFS=false;
+
+  function enterIcon(){ btn.textContent='✕'; btn.title='Exit fullscreen'; btn.setAttribute('aria-label','Exit fullscreen'); }
+  function exitIcon() { btn.textContent='⛶'; btn.title='Enter fullscreen'; btn.setAttribute('aria-label','Enter fullscreen'); }
+
+  function enterPseudo(){ document.body.classList.add('pseudo-fs'); pseudoFS=true; enterIcon(); announce('Fullscreen on.'); }
+  function exitPseudo() { document.body.classList.remove('pseudo-fs'); pseudoFS=false; exitIcon(); announce('Fullscreen off.'); }
+
+  const fsTarget=document.getElementById('app-wrapper');
+
+  function tryRealFS(){
+    if(fsTarget.requestFullscreen){
+      fsTarget.requestFullscreen().catch(()=>enterPseudo());
+    } else if(fsTarget.webkitRequestFullscreen){
+      try{ fsTarget.webkitRequestFullscreen(); } catch(e){ enterPseudo(); }
+    } else { enterPseudo(); }
+  }
+
+  function isRealFS(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+
+  document.addEventListener('fullscreenchange',       ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+  document.addEventListener('webkitfullscreenchange', ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+
+  btn.addEventListener('click',()=>{
+    if(isRealFS())       (document.exitFullscreen||document.webkitExitFullscreen||(()=>{})).call(document);
+    else if(pseudoFS)    exitPseudo();
+    else                 tryRealFS();
+  });
+  btn.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); btn.click(); } });
+})();
+</script>
+</body>
+</html>
