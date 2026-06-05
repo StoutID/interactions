@@ -432,7 +432,10 @@ body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-
 .modal-overlay.visible{display:flex}
 /* dialog top-layer: always visible above fullscreen stacking contexts */
 dialog.modal-overlay{border:0;padding:0;margin:0;max-width:none;max-height:none;}
-dialog.modal-overlay[open]{display:flex;position:fixed;inset:0;background:rgba(0,0,0,.65);padding:20px;overflow-y:auto;}
+dialog.modal-overlay[open]{
+  display:flex;justify-content:center;align-items:flex-start;
+  position:fixed;inset:0;width:100%;height:100%;
+  background:rgba(0,0,0,.65);padding:20px;overflow-y:auto;}
 dialog.modal-overlay::backdrop{display:none;}
 .modal-box{
   background:white;
@@ -549,7 +552,7 @@ dialog.modal-overlay::backdrop{display:none;}
 <div id="aria-live" aria-live="polite" aria-atomic="true"></div>
 
 <!-- INSTRUCTIONS MODAL -->
-<div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+<dialog class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
   <div class="modal-box">
     <h2 id="instrTitle">How to Use This Module</h2><br>
     <div class="instr-row"><span class="instr-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Click or tap to interact. Drag and drop cards where required. Press Continue to advance.</div></div>
@@ -558,10 +561,10 @@ dialog.modal-overlay::backdrop{display:none;}
     <div class="instr-row"><span class="instr-icon">⚠️</span><div><strong>Rush Guard:</strong> Dragging cards rapidly without reading them may trigger warnings and temporary locks.</div></div><br>
     <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
   </div>
-</div>
+</dialog>
 
 <!-- RESET MODAL -->
-<div class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+<dialog class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
   <div class="modal-box">
     <div class="modal-icon">⚠️</div>
     <h2 id="resetTitle">Reset All Progress?</h2>
@@ -571,7 +574,7 @@ dialog.modal-overlay::backdrop{display:none;}
       <button class="confirm-yes" id="resetConfirmBtn">Yes, Reset Everything</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- COMPLETION MODAL -->
 <dialog class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
@@ -817,7 +820,6 @@ const rushGuard = (() => {
 
   document.addEventListener('DOMContentLoaded',()=>{
     const _rushDlg=document.getElementById('rushModal');
-    // Prevent Escape from closing the dialog during lockouts (dismiss btn hidden)
     _rushDlg.addEventListener('cancel',e=>{
       const btn=document.getElementById('rushDismissBtn');
       if(btn&&btn.style.display==='none')e.preventDefault();
@@ -1945,20 +1947,28 @@ function showCompletionModal(){
    MODALS & RESET
 ========================================================== */
 document.getElementById('instrStartBtn').addEventListener('click',()=>{
-  document.getElementById('instructionsModal').classList.remove('visible');
+  const _im=document.getElementById('instructionsModal');
+  _im.classList.remove('visible');
+  if(typeof _im.close==='function'&&_im.open)_im.close();
   if(currentView==='cover') showCover();
   else if(typeof currentView==='number') showActivity(currentView);
   else showCover();
 });
 
 document.getElementById('resetProgressBtn').addEventListener('click',()=>{
-  document.getElementById('resetModal').classList.add('visible');
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.add('visible');
+  if(typeof _rst.showModal==='function'&&!_rst.open){try{_rst.showModal();}catch(e){}}
 });
 document.getElementById('resetCancelBtn').addEventListener('click',()=>{
-  document.getElementById('resetModal').classList.remove('visible');
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.remove('visible');
+  if(typeof _rst.close==='function'&&_rst.open)_rst.close();
 });
 document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
-  document.getElementById('resetModal').classList.remove('visible');
+  const _rst2=document.getElementById('resetModal');
+  _rst2.classList.remove('visible');
+  if(typeof _rst2.close==='function'&&_rst2.open)_rst2.close();
   ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i>0);});
   partADone.fill(false);
   currentView='cover';
@@ -2172,7 +2182,9 @@ function showReview(){
 ========================================================== */
 loadProgress();
 renderSidebar();
-document.getElementById('instructionsModal').classList.add('visible');
+const _im=document.getElementById('instructionsModal');
+_im.classList.add('visible');
+if(typeof _im.showModal==='function'&&!_im.open){try{_im.showModal();}catch(e){}}
 if(currentView==='cover') showCover();
 else if(currentView==='review') showReview();
 else if(typeof currentView==='number') showActivity(currentView);
