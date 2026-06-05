@@ -544,6 +544,35 @@ body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-
 <div id="aria-live" aria-live="polite" aria-atomic="true"></div>
 
 <!-- INSTRUCTIONS MODAL -->
+
+<!-- APP SHELL -->
+<div id="app-wrapper">
+  <aside id="sidebar" aria-label="Activity navigation">
+    <div class="sidebar-header">
+      Chapter 5
+      <small>Tolerance, Learning &amp; Drug Research</small>
+    </div>
+    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="5" id="overallProgressBar">
+      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
+    </div>
+    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
+    <div class="sidebar-footer" id="sidebar-footer-wrap">
+      <span id="sidebar-footer">0 of 5 activities complete</span>
+      <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">&#x21BA; Reset Progress</button>
+    </div>
+  </aside>
+
+  <main id="main-content">
+    <div class="top-bar">
+      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
+      <span class="top-bar-title" id="topBarTitle">Chapter 5 – Tolerance, Learning &amp; Drug Research</span>
+      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="img"></div>
+      <span class="step-label" id="stepLabel"></span>
+      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
+    </div>
+    <div class="content-scroll" id="content-area" tabindex="-1"></div>
+  </main>
+
 <div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
   <div class="modal-box">
     <h2 id="instrTitle">How to Use This Module</h2><br>
@@ -617,33 +646,6 @@ body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-
   </div>
 </div>
 
-<!-- APP SHELL -->
-<div id="app-wrapper">
-  <aside id="sidebar" aria-label="Activity navigation">
-    <div class="sidebar-header">
-      Chapter 5
-      <small>Tolerance, Learning &amp; Drug Research</small>
-    </div>
-    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="5" id="overallProgressBar">
-      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
-    </div>
-    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
-    <div class="sidebar-footer" id="sidebar-footer-wrap">
-      <span id="sidebar-footer">0 of 5 activities complete</span>
-      <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">&#x21BA; Reset Progress</button>
-    </div>
-  </aside>
-
-  <main id="main-content">
-    <div class="top-bar">
-      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
-      <span class="top-bar-title" id="topBarTitle">Chapter 5 – Tolerance, Learning &amp; Drug Research</span>
-      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="img"></div>
-      <span class="step-label" id="stepLabel"></span>
-      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
-    </div>
-    <div class="content-scroll" id="content-area" tabindex="-1"></div>
-  </main>
 </div>
 
 <script>

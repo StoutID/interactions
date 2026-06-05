@@ -1168,6 +1168,36 @@ body.pseudo-fs #app-wrapper{
 
 <!-- ===== ARIA LIVE ===== -->
 <div id="aria-live" aria-live="polite" aria-atomic="true"></div>
+<!-- ===== APP SHELL ===== -->
+<div id="app-wrapper">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" aria-label="Activity navigation">
+    <div class="sidebar-header">
+      Chapter 3
+      <small>Drugs and the Nervous System</small>
+    </div>
+    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="8" id="overallProgressBar">
+      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
+    </div>
+    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
+    <div class="sidebar-footer" id="sidebar-footer">0 of 7 activities complete</div>
+    <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">↺ Reset Progress</button>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main-content">
+    <div class="top-bar">
+      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
+      <span class="top-bar-title" id="topBarTitle">Chapter 3 – Drugs and the Nervous System</span>
+      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="img"></div>
+      <span class="step-label" id="stepLabel"></span>
+      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
+    </div>
+    <div class="content-scroll" id="content-area" tabindex="-1"></div>
+  </main>
+
+
 
 <!-- ===== INSTRUCTIONS MODAL ===== -->
 <div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
@@ -1251,34 +1281,15 @@ body.pseudo-fs #app-wrapper{
 </div>
 
 
-<!-- ===== APP SHELL ===== -->
-<div id="app-wrapper">
-
-  <!-- SIDEBAR -->
-  <aside id="sidebar" aria-label="Activity navigation">
-    <div class="sidebar-header">
-      Chapter 3
-      <small>Drugs and the Nervous System</small>
-    </div>
-    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="8" id="overallProgressBar">
-      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
-    </div>
-    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
-    <div class="sidebar-footer" id="sidebar-footer">0 of 7 activities complete</div>
-    <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">↺ Reset Progress</button>
-  </aside>
-
-  <!-- MAIN -->
-  <main id="main-content">
-    <div class="top-bar">
-      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
-      <span class="top-bar-title" id="topBarTitle">Chapter 3 – Drugs and the Nervous System</span>
-      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="img"></div>
-      <span class="step-label" id="stepLabel"></span>
-      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
-    </div>
-    <div class="content-scroll" id="content-area" tabindex="-1"></div>
-  </main>
+<div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
+  <div class="modal-box" style="border-top:5px solid #f59e0b;">
+    <div class="modal-icon" id="rushIcon">⚠️</div>
+    <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
+    <p id="rushMsg">It looks like you're dragging cards without reading them carefully. Take a moment to study the content before placing cards.</p>
+    <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
+    <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
+    <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
+  </div>
 
 </div>
 
@@ -3948,15 +3959,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 
 <!-- ===== RUSH GUARD MODAL ===== -->
-<div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
-  <div class="modal-box" style="border-top:5px solid #f59e0b;">
-    <div class="modal-icon" id="rushIcon">⚠️</div>
-    <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
-    <p id="rushMsg">It looks like you're dragging cards without reading them carefully. Take a moment to study the content before placing cards.</p>
-    <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
-    <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
-    <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
-  </div>
 </div>
 </body>
 </html>
