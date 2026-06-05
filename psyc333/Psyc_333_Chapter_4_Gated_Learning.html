@@ -430,7 +430,7 @@ body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-
   -webkit-overflow-scrolling:touch;
 }
 .modal-overlay.visible{display:flex}
-/* dialog top-layer: modals always visible above fullscreen stacking contexts */
+/* dialog top-layer: always visible above fullscreen stacking contexts */
 dialog.modal-overlay{border:0;padding:0;margin:0;max-width:none;max-height:none;}
 dialog.modal-overlay[open]{display:flex;position:fixed;inset:0;background:rgba(0,0,0,.65);padding:20px;overflow-y:auto;}
 dialog.modal-overlay::backdrop{display:none;}
@@ -816,10 +816,15 @@ const rushGuard = (() => {
   }
 
   document.addEventListener('DOMContentLoaded',()=>{
+    const _rushDlg=document.getElementById('rushModal');
+    // Prevent Escape from closing the dialog during lockouts (dismiss btn hidden)
+    _rushDlg.addEventListener('cancel',e=>{
+      const btn=document.getElementById('rushDismissBtn');
+      if(btn&&btn.style.display==='none')e.preventDefault();
+    });
     document.getElementById('rushDismissBtn').addEventListener('click',()=>{
-      const _rm2=document.getElementById('rushModal');
-      _rm2.classList.remove('visible');
-      if(typeof _rm2.close==='function'&&_rm2.open)_rm2.close();
+      _rushDlg.classList.remove('visible');
+      if(typeof _rushDlg.close==='function'&&_rushDlg.open)_rushDlg.close();
       wrongTimestamps=[];
       flipRushCount=0;
     });
