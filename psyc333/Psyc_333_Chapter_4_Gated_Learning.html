@@ -430,6 +430,10 @@ body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-
   -webkit-overflow-scrolling:touch;
 }
 .modal-overlay.visible{display:flex}
+/* dialog top-layer override */
+dialog.modal-overlay{border:0;padding:0;margin:0;max-width:none;max-height:none;}
+dialog.modal-overlay[open]{display:flex;position:fixed;inset:0;background:rgba(0,0,0,.65);padding:20px;overflow-y:auto;}
+dialog.modal-overlay::backdrop{display:none;}
 .modal-box{
   background:white;
   padding:40px 36px;
@@ -570,7 +574,7 @@ body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-
 </div>
 
 <!-- COMPLETION MODAL -->
-<div class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
+<dialog class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
   <div class="modal-box" style="max-width:600px;text-align:left;">
     <button class="modal-close" id="closeCompletion" aria-label="Close">&#x2715;</button>
 
@@ -632,7 +636,7 @@ body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-
     </div>
 
   </div>
-</div>
+</dialog>
 
 <!-- RUSH GUARD MODAL -->
 <div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
@@ -1920,7 +1924,9 @@ function showCompletionModal(){
   const q=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
   const qEl=document.getElementById('reflectionQuestion');
   if(qEl) qEl.textContent=q;
-  document.getElementById('completionModal').classList.add('visible');
+  const _cm=document.getElementById('completionModal');
+  _cm.classList.add('visible');
+  if(typeof _cm.showModal==='function'){try{_cm.showModal();}catch(e){}}
   document.getElementById('closeCompletion').focus();
   announce('Congratulations! You have completed all 5 Chapter 4 activities. A reflection question is now shown. Copy it into the Canvas text box below and answer in your own words.');
 }
@@ -1954,10 +1960,16 @@ document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
 });
 
 document.getElementById('closeCompletion').addEventListener('click',()=>{
-  document.getElementById('completionModal').classList.remove('visible');
+  const _cm=document.getElementById('completionModal');
+  _cm.classList.remove('visible');
+  if(typeof _cm.close==='function'&&_cm.open)_cm.close();
 });
 document.getElementById('closeCompletion').addEventListener('keydown',e=>{
-  if(e.key==='Escape') document.getElementById('completionModal').classList.remove('visible');
+  if(e.key==='Escape'){
+    const _cm=document.getElementById('completionModal');
+    _cm.classList.remove('visible');
+    if(typeof _cm.close==='function'&&_cm.open)_cm.close();
+  }
 });
 document.getElementById('downloadGuideBtn').addEventListener('click',()=>downloadStudyGuide());
 
