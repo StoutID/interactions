@@ -568,6 +568,42 @@ body.pseudo-fs #app-wrapper{
 <!-- ARIA LIVE -->
 <div id="aria-live" aria-live="polite" aria-atomic="true"></div>
 
+<!-- ===== APP SHELL ===== -->
+<div id="app-wrapper">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" aria-label="Activity navigation">
+    <div class="sidebar-header">
+      Chapter 1
+      <small>Substance Use Fundamentals</small>
+    </div>
+    <div class="nav-progress" role="progressbar" aria-label="Overall progress"
+         aria-valuemin="0" aria-valuemax="5" id="overallProgressBar">
+      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
+    </div>
+    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
+    <div class="sidebar-footer">
+      <span id="sidebar-footer-text">0 of 4 activities complete</span>
+      <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">↺ Reset My Progress</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main-content">
+    <div class="top-bar">
+      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
+      <span class="top-bar-title" id="topBarTitle">Chapter 1 – Substance Use Fundamentals</span>
+      <!-- #8 — Step indicator dots -->
+      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="img"></div>
+      <span class="step-label" id="stepLabel"></span>
+      <!-- Fullscreen toggle -->
+      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
+    </div>
+    <div class="content-scroll" id="content-area" tabindex="-1"></div>
+  </main>
+
+
+
 <!-- ===== INSTRUCTIONS MODAL ===== -->
 <div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
   <div class="modal-box">
@@ -611,6 +647,69 @@ body.pseudo-fs #app-wrapper{
     <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
   </div>
 </div>
+
+<!-- ===== COMPLETION MODAL ===== -->
+<div class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
+  <div class="modal-box" style="max-width:600px;text-align:left;">
+    <button class="modal-close" id="closeCompletion" aria-label="Close">✕</button>
+
+    <div class="completion-warning" role="alert">
+      <span class="completion-warning-icon">⚠️</span>
+      <div><strong>You're not done yet!</strong> Finishing the activities is only part of this assignment. To receive credit, you must still answer the reflection question below in the Canvas text box.</div>
+    </div>
+
+    <div class="modal-icon" style="text-align:center;">💊</div>
+    <h2 id="complTitle" style="text-align:center;">Activities Complete — One Step Left</h2>
+    <p style="text-align:center;">You explored the factors that shape the drug experience, key substance use terms, real-world scenarios, and routes of administration. Complete the reflection below to finish the assignment.</p>
+
+    <div class="reflection-block">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question" id="reflectionQuestion">&nbsp;</p>
+    </div>
+
+    <div class="reflection-instructions">
+      <strong>To complete this assignment:</strong>
+      <ol>
+        <li><strong>Copy and paste the question above</strong> into the Canvas text box below this activity.</li>
+        <li>Answer the question in your <strong>own words</strong> — a minimum of <strong>one paragraph of at least five sentences</strong>.</li>
+        <li><strong>Do not use AI</strong> to write or generate any part of your answer. The reflection must be entirely your own thinking.</li>
+      </ol>
+      <p class="reflection-note">⬇ Scroll down to the Canvas text box beneath this activity to submit your written response.</p>
+    </div>
+
+    <div class="completion-divider"></div>
+
+    <div style="text-align:center;margin-top:18px;">
+      <button class="download-btn" id="downloadGuideBtn">⬇ Download Study Guide</button>
+      <p style="font-size:.82rem;color:#666;margin-top:8px;">Optional: keep this study guide for review. You can also reopen it any time from the <strong>Review &amp; Study Guide</strong> menu item in the sidebar.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESET CONFIRM MODAL ===== -->
+<div class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+  <div class="modal-box">
+    <h2 id="resetTitle">Reset Progress?</h2>
+    <p>This will clear all your activity completions and start Chapter 1 from the beginning. This cannot be undone.</p>
+    <div class="reset-modal-btns">
+      <button class="confirm-reset-btn" id="confirmResetBtn">Yes, Reset</button>
+      <button class="cancel-reset-btn" id="cancelResetBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RUSH GUARD MODAL ===== -->
+<div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
+  <div class="modal-box" style="border-top:5px solid #f59e0b;">
+    <div class="modal-icon" id="rushIcon">⚠️</div>
+    <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
+    <p id="rushMsg"></p>
+    <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
+    <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
+    <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
+  </div>
+</div>
+
 
 <!-- ===== COMPLETION MODAL ===== -->
 <div class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
