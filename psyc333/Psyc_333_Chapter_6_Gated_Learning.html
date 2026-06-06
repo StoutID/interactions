@@ -420,6 +420,21 @@ body.pseudo-fs #app-wrapper{
   -webkit-overflow-scrolling:touch;
 }
 .modal-overlay.visible{display:flex}
+/* ── dialog: guaranteed full-screen overlay ──────────────────────────
+   !important beats UA and author rules; showModal() places dialog in
+   top layer above any fullscreen context. ── */
+dialog.modal-overlay{
+  position:fixed !important;inset:0 !important;
+  width:100% !important;height:100% !important;margin:0 !important;
+  border:0;padding:20px;box-sizing:border-box;
+  background:rgba(0,0,0,.65) !important;
+  z-index:2147483647 !important;
+  justify-content:center;align-items:flex-start;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  max-width:none !important;max-height:none !important;
+}
+dialog.modal-overlay[open]{display:flex !important;}
+dialog.modal-overlay::backdrop{display:none;}
 .modal-box{
   background:white;
   padding:40px 36px;
@@ -573,7 +588,7 @@ body.pseudo-fs #app-wrapper{
 <div id="aria-live" aria-live="polite" aria-atomic="true"></div>
 
 <!-- INSTRUCTIONS MODAL -->
-<div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+<dialog class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
   <div class="modal-box">
     <h2 id="instrTitle">How to Use This Module</h2><br>
     <div class="instr-row"><span class="instr-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Click or tap to interact. Drag and drop cards where required. Press Continue to advance.</div></div>
@@ -582,10 +597,10 @@ body.pseudo-fs #app-wrapper{
     <div class="instr-row"><span class="instr-icon">⚠️</span><div><strong>Rush Guard:</strong> Dragging cards rapidly without reading them may trigger warnings and temporary locks.</div></div><br>
     <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
   </div>
-</div>
+</dialog>
 
 <!-- RESET MODAL -->
-<div class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+<dialog class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
   <div class="modal-box">
     <div class="modal-icon">⚠️</div>
     <h2 id="resetTitle">Reset All Progress?</h2>
@@ -595,10 +610,10 @@ body.pseudo-fs #app-wrapper{
       <button class="confirm-yes" id="resetConfirmBtn">Yes, Reset Everything</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- COMPLETION MODAL -->
-<div class="modal-overlay" id="completionModal"
+<dialog class="modal-overlay" id="completionModal"
      role="dialog" aria-modal="true" aria-labelledby="complTitle">
   <div class="modal-box" style="max-width:600px;text-align:left;">
     <button class="modal-close" id="closeCompletion" aria-label="Close">✕</button>
@@ -659,10 +674,10 @@ body.pseudo-fs #app-wrapper{
       </p>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- RUSH GUARD MODAL -->
-<div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
+<dialog class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle">
   <div class="modal-box" style="border-top:5px solid #f59e0b;">
     <div class="modal-icon" id="rushIcon">⚠️</div>
     <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
@@ -671,7 +686,7 @@ body.pseudo-fs #app-wrapper{
     <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
     <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
   </div>
-</div>
+</dialog>
 
 <!-- APP SHELL -->
 <div id="app-wrapper">
@@ -756,6 +771,7 @@ const rushGuard = (() => {
     $dismiss().style.display=btnVisible?'':'none';
     if(btnVisible) $dismiss().textContent=btnTxt;
     m.classList.add('visible');
+    if(typeof m.showModal==='function'&&!m.open){try{m.showModal();}catch(e){}}
     if(btnVisible) setTimeout(()=>$dismiss().focus(),50);
   }
 
@@ -804,7 +820,9 @@ const rushGuard = (() => {
       if(secs<=0){
         clearInterval(cooldownTimer); cooldownTimer=null;
         locked=false; strikes=0; wrongTimestamps=[];
-        $modal().classList.remove('visible');
+        const _rm=document.getElementById('rushModal');
+        _rm.classList.remove('visible');
+        if(typeof _rm.close==='function'&&_rm.open)_rm.close();
         const ov=document.getElementById('rush-lock-overlay');
         if(ov) ov.remove();
         if(typeof currentView==='number') showActivity(currentView);
@@ -813,8 +831,14 @@ const rushGuard = (() => {
   }
 
   document.addEventListener('DOMContentLoaded',()=>{
+    const _rushDlg=document.getElementById('rushModal');
+    if(_rushDlg) _rushDlg.addEventListener('cancel',e=>{
+      const btn=document.getElementById('rushDismissBtn');
+      if(btn&&btn.style.display==='none')e.preventDefault();
+    });
     document.getElementById('rushDismissBtn').addEventListener('click',()=>{
-      $modal().classList.remove('visible');
+      _rushDlg.classList.remove('visible');
+      if(typeof _rushDlg.close==='function'&&_rushDlg.open)_rushDlg.close();
       wrongTimestamps=[];
       flipRushCount=0;
     });
@@ -969,6 +993,19 @@ function renderSidebar(){
     item.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();item.click();}};
     nav.appendChild(item);
   });
+
+  // Review nav item — appears only after all activities complete
+  if(ACTIVITIES.every(a=>a.done)){
+    const reviewItem=document.createElement('div');
+    reviewItem.className='nav-item'+(currentView==='review'?' active':'');
+    reviewItem.tabIndex=0;
+    reviewItem.setAttribute('role','button');
+    reviewItem.setAttribute('aria-label','Review and Study Guide');
+    reviewItem.innerHTML='<span class="nav-title">📋 Review &amp; Study Guide</span>';
+    reviewItem.onclick=()=>showReview();
+    reviewItem.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();reviewItem.click();}};
+    nav.appendChild(reviewItem);
+  }
 }
 
 /* ==========================================================
@@ -1044,6 +1081,128 @@ function showCover(){
 /* ==========================================================
    SHOW ACTIVITY
 ========================================================== */
+
+/* ==========================================================
+   REVIEW PAGE  (unlocked after all 5 activities complete)
+========================================================== */
+function showReview(){
+  currentView='review';
+  document.getElementById('topBarTitle').textContent='Chapter 6 – Review & Study Guide';
+  renderSidebar();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  area.scrollTop=0;
+
+  const TERMS=[
+    ['Stimulant','Drug that increases neural activity, heightens mood, increases alertness, and decreases fatigue.'],
+    ['Cocaine','Derived from Erythroxylum coca; blocks monoamine reuptake (dopamine, norepinephrine, serotonin).'],
+    ['Amphetamines','Synthetic stimulants; similar to cocaine but longer-lasting (4–12 hours vs 20–80 min).'],
+    ['Formication Syndrome','Sensation of insects crawling under skin (“speed bugs”); sign of stimulant overdose.'],
+    ['Stimulant Psychosis','Paranoid delusions + disorientation resembling paranoid schizophrenia; from high doses or prolonged use.'],
+    ['Crack Cocaine','Smokable freebase cocaine; rapid intense high; severe crash in 10–20 minutes.'],
+    ['Bath Salts','Synthetic cathinones (mephedrone, MDPV); amphetamine-like; can cause acute psychosis.'],
+    ['Monoamines','Dopamine, norepinephrine, serotonin — all affected by stimulant drugs.'],
+    ['Withdrawal Depression','Primary withdrawal symptom (“cocaine blues”); caused by monoamine depletion.'],
+    ['Vasoconstriction','Nasal blood vessel narrowing from intranasal cocaine; causes tissue damage over time.'],
+  ];
+
+  const TIMELINE=[
+    ['1850s','Cocaine isolated from coca leaves'],
+    ['1914','Harrison Narcotics Act — cocaine controlled'],
+    ['Post-WWII','Amphetamine misuse epidemic (Japan, Sweden, Europe)'],
+    ['1960s','Meth used as heroin treatment — backfired'],
+    ['1986','Crack epidemic; Anti-Drug Abuse Acts'],
+    ['1990s–2000s','Meth resurfaces; kitchen labs proliferate'],
+    ['2006','Combat Meth Epidemic Act — pseudoephedrine regulated'],
+    ['2010','Fair Sentencing Act — reduced crack penalties'],
+  ];
+
+  const MISCONCEPTIONS=[
+    'Cocaine is NOT synthetic — it comes from the coca plant',
+    'Stimulant withdrawal does NOT cause severe physical symptoms (no seizures, no fever)',
+    'Depression IS the primary withdrawal symptom — not seizures',
+    'Cocaine does NOT enhance intellectual performance',
+    'Crack is smokable COCAINE, not amphetamine',
+    'Amphetamines last LONGER than cocaine (4–12 hours vs 20–80 min)',
+    'Stimulants IMPAIR complex learning (state-dependent + may hurt complex reasoning)',
+    'Bath salts are synthetic cathinones, not methcathinone salts used in bathing',
+  ];
+
+  area.innerHTML=`
+    <div style="max-width:820px;margin:40px auto;padding:20px 20px 60px;">
+      <h1 style="color:var(--navy);font-size:1.5rem;margin-bottom:4px;">&#x1F4CB; Chapter 6 Review &amp; Study Guide</h1>
+      <p style="color:#666;margin-bottom:32px;font-size:.95rem;">Cocaine, Amphetamines, and Related Stimulants</p>
+
+      <section style="margin-bottom:32px;">
+        <h2 style="color:var(--navy);font-size:1.05rem;border-bottom:2px solid var(--sky);padding-bottom:6px;margin-bottom:14px;">Key Terms</h2>
+        <div style="display:grid;gap:10px;">
+          ${TERMS.map(([t,d])=>`
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid var(--sky);border-radius:8px;padding:12px 16px;">
+              <strong style="color:var(--navy);">${t}</strong>
+              <p style="margin:4px 0 0;color:#444;font-size:.91rem;line-height:1.55;">${d}</p>
+            </div>`).join('')}
+        </div>
+      </section>
+
+      <section style="margin-bottom:32px;">
+        <h2 style="color:var(--navy);font-size:1.05rem;border-bottom:2px solid var(--sky);padding-bottom:6px;margin-bottom:14px;">Mechanism of Action</h2>
+        <div style="background:#f0f7ff;border-radius:10px;padding:16px 20px;font-size:.92rem;line-height:1.7;color:#333;">
+          <ul style="margin:0;padding-left:20px;">
+            <li>Both cocaine AND amphetamines <strong>block reuptake</strong> of dopamine, norepinephrine, and serotonin.</li>
+            <li>Amphetamines <strong>also increase release</strong> of dopamine and norepinephrine &mdash; cocaine does not.</li>
+            <li>Stimulants act on the <strong>mesolimbic dopaminergic pathway</strong> (the brain’s reward system).</li>
+            <li>Long-term use depletes monoamines &rarr; explains post-use depression.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section style="margin-bottom:32px;">
+        <h2 style="color:var(--navy);font-size:1.05rem;border-bottom:2px solid var(--sky);padding-bottom:6px;margin-bottom:14px;">Cocaine vs. Amphetamines &mdash; Key Differences</h2>
+        <div style="overflow-x:auto;border-radius:10px;border:1px solid #e2e8f0;">
+          <table style="width:100%;border-collapse:collapse;font-size:.9rem;">
+            <thead>
+              <tr style="background:var(--navy);color:white;">
+                <th style="padding:10px 16px;text-align:left;font-weight:600;">Property</th>
+                <th style="padding:10px 16px;text-align:left;font-weight:600;">Cocaine</th>
+                <th style="padding:10px 16px;text-align:left;font-weight:600;">Amphetamines</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background:#f8fafc;"><td style="padding:9px 16px;font-weight:600;color:var(--navy);">Origin</td><td style="padding:9px 16px;">Plant-derived (coca leaf)</td><td style="padding:9px 16px;">Synthetic</td></tr>
+              <tr><td style="padding:9px 16px;font-weight:600;color:var(--navy);">Duration</td><td style="padding:9px 16px;">20&ndash;80 minutes</td><td style="padding:9px 16px;">4&ndash;12 hours</td></tr>
+              <tr style="background:#f8fafc;"><td style="padding:9px 16px;font-weight:600;color:var(--navy);">Mechanism</td><td style="padding:9px 16px;">Blocks reuptake only</td><td style="padding:9px 16px;">Blocks reuptake + increases release</td></tr>
+              <tr><td style="padding:9px 16px;font-weight:600;color:var(--navy);">Shared effects</td><td colspan="2" style="padding:9px 16px;">&uarr; mood, &uarr; alertness, &uarr; heart rate, vasoconstriction, withdrawal depression</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section style="margin-bottom:32px;">
+        <h2 style="color:var(--navy);font-size:1.05rem;border-bottom:2px solid var(--sky);padding-bottom:6px;margin-bottom:14px;">Historical Timeline</h2>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${TIMELINE.map(([yr,ev])=>`
+            <div style="display:flex;gap:14px;align-items:flex-start;background:#f8fafc;border-radius:8px;padding:10px 14px;">
+              <span style="background:var(--navy);color:white;font-size:.77rem;font-weight:700;padding:3px 9px;border-radius:12px;white-space:nowrap;flex-shrink:0;">${yr}</span>
+              <span style="color:#333;font-size:.91rem;line-height:1.5;">${ev}</span>
+            </div>`).join('')}
+        </div>
+      </section>
+
+      <section>
+        <h2 style="color:var(--navy);font-size:1.05rem;border-bottom:2px solid #dc2626;padding-bottom:6px;margin-bottom:14px;">&#x26A0;&#xFE0F; Common Misconceptions</h2>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${MISCONCEPTIONS.map(txt=>`
+            <div style="display:flex;gap:12px;align-items:flex-start;background:#fff5f5;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;">
+              <span style="color:#dc2626;font-weight:700;flex-shrink:0;font-size:1rem;">&times;</span>
+              <span style="color:#333;font-size:.91rem;line-height:1.5;">${txt}</span>
+            </div>`).join('')}
+        </div>
+      </section>
+    </div>
+  `;
+  announce('Review and Study Guide loaded.');
+}
+
 function showActivity(index){
   rushGuard.reset();
   currentView=index;
@@ -1092,7 +1251,9 @@ function showCompletionModal(){
   const qEl = document.getElementById('reflectionQuestion');
   if(qEl) qEl.textContent = q;
 
-  document.getElementById('completionModal').classList.add('visible');
+  const _cm=document.getElementById('completionModal');
+  _cm.classList.add('visible');
+  if(typeof _cm.showModal==='function'&&!_cm.open){try{_cm.showModal();}catch(e){}}
   document.getElementById('closeCompletion').focus();
 
   announce('Congratulations! You have completed all 5 Chapter 6 activities. ' +
@@ -2121,20 +2282,28 @@ function renderAct5(area){
    MODALS & RESET
 ========================================================== */
 document.getElementById('instrStartBtn').addEventListener('click',()=>{
-  document.getElementById('instructionsModal').classList.remove('visible');
+  const _im=document.getElementById('instructionsModal');
+  _im.classList.remove('visible');
+  if(typeof _im.close==='function'&&_im.open)_im.close();
   if(currentView==='cover') showCover();
   else if(typeof currentView==='number') showActivity(currentView);
   else showCover();
 });
 
 document.getElementById('resetProgressBtn').addEventListener('click',()=>{
-  document.getElementById('resetModal').classList.add('visible');
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.add('visible');
+  if(typeof _rst.showModal==='function'&&!_rst.open){try{_rst.showModal();}catch(e){}}
 });
 document.getElementById('resetCancelBtn').addEventListener('click',()=>{
-  document.getElementById('resetModal').classList.remove('visible');
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.remove('visible');
+  if(typeof _rst.close==='function'&&_rst.open)_rst.close();
 });
 document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
-  document.getElementById('resetModal').classList.remove('visible');
+  const _rst2=document.getElementById('resetModal');
+  _rst2.classList.remove('visible');
+  if(typeof _rst2.close==='function'&&_rst2.open)_rst2.close();
   ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i>0);});
   partADone.fill(false);
   currentView='cover';
@@ -2146,7 +2315,9 @@ document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
 });
 
 document.getElementById('closeCompletion').addEventListener('click',()=>{
-  document.getElementById('completionModal').classList.remove('visible');
+  const _cm=document.getElementById('completionModal');
+  _cm.classList.remove('visible');
+  if(typeof _cm.close==='function'&&_cm.open)_cm.close();
 });
 
 document.getElementById('downloadGuideBtn').addEventListener('click',()=>{
@@ -2235,7 +2406,9 @@ QUIZ MISCONCEPTIONS TO REMEMBER
 ========================================================== */
 loadProgress();
 renderSidebar();
-document.getElementById('instructionsModal').classList.add('visible');
+const _im=document.getElementById('instructionsModal');
+_im.classList.add('visible');
+if(typeof _im.showModal==='function'&&!_im.open){try{_im.showModal();}catch(e){}}
 if(currentView==='cover') showCover();
 else if(typeof currentView==='number') showActivity(currentView);
 else showCover();
