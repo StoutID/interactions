@@ -424,10 +424,21 @@ body.pseudo-fs #app-wrapper{
 .modal-overlay.visible{display:flex;}
 /* ── dialog top-layer override: completionModal shows above all fullscreen
    stacking contexts via showModal() — no z-index tricks needed ── */
-dialog.modal-overlay{border:0;padding:0;margin:0;max-width:none;max-height:none;}
-dialog.modal-overlay[open]{display:flex;position:fixed;inset:0;
-  background:rgba(0,0,0,.65);padding:20px;overflow-y:auto;}
-dialog.modal-overlay::backdrop{display:none;}
+dialog.modal-overlay{
+  position:fixed;
+  inset:auto;
+  top:20px;left:0;right:0;bottom:auto;
+  margin:0 auto;
+  width:calc(100% - 40px);
+  max-height:calc(100vh - 60px);
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:transparent;
+  border:0;padding:0;
+  justify-content:center;align-items:flex-start;
+  /* display omitted — closed dialogs hidden via .modal-overlay{display:none} */
+}
+dialog.modal-overlay[open]{display:flex;}
+dialog.modal-overlay::backdrop{background:rgba(0,0,0,.65);}
 .modal-box{
   background:white;padding:40px 36px;max-width:520px;width:100%;
   border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.3);
@@ -575,7 +586,7 @@ dialog.modal-overlay::backdrop{display:none;}
 <div id="aria-live" aria-live="polite" aria-atomic="true"></div>
 
 <!-- ===== INSTRUCTIONS MODAL ===== -->
-<div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+<dialog class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
   <div class="modal-box">
     <h2 id="instrTitle">How to Use This Module</h2><br>
     <div class="instr-row">
@@ -604,10 +615,10 @@ dialog.modal-overlay::backdrop{display:none;}
     </div><br>
     <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
   </div>
-</div>
+</dialog>
 
 <!-- ===== RUSH GUARD MODAL ===== -->
-<div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
+<dialog class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
   <div class="modal-box" style="border-top:5px solid #f59e0b;">
     <div class="modal-icon" id="rushIcon">⚠️</div>
     <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
@@ -616,7 +627,7 @@ dialog.modal-overlay::backdrop{display:none;}
     <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
     <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
   </div>
-</div>
+</dialog>
 
 <!-- ===== COMPLETION MODAL ===== -->
 <dialog class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
@@ -657,7 +668,7 @@ dialog.modal-overlay::backdrop{display:none;}
 </dialog>
 
 <!-- ===== RESET CONFIRM MODAL ===== -->
-<div class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+<dialog class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
   <div class="modal-box">
     <h2 id="resetTitle">Reset Progress?</h2>
     <p>This will clear all your activity completions and start Chapter 1 from the beginning. This cannot be undone.</p>
@@ -666,7 +677,7 @@ dialog.modal-overlay::backdrop{display:none;}
       <button class="cancel-reset-btn" id="cancelResetBtn">Cancel</button>
     </div>
   </div>
-</div>
+</dialog>
 
 <!-- ===== APP SHELL ===== -->
 <div id="app-wrapper">
@@ -760,6 +771,7 @@ const rushGuard = (() => {
     $dismiss().style.display=btnVisible?'':'none';
     if(btnVisible) $dismiss().textContent=btnTxt;
     m.classList.add('visible');
+    if(typeof m.showModal==='function'&&!m.open){try{m.showModal();}catch(e){}}
     if(btnVisible) setTimeout(()=>$dismiss().focus(),50);
   }
 
@@ -812,7 +824,9 @@ const rushGuard = (() => {
       if(secs<=0){
         clearInterval(cooldownTimer); cooldownTimer=null;
         locked=false; strikes=0; wrongTimestamps=[];
-        $modal().classList.remove('visible');
+        const _rm=document.getElementById('rushModal');
+        _rm.classList.remove('visible');
+        if(typeof _rm.close==='function'&&_rm.open)_rm.close();
         const ov=document.getElementById('rush-lock-overlay');
         if(ov) ov.remove();
         if(typeof currentView==='number') showActivity(currentView);
@@ -821,8 +835,14 @@ const rushGuard = (() => {
   }
 
   document.addEventListener('DOMContentLoaded',()=>{
+    const _rushDlg=document.getElementById('rushModal');
+    _rushDlg.addEventListener('cancel',e=>{
+      const btn=document.getElementById('rushDismissBtn');
+      if(btn&&btn.style.display==='none')e.preventDefault();
+    });
     document.getElementById('rushDismissBtn').addEventListener('click',()=>{
-      $modal().classList.remove('visible');
+      _rushDlg.classList.remove('visible');
+      if(typeof _rushDlg.close==='function'&&_rushDlg.open)_rushDlg.close();
       wrongTimestamps=[];
       flipRushCount=0;
     });
@@ -1015,15 +1035,21 @@ document.getElementById('toggleBtn').addEventListener('click',()=>{
    RESET PROGRESS — #10
 ========================================================== */
 document.getElementById('resetProgressBtn').addEventListener('click',()=>{
-  document.getElementById('resetModal').classList.add('visible');
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.add('visible');
+  if(typeof _rst.showModal==='function'&&!_rst.open){try{_rst.showModal();}catch(e){}}
   document.getElementById('confirmResetBtn').focus();
 });
 document.getElementById('confirmResetBtn').addEventListener('click',()=>{
-  document.getElementById('resetModal').classList.remove('visible');
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.remove('visible');
+  if(typeof _rst.close==='function'&&_rst.open)_rst.close();
   resetProgress();
 });
 document.getElementById('cancelResetBtn').addEventListener('click',()=>{
-  document.getElementById('resetModal').classList.remove('visible');
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.remove('visible');
+  if(typeof _rst.close==='function'&&_rst.open)_rst.close();
   announce('Reset cancelled.');
 });
 
@@ -1266,7 +1292,7 @@ function showCompletionModal(){
   if(qEl) qEl.textContent=q;
   const _cm=document.getElementById('completionModal');
   _cm.classList.add('visible');
-  if(typeof _cm.showModal==='function'){try{_cm.showModal();}catch(e){}}
+  if(typeof _cm.showModal==='function'&&!_cm.open){try{_cm.showModal();}catch(e){}}
   document.getElementById('closeCompletion').focus();
   announce('Congratulations! You have completed all 4 Chapter 1 activities. A reflection question is now shown. Copy it into the Canvas text box below and answer in your own words.');
 }
@@ -2119,10 +2145,14 @@ renderSidebar();
 
 // Show instructions modal, then cover underneath
 showCover();
-document.getElementById('instructionsModal').classList.add('visible');
+const _im=document.getElementById('instructionsModal');
+_im.classList.add('visible');
+if(typeof _im.showModal==='function'&&!_im.open){try{_im.showModal();}catch(e){}}
 
 document.getElementById('instrStartBtn').addEventListener('click',()=>{
-  document.getElementById('instructionsModal').classList.remove('visible');
+  const _im=document.getElementById('instructionsModal');
+  _im.classList.remove('visible');
+  if(typeof _im.close==='function'&&_im.open)_im.close();
   if(currentView==='cover') showCover();
   else if(currentView==='review') showReviewSummary();
   else showActivity(currentView);
