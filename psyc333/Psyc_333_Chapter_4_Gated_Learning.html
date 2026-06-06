@@ -430,13 +430,25 @@ body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-
   -webkit-overflow-scrolling:touch;
 }
 .modal-overlay.visible{display:flex}
-/* dialog top-layer: always visible above fullscreen stacking contexts */
-dialog.modal-overlay{border:0;padding:0;margin:0;max-width:none;max-height:none;}
-dialog.modal-overlay[open]{
-  display:flex;justify-content:center;align-items:flex-start;
-  position:fixed;inset:0;width:100%;height:100%;
-  background:rgba(0,0,0,.65);padding:20px;overflow-y:auto;}
-dialog.modal-overlay::backdrop{display:none;}
+/* --- dialog top-layer: ::backdrop = dark overlay; dialog = centred popup ---
+   Chrome UA styles prevent making dialog itself full-screen, so we let
+   ::backdrop handle the dark bg and position the dialog near the top. --- */
+dialog.modal-overlay{
+  position:fixed;
+  inset:auto;
+  top:20px;left:0;right:0;bottom:auto;
+  margin:0 auto;
+  width:calc(100% - 40px);
+  max-height:calc(100vh - 60px);
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:transparent;
+  border:0;padding:0;
+  justify-content:center;align-items:flex-start;
+  /* display intentionally omitted — closed dialogs stay hidden via
+     .modal-overlay{display:none}; only [open] sets display:flex */
+}
+dialog.modal-overlay[open]{display:flex;}
+dialog.modal-overlay::backdrop{background:rgba(0,0,0,.65);}
 .modal-box{
   background:white;
   padding:40px 36px;
