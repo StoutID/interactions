@@ -435,7 +435,13 @@ body.pseudo-fs #app-wrapper{
 }
 .hint-text.visible{display:block;}
 
-/* Modals */
+/* Modals
+   Modals live *inside* #app-wrapper so they render in both
+   pseudo-fullscreen (position:fixed + z-index:9999 on wrapper) and
+   real Fullscreen API mode (only descendants of the fullscreen element
+   are rendered). position:fixed still anchors to the viewport because
+   #app-wrapper has no transform/filter/perspective. z-index:10000
+   clears every other child layer inside the wrapper.                  */
 .modal-overlay{
   position:fixed;
   inset:0;
@@ -443,7 +449,7 @@ body.pseudo-fs #app-wrapper{
   display:none;
   justify-content:center;
   align-items:flex-start;
-  z-index:2000;
+  z-index:10000;
   padding:20px;
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
@@ -572,93 +578,6 @@ body.pseudo-fs #app-wrapper{
 
 <div id="aria-live" aria-live="polite" aria-atomic="true"></div>
 
-<!-- INSTRUCTIONS MODAL -->
-<div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
-  <div class="modal-box">
-    <h2 id="instrTitle">How to Use This Module</h2><br>
-    <div class="instr-row"><span class="instr-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Click or tap to interact. Drag and drop cards where required. Press Continue to advance.</div></div>
-    <div class="instr-row"><span class="instr-icon">⌨️</span><div><strong>Keyboard:</strong> Use <kbd>Tab</kbd> to move, <kbd>Enter</kbd> or <kbd>Space</kbd> to select. Arrow keys navigate flip cards.</div></div>
-    <div class="instr-row"><span class="instr-icon">🔒</span><div><strong>Gated Progress:</strong> Each activity must be completed correctly before the next unlocks. Your progress saves automatically.</div></div>
-    <div class="instr-row"><span class="instr-icon">⚠️</span><div><strong>Rush Guard:</strong> Dragging cards rapidly without reading them may trigger warnings and temporary locks.</div></div><br>
-    <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
-  </div>
-</div>
-
-<!-- RESET MODAL -->
-<div class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
-  <div class="modal-box">
-    <div class="modal-icon">⚠️</div>
-    <h2 id="resetTitle">Reset All Progress?</h2>
-    <p>This will <strong>erase all completed activities</strong> and re-lock everything except Activity 1. This cannot be undone.</p>
-    <div class="confirm-btn-row">
-      <button class="confirm-no" id="resetCancelBtn">Cancel</button>
-      <button class="confirm-yes" id="resetConfirmBtn">Yes, Reset Everything</button>
-    </div>
-  </div>
-</div>
-
-<!-- COMPLETION MODAL ─────────────────────────────────────────────── -->
-<div class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
-  <div class="modal-box" style="max-width:600px;text-align:left;">
-    <button class="modal-close" id="closeCompletion" aria-label="Close">✕</button>
-
-    <!-- Not-done-yet warning -->
-    <div class="completion-warning" role="alert">
-      <span class="completion-warning-icon">⚠️</span>
-      <div><strong>You're not done yet!</strong> Finishing the activities is only part of this assignment. To receive credit, you must still answer the reflection question below in the Canvas text box.</div>
-    </div>
-
-    <!-- Icon + title -->
-    <div class="modal-icon" style="text-align:center;">🚬</div>
-    <h2 id="complTitle" style="text-align:center;">Activities Complete — One Step Left</h2>
-    <p style="text-align:center;">You've completed all five Chapter 7 activities on nicotine — from key terms to treatment evaluation. Answer the reflection below to finish the assignment.</p>
-
-    <!-- Randomly populated reflection question (filled by JS) -->
-    <div class="reflection-block">
-      <div class="reflection-label">📝 Your Reflection Question</div>
-      <p class="reflection-question" id="reflectionQuestion">&nbsp;</p>
-    </div>
-
-    <!-- Assignment directions -->
-    <div class="reflection-instructions">
-      <strong>To complete this assignment:</strong>
-      <ol>
-        <li><strong>Copy and paste the question above</strong> into the Canvas text box below this activity.</li>
-        <li>Answer the question in your <strong>own words</strong> — a minimum of <strong>one full paragraph of at least five sentences</strong>.</li>
-        <li><strong>Do not use AI</strong> to write or generate any part of your answer. The reflection must be entirely your own thinking.</li>
-      </ol>
-      <p class="reflection-note">
-        ⬇ Scroll down to the Canvas text box beneath this activity to submit your written response.
-      </p>
-    </div>
-
-    <!-- Divider -->
-    <div class="completion-divider"></div>
-
-    <!-- Study guide / review link -->
-    <div style="text-align:center;margin-top:18px;">
-      <button class="download-btn" id="downloadGuideBtn">⬇ Download Study Notes</button>
-      <p style="font-size:.82rem;color:#666;margin-top:8px;">
-        You can also access the full <strong>Review &amp; Study Guide</strong> from the sidebar menu at any time.
-      </p>
-    </div>
-
-  </div>
-</div>
-<!-- END COMPLETION MODAL ─────────────────────────────────────────── -->
-
-<!-- RUSH GUARD MODAL -->
-<div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
-  <div class="modal-box" style="border-top:5px solid #f59e0b;">
-    <div class="modal-icon" id="rushIcon">⚠️</div>
-    <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
-    <p id="rushMsg"></p>
-    <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
-    <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
-    <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
-  </div>
-</div>
-
 <!-- APP SHELL -->
 <div id="app-wrapper">
   <aside id="sidebar" aria-label="Activity navigation">
@@ -684,6 +603,94 @@ body.pseudo-fs #app-wrapper{
     </div>
     <div class="content-scroll" id="content-area" tabindex="-1"></div>
   </main>
+
+  <!-- ── MODALS (inside #app-wrapper so they overlay in both pseudo-fs and real-fs modes) ── -->
+
+  <!-- INSTRUCTIONS MODAL -->
+  <div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+    <div class="modal-box">
+      <h2 id="instrTitle">How to Use This Module</h2><br>
+      <div class="instr-row"><span class="instr-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Click or tap to interact. Drag and drop cards where required. Press Continue to advance.</div></div>
+      <div class="instr-row"><span class="instr-icon">⌨️</span><div><strong>Keyboard:</strong> Use <kbd>Tab</kbd> to move, <kbd>Enter</kbd> or <kbd>Space</kbd> to select. Arrow keys navigate flip cards.</div></div>
+      <div class="instr-row"><span class="instr-icon">🔒</span><div><strong>Gated Progress:</strong> Each activity must be completed correctly before the next unlocks. Your progress saves automatically.</div></div>
+      <div class="instr-row"><span class="instr-icon">⚠️</span><div><strong>Rush Guard:</strong> Dragging cards rapidly without reading them may trigger warnings and temporary locks.</div></div><br>
+      <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
+    </div>
+  </div>
+
+  <!-- RESET MODAL -->
+  <div class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+    <div class="modal-box">
+      <div class="modal-icon">⚠️</div>
+      <h2 id="resetTitle">Reset All Progress?</h2>
+      <p>This will <strong>erase all completed activities</strong> and re-lock everything except Activity 1. This cannot be undone.</p>
+      <div class="confirm-btn-row">
+        <button class="confirm-no" id="resetCancelBtn">Cancel</button>
+        <button class="confirm-yes" id="resetConfirmBtn">Yes, Reset Everything</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLETION MODAL -->
+  <div class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
+    <div class="modal-box" style="max-width:600px;text-align:left;">
+      <button class="modal-close" id="closeCompletion" aria-label="Close">✕</button>
+
+      <!-- Not-done-yet warning -->
+      <div class="completion-warning" role="alert">
+        <span class="completion-warning-icon">⚠️</span>
+        <div><strong>You're not done yet!</strong> Finishing the activities is only part of this assignment. To receive credit, you must still answer the reflection question below in the Canvas text box.</div>
+      </div>
+
+      <!-- Icon + title -->
+      <div class="modal-icon" style="text-align:center;">🚬</div>
+      <h2 id="complTitle" style="text-align:center;">Activities Complete — One Step Left</h2>
+      <p style="text-align:center;">You've completed all five Chapter 7 activities on nicotine — from key terms to treatment evaluation. Answer the reflection below to finish the assignment.</p>
+
+      <!-- Randomly populated reflection question (filled by JS) -->
+      <div class="reflection-block">
+        <div class="reflection-label">📝 Your Reflection Question</div>
+        <p class="reflection-question" id="reflectionQuestion">&nbsp;</p>
+      </div>
+
+      <!-- Assignment directions -->
+      <div class="reflection-instructions">
+        <strong>To complete this assignment:</strong>
+        <ol>
+          <li><strong>Copy and paste the question above</strong> into the Canvas text box below this activity.</li>
+          <li>Answer the question in your <strong>own words</strong> — a minimum of <strong>one full paragraph of at least five sentences</strong>.</li>
+          <li><strong>Do not use AI</strong> to write or generate any part of your answer. The reflection must be entirely your own thinking.</li>
+        </ol>
+        <p class="reflection-note">
+          ⬇ Scroll down to the Canvas text box beneath this activity to submit your written response.
+        </p>
+      </div>
+
+      <!-- Divider -->
+      <div class="completion-divider"></div>
+
+      <!-- Study guide / review link -->
+      <div style="text-align:center;margin-top:18px;">
+        <button class="download-btn" id="downloadGuideBtn">⬇ Download Study Notes</button>
+        <p style="font-size:.82rem;color:#666;margin-top:8px;">
+          You can also access the full <strong>Review &amp; Study Guide</strong> from the sidebar menu at any time.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RUSH GUARD MODAL -->
+  <div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle">
+    <div class="modal-box" style="border-top:5px solid #f59e0b;max-width:480px;">
+      <div class="modal-icon" id="rushIcon">⚠️</div>
+      <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
+      <p id="rushMsg"></p>
+      <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
+      <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
+      <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
+    </div>
+  </div>
+
 </div>
 
 <script>
