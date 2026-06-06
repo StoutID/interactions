@@ -1196,7 +1196,18 @@ function renderAct1(area){
   qs('#a1-card',w).addEventListener('click',flipCard);
   qs('#a1-card',w).addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flipCard();}});
   qs('#a1-prev',w).addEventListener('click',()=>{if(currentIdx>0){currentIdx--;updateCard();}});
-  qs('#a1-next',w).addEventListener('click',()=>{if(currentIdx<cards.length-1){currentIdx++;updateCard();}});
+  /* Flip-speed rush guard: rapid Next clicks without reading trigger warning */
+  let _flipTs=[];
+  qs('#a1-next',w).addEventListener('click',()=>{
+    if(currentIdx<cards.length-1){
+      currentIdx++;
+      updateCard();
+      const _now=Date.now();
+      _flipTs.push(_now);
+      _flipTs=_flipTs.filter(t=>_now-t<3000);
+      if(_flipTs.length>=3){ _flipTs=[]; rushGuard.recordWrong(w); }
+    }
+  });
   qs('#act1-toMatch',w).addEventListener('click',()=>{
     showPartB(partA,partB,initMatching);
   });
@@ -1298,6 +1309,7 @@ function renderAct1(area){
 
     /* ---- Shake the top card and handle wrong logic ---- */
     function shakeAndReturn(defData, termKey){
+      rushGuard.recordWrong(w);   // rush guard: wrong drop counts as a rush
       const card=qs('#a1b-top-card',partB);
       if(card){
         card.classList.remove('card-shake');
