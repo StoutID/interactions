@@ -1196,16 +1196,13 @@ function renderAct1(area){
   qs('#a1-card',w).addEventListener('click',flipCard);
   qs('#a1-card',w).addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flipCard();}});
   qs('#a1-prev',w).addEventListener('click',()=>{if(currentIdx>0){currentIdx--;updateCard();}});
-  /* Flip-speed rush guard: rapid Next clicks without reading trigger warning */
-  let _flipTs=[];
+  /* Rush guard: clicking Next on a card you haven't flipped (read) counts as
+     rushing. Two unread-skip events within 5 s trigger the warning popup. */
   qs('#a1-next',w).addEventListener('click',()=>{
     if(currentIdx<cards.length-1){
+      if(!visited[currentIdx]) rushGuard.recordWrong(w); // skipped without reading
       currentIdx++;
       updateCard();
-      const _now=Date.now();
-      _flipTs.push(_now);
-      _flipTs=_flipTs.filter(t=>_now-t<3000);
-      if(_flipTs.length>=3){ _flipTs=[]; rushGuard.recordWrong(w); }
     }
   });
   qs('#act1-toMatch',w).addEventListener('click',()=>{
