@@ -535,12 +535,13 @@ const ACTIVITIES=[
   {id:'act5',title:'Activity 4',subtitle:'Policy Synthesis Challenge',      type:'SCENARIO', locked:true, done:false}
 ];
 let currentView='cover';
+let savedReflectionQuestion='';
 
 /* ── PERSISTENCE ─────────────────────────────────────── */
 const STORAGE_KEY='ch2-gated-v1';
-function saveProgress(){localStorage.setItem(STORAGE_KEY,JSON.stringify({currentView,done:ACTIVITIES.map(a=>a.done),locked:ACTIVITIES.map(a=>a.locked)}));}
-function loadProgress(){try{const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!d)return;currentView=d.currentView;ACTIVITIES.forEach((a,i)=>{a.done=d.done[i];a.locked=d.locked[i];});announce('Previous progress restored.');}catch(e){}}
-function resetProgress(){localStorage.removeItem(STORAGE_KEY);rushGuard.hardReset();currentView='cover';ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i!==0);});renderSidebar();showCover();announce('Progress reset.');}
+function saveProgress(){localStorage.setItem(STORAGE_KEY,JSON.stringify({currentView,done:ACTIVITIES.map(a=>a.done),locked:ACTIVITIES.map(a=>a.locked),reflectionQ:savedReflectionQuestion}));}
+function loadProgress(){try{const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!d)return;currentView=d.currentView;ACTIVITIES.forEach((a,i)=>{a.done=d.done[i];a.locked=d.locked[i];});savedReflectionQuestion=d.reflectionQ||'';announce('Previous progress restored.');}catch(e){}}
+function resetProgress(){localStorage.removeItem(STORAGE_KEY);rushGuard.hardReset();currentView='cover';savedReflectionQuestion='';ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i!==0);});renderSidebar();showCover();announce('Progress reset.');}
 
 /* ── SIDEBAR ─────────────────────────────────────────── */
 function doneCount(){return ACTIVITIES.filter(a=>a.done).length;}
@@ -714,7 +715,7 @@ function completeActivity(index){
   if(index+1<ACTIVITIES.length){ACTIVITIES[index+1].locked=false;announce(`${ACTIVITIES[index].title} complete. ${ACTIVITIES[index+1].title} unlocked.`);}
   renderSidebar();saveProgress();
   // Only show completion modal when Activity 5 (index 4) is completed for the FIRST time
-  if(index===3&&!wasAlreadyDone){showReviewSummary();setTimeout(()=>showCompletionModal(),400);}
+  if(index===3&&!wasAlreadyDone){savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];saveProgress();showReviewSummary();setTimeout(()=>showCompletionModal(),400);}
 }
 
 /* ── REFLECTION QUESTIONS (same 5 for all chapters) ─────────── */
@@ -728,7 +729,7 @@ const REFLECTION_QUESTIONS=[
 
 /* ── COMPLETION MODAL ────────────────────────────────── */
 function showCompletionModal(){
-  const q=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+  const q=savedReflectionQuestion;
   const qEl=document.getElementById('reflectionQuestion');
   if(qEl) qEl.textContent=q;
   const _cm=document.getElementById('completionModal');
@@ -817,12 +818,22 @@ function showReviewSummary(){
       <h3>${d.title}</h3>
       <ul class="review-list">${d.points.map(pt=>`<li>${pt}</li>`).join('')}</ul>
     </div>`).join('');
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
   page.innerHTML=`
     <h1 style="color:var(--navy);margin-bottom:6px;">Chapter 2 Review</h1>
     <p class="ix-instructions">
       You\'ve completed all ${ACTIVITIES.length} activities. Use this page to review key concepts,
       and download the study guide for later reference.
     </p>
+    ${reflectionBlock}
     <div style="text-align:center;margin:18px 0 28px;">
       <button class="download-btn" id="reviewPageDownloadBtn">⬇ Download Study Guide</button>
     </div>
