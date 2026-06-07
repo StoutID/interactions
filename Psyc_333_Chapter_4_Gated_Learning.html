@@ -1,0 +1,2261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 4 – Pharmacology</title>
+
+<style>
+/* ===================================================
+   GLOBAL / RESET
+=================================================== */
+:root{
+  --navy:#13294B;
+  --blue:#1D4F91;
+  --sky:#00A3E0;
+  --accent:#D3E3FF;
+  --bg:#F3F3F5;
+  --white:#FFFFFF;
+  --border:1px solid rgba(19,41,75,.15);
+  --shadow:0 10px 15px -3px rgba(0,0,0,.1);
+  --sidebar-w:300px;
+  --green-bg:#dcfce7;
+  --green-border:#14532d;
+  --red-bg:#fee2e2;
+  --red-border:#7f1d1d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',Tahoma,sans-serif;
+  background:var(--bg);
+  color:var(--navy);
+  display:flex;
+  justify-content:center;
+  overflow:hidden;
+  height:100vh;
+}
+#app-wrapper{
+  width:100%;
+  max-width:1200px;
+  height:100vh;
+  display:flex;
+  background:white;
+  box-shadow:0 25px 50px -12px rgba(0,0,0,.25);
+}
+/* SIDEBAR */
+#sidebar{
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  border-right:var(--border);
+  display:flex;
+  flex-direction:column;
+  transition:width .3s, min-width .3s;
+  overflow:hidden;
+}
+#sidebar.collapsed{width:0;min-width:0;border-right:none;}
+.sidebar-header{
+  background:var(--navy);
+  color:white;
+  padding:24px 20px;
+  font-weight:800;
+  font-size:1rem;
+  letter-spacing:.5px;
+  line-height:1.4;
+  flex-shrink:0;
+}
+.sidebar-header small{
+  display:block;
+  font-weight:400;
+  font-size:.75rem;
+  opacity:.75;
+  margin-top:4px;
+  letter-spacing:0;
+}
+.nav-list{overflow-y:auto;flex:1;}
+.nav-item{
+  padding:14px 18px;
+  border-bottom:1px solid rgba(0,0,0,.05);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+  font-size:.93rem;
+  transition:background .15s;
+  gap:8px;
+}
+.nav-item:hover:not(.locked){background:#f0f5ff}
+.nav-item:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.nav-item.active{background:var(--accent);font-weight:700}
+.nav-item.locked{opacity:.55;cursor:not-allowed}
+.nav-item.done .nav-title::after{content:' ✓';color:#16a34a;font-weight:700}
+.nav-title{flex:1}
+.lock-icon{font-size:.85rem;flex-shrink:0}
+.nav-progress{width:100%;height:4px;background:#e5e7eb;flex-shrink:0;}
+.nav-progress-fill{height:4px;background:var(--sky);transition:width .4s;}
+.sidebar-footer{
+  padding:12px 18px;border-top:var(--border);font-size:.8rem;color:#666;
+  display:flex;flex-direction:column;gap:8px;
+}
+/* MAIN */
+#main-content{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.top-bar{
+  padding:12px 18px;
+  border-bottom:var(--border);
+  display:flex;align-items:center;gap:12px;
+  flex-shrink:0;background:white;
+}
+.menu-btn{
+  background:var(--blue);color:white;border:none;
+  padding:9px 16px;border-radius:6px;font-weight:bold;
+  cursor:pointer;font-size:.9rem;white-space:nowrap;touch-action:manipulation;
+}
+.menu-btn:focus{outline:3px solid var(--sky)}
+.top-bar-title{font-weight:700;color:var(--navy);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+/* ── Step indicator dots ─────────────────────────────────── */
+.step-dots{display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0;}
+.step-dot{width:12px;height:12px;border-radius:50%;background:#e5e7eb;border:2px solid #d1d5db;transition:background .3s,border-color .3s;flex-shrink:0;}
+.step-dot.done{background:#16a34a;border-color:#15803d;}
+.step-dot.active{background:var(--sky);border-color:#0284c7;}
+.step-dot.locked{background:#e5e7eb;border-color:#d1d5db;}
+.step-label{font-size:.75rem;color:#666;white-space:nowrap;margin-left:4px;}
+/* ── Fullscreen toggle ───────────────────────────────────── */
+.fs-btn{background:none;border:1px solid rgba(19,41,75,.25);border-radius:6px;padding:6px 10px;font-size:1rem;cursor:pointer;color:var(--navy);line-height:1;flex-shrink:0;transition:background .15s,border-color .15s;touch-action:manipulation;}
+.fs-btn:hover{background:var(--accent);border-color:var(--blue);}
+.fs-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+body.pseudo-fs{overflow:auto;}
+body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-index:9999;box-shadow:none;}
+.content-scroll{flex:1;overflow-y:auto;padding:0;-webkit-overflow-scrolling:touch;}
+
+/* COVER */
+#cover-page{max-width:820px;margin:40px auto;padding:20px 20px 40px;}
+.cover-badge{
+  display:inline-block;background:var(--accent);color:var(--blue);
+  font-weight:700;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;
+  padding:5px 12px;border-radius:20px;margin-bottom:16px;
+}
+.cover-title{font-size:2rem;font-weight:800;color:var(--navy);line-height:1.2;margin-bottom:12px;}
+.cover-subtitle{font-size:1.05rem;color:#444;margin-bottom:32px;line-height:1.6;}
+.cover-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:36px;}
+.cover-card{
+  border:var(--border);border-radius:12px;padding:20px;background:white;
+  box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start;
+}
+.cover-card-num{
+  background:var(--navy);color:white;font-weight:800;font-size:.95rem;
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;
+}
+.cover-card-body h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:5px;}
+.cover-card-body p{font-size:.85rem;color:#555;line-height:1.5;}
+.cover-tag{
+  display:inline-block;background:#f0f5ff;color:var(--blue);font-size:.73rem;
+  font-weight:600;padding:2px 8px;border-radius:10px;margin-top:8px;border:1px solid var(--accent);
+}
+.cover-instructions{
+  background:#f8faff;border:var(--border);border-left:4px solid var(--sky);
+  border-radius:8px;padding:16px 20px;margin-bottom:28px;font-size:.9rem;line-height:1.7;color:#333;
+}
+.cover-instructions strong{display:block;margin-bottom:6px;color:var(--navy)}
+.get-started-btn{
+  display:inline-block;background:var(--navy);color:white;border:none;
+  padding:16px 40px;font-size:1.1rem;font-weight:700;border-radius:10px;cursor:pointer;
+  letter-spacing:.5px;touch-action:manipulation;transition:background .2s,transform .1s;
+}
+.get-started-btn:hover{background:var(--blue)}
+.get-started-btn:active{transform:scale(.98)}
+.get-started-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+
+/* INTERACTION */
+.interaction-wrapper{padding:30px 30px 50px;max-width:960px;margin:0 auto;width:100%;}
+.interaction-wrapper h1{margin-top:0;color:var(--navy);}
+
+/* SHARED INTERACTION STYLES */
+.ix-card{
+  background:linear-gradient(135deg,#13294B 0%,#1D4F91 100%);
+  color:white;border:2px solid rgba(255,255,255,.18);border-radius:8px;
+  padding:12px 14px;margin:8px 0;cursor:grab;font-size:.9rem;font-weight:600;
+  user-select:none;-webkit-user-select:none;touch-action:none;
+  transition:box-shadow .15s,opacity .15s,transform .1s;
+  box-shadow:0 3px 8px rgba(0,0,0,.25);
+}
+.ix-card:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.3);}
+.ix-card:focus{outline:3px solid var(--sky);outline-offset:2px;}
+.ix-card.placed{
+  background:linear-gradient(135deg,#166534 0%,#15803d 100%);
+  border-color:rgba(255,255,255,.3);opacity:.85;cursor:default;pointer-events:none;
+}
+.ix-card.selected{outline:3px solid var(--sky);outline-offset:2px;}
+.ix-card.dragging{opacity:.35;box-shadow:0 8px 20px rgba(0,0,0,.2);}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}
+  40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+.ix-card.shake{animation:shake .4s ease;}
+
+.ix-dropzone{
+  border:2px dashed var(--accent);border-radius:10px;padding:12px;
+  min-height:90px;margin-bottom:16px;transition:background .15s,border-color .15s;
+}
+.ix-dropzone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.ix-dropzone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+
+.ix-option{
+  border:var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px;
+  cursor:pointer;font-size:.95rem;transition:background .15s;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+.ix-option:hover{background:var(--accent)}
+.ix-option:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.ix-option.correct-opt{background:var(--green-bg);border-color:var(--green-border)}
+.ix-option.incorrect-opt{background:var(--red-bg);border-color:var(--red-border)}
+
+.ix-explanation{
+  margin-top:16px;padding:14px 16px;border-radius:8px;background:#eef6ff;
+  font-size:.92rem;line-height:1.6;display:none;
+}
+.ix-explanation.visible{display:block}
+
+.ix-feedback{
+  margin-top:18px;padding:14px 16px;border-radius:8px;
+  font-weight:600;font-size:.95rem;display:none;
+}
+.ix-feedback.visible{display:block}
+.ix-feedback.correct{background:var(--green-bg);color:#166534}
+.ix-feedback.incorrect{background:var(--red-bg);color:#991b1b}
+
+.ix-counter{font-weight:700;margin-bottom:10px;color:var(--blue);font-size:.9rem;}
+.ix-prompt{font-weight:600;margin-bottom:18px;font-size:1rem;line-height:1.5;}
+
+.ix-continue-btn{
+  display:block;margin-top:28px;padding:13px 28px;font-size:1rem;font-weight:700;
+  background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;
+  touch-action:manipulation;transition:background .15s,opacity .15s;
+}
+.ix-continue-btn:disabled{opacity:.35;cursor:default}
+.ix-continue-btn:not(:disabled):hover{background:var(--navy)}
+.ix-continue-btn:focus{outline:3px solid var(--sky)}
+
+/* col-sort (card sort columns) */
+.col-sort-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;}
+.col-sort-col{flex:1 1 160px;display:flex;flex-direction:column;gap:0;min-width:140px;}
+.col-sort-head{
+  background:var(--navy);color:#fff;font-weight:700;font-size:.84rem;
+  text-align:center;padding:9px 8px;border-radius:8px 8px 0 0;line-height:1.3;
+}
+.col-sort-zone{
+  border:2px dashed var(--accent);border-top:none;border-radius:0 0 8px 8px;
+  min-height:56px;padding:6px;display:flex;flex-direction:column;gap:5px;
+  transition:background .15s,border-color .15s;
+}
+.col-sort-zone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.col-sort-zone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.col-sort-zone .ix-card{font-size:.82rem;margin:0;line-height:1.3;}
+
+/* ── Activity 2 stacked card pool ─────────────────────────────── */
+#a2-pool-wrap{
+  display:flex;justify-content:center;align-items:center;
+  width:100%;padding:24px 0 36px;
+}
+#a2-pool-label{
+  text-align:center;font-weight:700;font-size:.78rem;color:var(--navy);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;
+}
+#a2-pool{
+  position:relative;width:370px;height:88px;flex-shrink:0;
+}
+#a2-pool .ix-card{
+  position:absolute;
+  top:calc(var(--stack-i,0) * -4px);
+  left:calc(var(--stack-i,0) * 5px);
+  width:340px;margin:0;font-size:.82rem;
+  transform:rotate(calc(var(--stack-rot,0) * 1deg));
+  transition:transform .15s,box-shadow .15s,top .15s,left .15s;
+  z-index:var(--stack-z,1);
+}
+#a2-pool .ix-card:last-child{cursor:grab;}
+#a2-pool .ix-card:last-child:hover{
+  transform:rotate(0deg) translateY(-6px);
+  box-shadow:0 10px 22px rgba(0,0,0,.35);
+  z-index:20;
+}
+
+/* Sequence ordering */
+.seq-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;}
+.seq-col-title{font-size:.95rem;font-weight:700;margin-bottom:8px;color:var(--navy);}
+.seq-pool{display:flex;flex-direction:column;}
+.seq-slots{display:flex;flex-direction:column;gap:10px;}
+.seq-slot-row{display:flex;gap:8px;align-items:center;}
+.seq-num{min-width:22px;color:var(--sky);font-weight:800;}
+.seq-drop{
+  flex:1;min-height:52px;border:2px dashed var(--accent);
+  border-radius:10px;padding:8px;
+}
+.seq-drop.drag-over{background:#eef6ff;border-color:var(--sky);}
+.seq-drop.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+
+/* Flip cards (Activity 1) */
+.flip-deck{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.flip-card-wrap{width:100%;max-width:560px;perspective:1000px;cursor:pointer;}
+.flip-card-inner{
+  position:relative;width:100%;height:200px;transition:transform .55s ease;
+  transform-style:preserve-3d;border-radius:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+}
+.flip-card-wrap.flipped .flip-card-inner{transform:rotateY(180deg);}
+.flip-face{
+  position:absolute;inset:0;backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px 28px;text-align:center;
+}
+.flip-front{background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);color:#fff;}
+.flip-back{background:#fff;color:var(--navy);transform:rotateY(180deg);border:2px solid var(--accent);}
+.flip-label{font-size:.7rem;letter-spacing:1.2px;text-transform:uppercase;opacity:.65;font-weight:600;margin-bottom:8px;}
+.flip-term{font-size:1.35rem;font-weight:800;line-height:1.2;}
+.flip-def{font-size:.92rem;line-height:1.6;color:#333;}
+.flip-tap-hint{font-size:.75rem;opacity:.55;margin-top:10px;}
+.flip-nav{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.flip-nav-btn{
+  background:var(--navy);color:white;border:none;border-radius:999px;
+  padding:8px 20px;font-size:.88rem;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  transition:background .2s,transform .1s;
+}
+.flip-nav-btn:not(:disabled):hover{background:var(--blue);transform:translateY(-1px);}
+.flip-nav-btn:disabled{opacity:.35;cursor:default;}
+.flip-nav-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+.flip-counter{font-size:.85rem;color:#555;font-weight:600;}
+.flip-progress-row{display:flex;align-items:center;gap:10px;width:100%;max-width:560px;}
+.flip-progress-bar{flex:1;height:7px;background:#e5e7eb;border-radius:999px;overflow:hidden;}
+.flip-progress-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--blue));transition:width .3s;}
+.viewed-badge{
+  display:inline-flex;align-items:center;gap:5px;background:#f0f7ff;
+  border:1px solid var(--accent);border-radius:999px;padding:4px 12px;
+  font-size:.78rem;font-weight:600;color:var(--blue);
+}
+
+/* Branching scenario (Activity 4) */
+.scenario-box{
+  background:#f8faff;border:var(--border);border-left:4px solid var(--sky);
+  border-radius:10px;padding:16px 20px;margin-bottom:20px;
+  font-size:.95rem;line-height:1.65;color:#333;
+}
+.scenario-box strong{color:var(--navy);}
+.branch-result{
+  margin-top:16px;padding:14px 16px;border-radius:10px;
+  font-size:.93rem;line-height:1.6;
+}
+.branch-result.optimal{background:#dcfce7;border:1px solid #14532d;color:#166534;}
+.branch-result.acceptable{background:#fef9c3;border:1px solid #92400e;color:#78350f;}
+.branch-result.poor{background:#fee2e2;border:1px solid #7f1d1d;color:#991b1b;}
+.branch-choices{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.branch-choice{
+  border:var(--border);border-radius:8px;padding:14px 16px;
+  cursor:pointer;font-size:.92rem;line-height:1.5;
+  transition:background .15s,border-color .15s;user-select:none;touch-action:manipulation;
+}
+.branch-choice:hover{background:var(--accent);}
+.branch-choice:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.branch-score-pill{
+  display:inline-block;font-size:.75rem;font-weight:700;
+  padding:2px 10px;border-radius:20px;margin-left:8px;vertical-align:middle;
+}
+.scenario-progress{font-size:.82rem;color:#555;margin-bottom:14px;}
+
+/* T/F quiz (Activity 5) */
+.tf-block{
+  background:#f9fafb;border-radius:12px;padding:16px 18px;border:1px solid #dde3f0;
+  margin-bottom:14px;
+}
+.tf-block.tf-correct{border-color:var(--green-border);background:var(--green-bg);}
+.tf-block.tf-incorrect{border-color:var(--red-border);background:var(--red-bg);}
+.tf-stmt{font-size:.95rem;font-weight:600;color:var(--navy);margin-bottom:10px;line-height:1.5;}
+.tf-btns{display:inline-flex;gap:8px;}
+.tf-btn{
+  border-radius:999px;border:2px solid #d0d5dd;padding:6px 18px;
+  font-size:.88rem;font-weight:600;cursor:pointer;
+  background:#fff;color:var(--navy);font-family:inherit;
+  transition:border-color .15s,background .15s;
+}
+.tf-btn:hover{border-color:var(--sky);background:#f0f7ff;}
+.tf-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+.tf-btn.selected{border-color:var(--sky);background:var(--accent);}
+.tf-exp{font-size:.85rem;line-height:1.55;color:#333;margin-top:10px;display:none;}
+.tf-exp.visible{display:block;}
+
+/* two-part banner */
+.two-part-banner{
+  display:flex;align-items:center;gap:14px;
+  background:linear-gradient(135deg,#1a3a6b 0%,#2563eb 100%);
+  color:#fff;border-radius:12px;padding:14px 18px;
+  margin-bottom:18px;font-size:.92rem;line-height:1.5;
+}
+.two-part-banner .tpb-icon{font-size:1.6rem;flex-shrink:0;}
+.tpb-badge{
+  display:inline-block;background:#fff;color:#1a3a6b;
+  font-weight:800;font-size:.75rem;padding:2px 8px;
+  border-radius:20px;margin-right:6px;
+}
+@keyframes fadeOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-12px)}}
+@keyframes fadeIn {from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.part-fade-out{animation:fadeOut .35s ease forwards;}
+.part-fade-in {animation:fadeIn .35s ease forwards;}
+
+/* Review nav item */
+.nav-item.review-item{background:linear-gradient(135deg,#f0f5ff 0%,#e8f0fe 100%);border-top:2px solid var(--accent);}
+.nav-item.review-item .nav-title{color:var(--blue);font-weight:700;}
+.nav-item.review-item:hover{background:linear-gradient(135deg,#dbeafe 0%,#bfdbfe 100%);}
+.nav-item.review-item.active{background:var(--accent);}
+
+/* nav sub-items */
+.nav-sublist{display:flex;flex-direction:column;gap:1px;margin:2px 0 4px 16px;}
+.nav-subitem{
+  font-size:.75rem;padding:4px 10px;border-radius:6px;color:var(--navy);cursor:pointer;
+  display:flex;align-items:center;gap:6px;transition:background .1s;
+  border-left:2px solid var(--accent);
+}
+.nav-subitem:hover{background:#e8f0fe;}
+.nav-subitem.sub-done::after{content:' ✓';color:#16a34a;font-weight:700;}
+.nav-subitem.sub-pending{color:#888;cursor:default;}
+
+/* Modals */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;
+  justify-content:center;
+  align-items:flex-start;
+  z-index:2000;
+  padding:20px;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.modal-overlay.visible{display:flex}
+/* --- dialog top-layer: ::backdrop = dark overlay; dialog = centred popup ---
+   Chrome UA styles prevent making dialog itself full-screen, so we let
+   ::backdrop handle the dark bg and position the dialog near the top. --- */
+dialog.modal-overlay{
+  position:fixed;
+  inset:auto;
+  top:20px;left:0;right:0;bottom:auto;
+  margin:0 auto;
+  width:calc(100% - 40px);
+  max-height:calc(100vh - 60px);
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:transparent;
+  border:0;padding:0;
+  justify-content:center;align-items:flex-start;
+  /* display intentionally omitted — closed dialogs stay hidden via
+     .modal-overlay{display:none}; only [open] sets display:flex */
+}
+dialog.modal-overlay[open]{display:flex;}
+dialog.modal-overlay::backdrop{background:rgba(0,0,0,.65);}
+.modal-box{
+  background:white;
+  padding:40px 36px;
+  max-width:520px;
+  width:100%;
+  border-radius:16px;
+  box-shadow:0 30px 60px rgba(0,0,0,.3);
+  text-align:center;
+  position:relative;
+  max-height:calc(100vh - 40px);
+  overflow-y:auto;
+  margin:auto;
+}
+.modal-icon{font-size:3.5rem;margin-bottom:16px}
+.modal-box h2{color:var(--navy);font-size:1.6rem;font-weight:800;margin-bottom:12px;}
+.modal-box p{color:#444;line-height:1.7;margin-bottom:24px;font-size:.97rem;}
+.download-btn{
+  display:inline-block;background:var(--navy);color:white;
+  padding:14px 32px;font-size:1rem;font-weight:700;border:none;
+  border-radius:10px;cursor:pointer;text-decoration:none;touch-action:manipulation;
+}
+.download-btn:hover{background:var(--blue)}
+.download-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+.modal-close{
+  position:sticky;
+  float:right;
+  top:0;
+  margin:-24px -16px 0 0;
+  background:none;
+  border:none;
+  font-size:1.4rem;
+  cursor:pointer;
+  color:#888;
+  line-height:1;
+  padding:4px 8px;
+  z-index:1;
+}
+.modal-close:hover{color:var(--navy)}
+.modal-close:focus{outline:3px solid var(--sky)}
+.modal-checklist{text-align:left;background:#f8faff;border-radius:10px;padding:16px 20px;margin-bottom:24px;}
+.modal-checklist li{list-style:none;padding:5px 0;font-size:.9rem;color:#333;}
+.modal-checklist li::before{content:'\2705 ';margin-right:4px}
+#instructionsModal .modal-box{text-align:left}
+#instructionsModal h2{text-align:center}
+.instr-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;font-size:.93rem;line-height:1.5;}
+.instr-icon{font-size:1.4rem;flex-shrink:0;margin-top:1px;}
+
+/* ── COMPLETION WARNING BANNER ────────────────────────────────────── */
+.completion-warning{
+  display:flex;gap:12px;align-items:flex-start;
+  background:#fef2f2;border:1px solid #fecaca;border-left:5px solid #dc2626;
+  border-radius:10px;padding:14px 16px;margin:6px 0 20px;
+  font-size:.92rem;line-height:1.55;color:#7f1d1d;text-align:left;
+}
+.completion-warning-icon{font-size:1.4rem;flex-shrink:0;line-height:1.2;}
+
+/* ── REFLECTION BLOCK ─────────────────────────────────────────────── */
+.reflection-block{
+  background:#f0f5ff;border:1px solid var(--accent);border-left:5px solid var(--blue);
+  border-radius:10px;padding:16px 18px;margin-bottom:18px;text-align:left;
+}
+.reflection-label{
+  font-size:.78rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--blue);margin-bottom:8px;
+}
+.reflection-question{font-size:1rem;line-height:1.55;color:var(--navy);font-weight:600;margin:0;}
+.reflection-instructions{font-size:.9rem;color:#333;line-height:1.6;text-align:left;}
+.reflection-instructions ol{margin:10px 0 0;padding-left:22px;}
+.reflection-instructions li{margin-bottom:8px;}
+.reflection-note{
+  margin-top:14px;background:#fffbeb;border:1px solid #fcd34d;
+  border-radius:8px;padding:10px 14px;font-size:.86rem;color:#92400e;font-weight:600;
+}
+.completion-divider{height:1px;background:rgba(19,41,75,.12);margin:24px 0 4px;}
+.reset-btn{
+  display:block;width:calc(100% - 28px);margin:10px 14px 0;padding:10px 0;
+  background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5;border-radius:8px;
+  font-size:.85rem;font-weight:600;cursor:pointer;transition:background .15s;touch-action:manipulation;
+}
+.reset-btn:hover{background:#fecaca;}
+.reset-btn:focus{outline:3px solid var(--sky);}
+.confirm-btn-row{display:flex;gap:10px;justify-content:center;margin-top:18px;}
+.confirm-yes{background:#dc2626;color:white;border:none;padding:11px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.95rem;}
+.confirm-yes:hover{background:#b91c1c;}
+.confirm-no{background:#e5e7eb;color:#333;border:none;padding:11px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.95rem;}
+.confirm-no:hover{background:#d1d5db;}
+
+/* Rush guard */
+#rushModal .modal-box{max-width:480px;}
+.activity-locked-overlay{
+  position:absolute;inset:0;background:rgba(255,255,255,.88);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;z-index:100;border-radius:12px;padding:30px;text-align:center;
+}
+.activity-locked-overlay h3{color:#dc2626;font-size:1.1rem;margin:0;}
+.activity-locked-overlay p{font-size:.9rem;color:#555;margin:0;line-height:1.5;}
+.lock-countdown{font-size:2rem;font-weight:800;color:#dc2626;}
+
+#aria-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+
+@media(max-width:640px){
+  #sidebar{width:260px;min-width:260px}
+  .cover-title{font-size:1.5rem}
+  .seq-layout{grid-template-columns:1fr}
+  .interaction-wrapper{padding:20px 16px 40px}
+  #cover-page{padding:16px 16px 40px}
+  .flip-card-inner{height:240px;}
+}
+</style>
+</head>
+<body>
+
+<div id="aria-live" aria-live="polite" aria-atomic="true"></div>
+
+<!-- INSTRUCTIONS MODAL -->
+<dialog class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+  <div class="modal-box">
+    <h2 id="instrTitle">How to Use This Module</h2><br>
+    <div class="instr-row"><span class="instr-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Click or tap to interact. Drag and drop cards where required. Press Continue to advance.</div></div>
+    <div class="instr-row"><span class="instr-icon">⌨️</span><div><strong>Keyboard:</strong> Use <kbd>Tab</kbd> to move, <kbd>Enter</kbd> or <kbd>Space</kbd> to select. Arrow keys navigate flip cards.</div></div>
+    <div class="instr-row"><span class="instr-icon">🔒</span><div><strong>Gated Progress:</strong> Each activity must be completed correctly before the next unlocks. Your progress saves automatically.</div></div>
+    <div class="instr-row"><span class="instr-icon">⚠️</span><div><strong>Rush Guard:</strong> Dragging cards rapidly without reading them may trigger warnings and temporary locks.</div></div><br>
+    <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
+  </div>
+</dialog>
+
+<!-- RESET MODAL -->
+<dialog class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <h2 id="resetTitle">Reset All Progress?</h2>
+    <p>This will <strong>erase all completed activities</strong> and re-lock everything except Activity 1. This cannot be undone.</p>
+    <div class="confirm-btn-row">
+      <button class="confirm-no" id="resetCancelBtn">Cancel</button>
+      <button class="confirm-yes" id="resetConfirmBtn">Yes, Reset Everything</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- COMPLETION MODAL -->
+<dialog class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
+  <div class="modal-box" style="max-width:600px;text-align:left;">
+    <button class="modal-close" id="closeCompletion" aria-label="Close">&#x2715;</button>
+
+    <!-- Not-done-yet warning -->
+    <div class="completion-warning" role="alert">
+      <span class="completion-warning-icon">&#x26A0;&#xFE0F;</span>
+      <div><strong>You&#x2019;re not done yet!</strong> Finishing the activities is only
+      part of this assignment. To receive credit, you must still answer the
+      reflection question below in the Canvas text box.</div>
+    </div>
+
+    <!-- Icon + title -->
+    <div class="modal-icon" style="text-align:center;">&#x1F48A;</div>
+    <h2 id="complTitle" style="text-align:center;">
+      Activities Complete &#x2014; One Step Left
+    </h2>
+    <p style="text-align:center;">
+      You&#x2019;ve mastered the core principles of pharmacology &#x2014; from how drugs enter
+      and move through the body, to how their effects are measured, compared, and combined.
+      Complete the reflection below to finish the assignment.
+    </p>
+
+    <!-- Randomly populated reflection question (filled by JS) -->
+    <div class="reflection-block">
+      <div class="reflection-label">&#x1F4DD; Your Reflection Question</div>
+      <p class="reflection-question" id="reflectionQuestion">&nbsp;</p>
+    </div>
+
+    <!-- Assignment directions -->
+    <div class="reflection-instructions">
+      <strong>To complete this assignment:</strong>
+      <ol>
+        <li><strong>Copy and paste the question above</strong> into the
+            Canvas text box below this activity.</li>
+        <li>Answer the question in your <strong>own words</strong> &#x2014;
+            a minimum of <strong>one paragraph of at least five
+            sentences</strong>.</li>
+        <li><strong>Do not use AI</strong> to write or generate any part
+            of your answer. The reflection must be entirely your own
+            thinking.</li>
+      </ol>
+      <p class="reflection-note">
+        &#x2B07; Scroll down to the Canvas text box beneath this activity
+        to submit your written response.
+      </p>
+    </div>
+
+    <!-- Divider -->
+    <div class="completion-divider"></div>
+
+    <!-- Study guide download -->
+    <div style="text-align:center;margin-top:18px;">
+      <button class="download-btn" id="downloadGuideBtn">
+        &#x2B07; Download Study Notes
+      </button>
+      <p style="font-size:.82rem;color:#666;margin-top:8px;">
+        Optional: keep these study notes for quiz review.
+      </p>
+    </div>
+
+  </div>
+</dialog>
+
+<!-- RUSH GUARD MODAL -->
+<dialog class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
+  <div class="modal-box" style="border-top:5px solid #f59e0b;">
+    <div class="modal-icon" id="rushIcon">⚠️</div>
+    <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
+    <p id="rushMsg"></p>
+    <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
+    <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
+    <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
+  </div>
+</dialog>
+
+<!-- APP SHELL -->
+<div id="app-wrapper">
+  <aside id="sidebar" aria-label="Activity navigation">
+    <div class="sidebar-header">
+      Chapter 4
+      <small>Pharmacology</small>
+    </div>
+    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="5" id="overallProgressBar">
+      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
+    </div>
+    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
+    <div class="sidebar-footer" id="sidebar-footer-wrap">
+      <span id="sidebar-footer">0 of 5 activities complete</span>
+      <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">&#x21BA; Reset Progress</button>
+    </div>
+  </aside>
+
+  <main id="main-content">
+    <div class="top-bar">
+      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
+      <span class="top-bar-title" id="topBarTitle">Chapter 4 – Pharmacology</span>
+      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="img"></div>
+      <span class="step-label" id="stepLabel"></span>
+      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
+    </div>
+    <div class="content-scroll" id="content-area" tabindex="-1"></div>
+  </main>
+</div>
+
+<script>
+/* ==========================================================
+   RUSH GUARD  (standard escalating-timeout model)
+   A rush event = 2 wrong answers within a 5-second window.
+   Each step: dismissable warning -> rush again -> timed lockout.
+   Lockout durations escalate: 60s -> 3 min -> 4 min -> 5 min -> ...
+   (+1 minute per lockout). No permanent lock; no password required.
+========================================================== */
+const rushGuard = (() => {
+  const WINDOW_MS = 5000;
+  const THRESHOLD = 2;
+
+  let wrongTimestamps = [];
+  let strikes         = 0;
+  let lockCount       = 0;
+  let locked          = false;
+  let cooldownTimer   = null;
+  let currentWrapper  = null;
+  let flipRushCount   = 0;
+  let flipStrikes     = 0;
+
+  const $modal     = () => document.getElementById('rushModal');
+  const $icon      = () => document.getElementById('rushIcon');
+  const $title     = () => document.getElementById('rushTitle');
+  const $msg       = () => document.getElementById('rushMsg');
+  const $detail    = () => document.getElementById('rushDetail');
+  const $countdown = () => document.getElementById('rushCountdown');
+  const $dismiss   = () => document.getElementById('rushDismissBtn');
+
+  function durFor(k){ return k <= 1 ? 60 : 180 + (k - 2) * 60; }
+  function fmtLong(secs){
+    if(secs < 60) return secs + ' seconds';
+    const m = Math.round(secs / 60);
+    return m + ' minute' + (m !== 1 ? 's' : '');
+  }
+  function fmtAdj(secs){
+    return secs < 60 ? secs + '-Second' : Math.round(secs / 60) + '-Minute';
+  }
+  function fmtClock(secs){
+    if(secs < 60) return secs + 's';
+    const m = Math.floor(secs / 60), s = secs % 60;
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  function setModal(iconTxt,titleTxt,titleColor,borderColor,msgTxt,detailHTML,cdVisible,btnVisible,btnTxt){
+    const m=$modal();
+    m.querySelector('.modal-box').style.borderTopColor=borderColor;
+    $icon().textContent=iconTxt; $title().textContent=titleTxt; $title().style.color=titleColor;
+    $msg().textContent=msgTxt; $detail().innerHTML=detailHTML;
+    $countdown().style.display=cdVisible?'block':'none';
+    $dismiss().style.display=btnVisible?'':'none';
+    if(btnVisible) $dismiss().textContent=btnTxt;
+    m.classList.add('visible');
+    if(typeof m.showModal==='function'&&!m.open){try{m.showModal();}catch(e){}}
+    if(btnVisible) setTimeout(()=>$dismiss().focus(),50);
+  }
+
+  function showWarning(){
+    const nextLock = durFor(lockCount + 1);
+    if(lockCount===0){
+      setModal('\u26A0\uFE0F','Slow Down!','#92400e','#f59e0b',
+        "You're answering too quickly without reading carefully. Take a moment to think before selecting.",
+        "Tip: Read each option fully before choosing. Think about what each term or concept means.<br><br>One more rush and this activity locks for <strong>60 seconds</strong>.",
+        false,true,"I'll Read More Carefully");
+    } else if(lockCount===1){
+      setModal('\uD83D\uDEA8','Final Warning','#dc2626','#dc2626',
+        "You're rushing again after already receiving a timeout.",
+        "One more rush and this activity locks for <strong>3 minutes</strong>.",
+        false,true,"I Understand \u2014 I'll Think First");
+    } else {
+      setModal('\uD83D\uDEA8','Final Warning','#7f1d1d','#7f1d1d',
+        "You're rushing again after multiple timeouts.",
+        "One more rush and this activity locks for <strong>"+fmtLong(nextLock)+"</strong>.<br><br>\u26A0\uFE0F Each additional rush adds <strong>another minute</strong> to the next lockout.",
+        false,true,"I Understand \u2014 I'll Slow Down");
+    }
+  }
+
+  function showFlipWarning(){
+    const nextLock = durFor(lockCount + 1);
+    if(lockCount===0){
+      setModal('\u26A0\uFE0F','Slow Down \u2014 Read the Cards!','#92400e','#f59e0b',
+        "You're moving through the vocabulary cards too quickly to actually read them.",
+        "Tip: Flip each card and spend at least <strong>6 seconds reading the definition</strong> before moving on. These terms appear directly on the quiz.<br><br>One more rush and this activity locks for <strong>60 seconds</strong>.",
+        false,true,"I'll Read Each Definition Carefully");
+    } else if(lockCount===1){
+      setModal('\uD83D\uDEA8','Final Warning \u2014 Read the Definitions!','#dc2626','#dc2626',
+        "You're still moving through cards without reading them.",
+        "One more rush and this activity locks for <strong>3 minutes</strong>.",
+        false,true,"I Understand \u2014 I'll Take My Time");
+    } else {
+      setModal('\uD83D\uDEA8','Final Warning','#7f1d1d','#7f1d1d',
+        "You're rushing through cards after multiple timeouts.",
+        "One more rush and this activity locks for <strong>"+fmtLong(nextLock)+"</strong>.<br><br>\u26A0\uFE0F Each additional rush adds <strong>another minute</strong>.",
+        false,true,"I Understand \u2014 I'll Slow Down");
+    }
+  }
+
+  function showTimeout(){
+    lockCount++;
+    const dur = durFor(lockCount);
+    setModal('\uD83D\uDD12','Activity Locked \u2013 '+fmtAdj(dur)+' Timeout','#dc2626','#dc2626',
+      "You rushed again immediately after a warning. This activity is locked for "+fmtLong(dur)+".",
+      "Use this time to carefully study the content before continuing.<br><br>\u26A0\uFE0F Each additional rush adds <strong>another minute</strong> to the next lockout.",
+      true,false,'');
+    startCooldown(dur);
+  }
+
+  function startCooldown(durSecs){
+    locked=true;
+    let secs=durSecs;
+    $countdown().textContent=fmtClock(secs);
+    if(currentWrapper){
+      currentWrapper.style.position='relative';
+      let ov=document.getElementById('rush-lock-overlay');
+      if(!ov){ ov=document.createElement('div'); ov.className='activity-locked-overlay'; ov.id='rush-lock-overlay'; currentWrapper.appendChild(ov); }
+      ov.innerHTML='<h3>\uD83D\uDD12 Activity Locked</h3><p>Take '+fmtLong(durSecs)+' to study the content.</p><div class="lock-countdown" id="lock-secs">'+fmtClock(secs)+'</div><p style="font-size:.82rem;">Activity will reshuffle when the timer ends.</p>';
+    }
+    if(cooldownTimer){ clearInterval(cooldownTimer); }
+    cooldownTimer=setInterval(()=>{
+      secs--;
+      const cd=$countdown(), ls=document.getElementById('lock-secs');
+      if(cd) cd.textContent=fmtClock(secs);
+      if(ls) ls.textContent=fmtClock(secs);
+      if(secs<=0){
+        clearInterval(cooldownTimer); cooldownTimer=null;
+        locked=false; strikes=0; wrongTimestamps=[];
+        const _rm=document.getElementById('rushModal');
+        _rm.classList.remove('visible');
+        if(typeof _rm.close==='function'&&_rm.open)_rm.close();
+        const ov=document.getElementById('rush-lock-overlay');
+        if(ov) ov.remove();
+        if(typeof currentView==='number') showActivity(currentView);
+      }
+    },1000);
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    const _rushDlg=document.getElementById('rushModal');
+    _rushDlg.addEventListener('cancel',e=>{
+      const btn=document.getElementById('rushDismissBtn');
+      if(btn&&btn.style.display==='none')e.preventDefault();
+    });
+    document.getElementById('rushDismissBtn').addEventListener('click',()=>{
+      _rushDlg.classList.remove('visible');
+      if(typeof _rushDlg.close==='function'&&_rushDlg.open)_rushDlg.close();
+      wrongTimestamps=[];
+      flipRushCount=0;
+    });
+  });
+
+  return {
+    reset(){
+      wrongTimestamps=[]; strikes=0; locked=false;
+      flipRushCount=0; flipStrikes=0;
+      if(cooldownTimer){clearInterval(cooldownTimer);cooldownTimer=null;}
+      const ov=document.getElementById('rush-lock-overlay');
+      if(ov) ov.remove();
+    },
+    hardReset(){
+      this.reset();
+      lockCount=0;
+    },
+    clearTimestamps(){
+      wrongTimestamps=[];
+    },
+    recordWrong(wrapper){
+      if(locked) return;
+      currentWrapper=wrapper;
+      const now=Date.now();
+      wrongTimestamps.push(now);
+      wrongTimestamps=wrongTimestamps.filter(t=>now-t<WINDOW_MS);
+      if(wrongTimestamps.length<THRESHOLD) return;
+      wrongTimestamps=[]; strikes++;
+      if(strikes===1){ showWarning(); }
+      else { strikes=0; showTimeout(); }
+    },
+    recordFlipRush(wrapper){
+      if(locked) return;
+      currentWrapper=wrapper;
+      flipRushCount++;
+      if(flipRushCount<3) return;
+      flipRushCount=0; flipStrikes++;
+      if(flipStrikes===1){ showFlipWarning(); }
+      else { flipStrikes=0; showTimeout(); }
+    },
+    isLocked(){ return locked; }
+  };
+})();
+
+/* ==========================================================
+   UTILITY
+========================================================== */
+function announce(msg){
+  const el=document.getElementById('aria-live');
+  el.textContent='';
+  setTimeout(()=>el.textContent=msg,60);
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+function qs(sel,root=document){return root.querySelector(sel)}
+function qsa(sel,root=document){return [...root.querySelectorAll(sel)]}
+
+function makeDraggable(cardEl,onDropFn){
+  cardEl.addEventListener('dragstart',e=>{
+    e.dataTransfer.setData('text/plain',cardEl.id);
+    cardEl.classList.add('dragging');
+  });
+  cardEl.addEventListener('dragend',()=>cardEl.classList.remove('dragging'));
+}
+
+function showPartB(partAEl,partBEl,initFn){
+  partAEl.classList.add('part-fade-out');
+  setTimeout(()=>{
+    partAEl.style.display='none';
+    partBEl.style.display='block';
+    partBEl.classList.add('part-fade-in');
+    if(initFn) initFn();
+  },360);
+}
+
+/* ==========================================================
+   ACTIVITIES DEFINITION
+========================================================== */
+const ACTIVITIES=[
+  {id:'act1',title:'Activity 1',subtitle:'Core Pharmacology Vocabulary',type:'FLIPCARD',locked:false,done:false},
+  {id:'act2',title:'Activity 2',subtitle:'Routes of Drug Administration',type:'CARDSORT',locked:true,done:false},
+  {id:'act3',title:'Activity 3',subtitle:'The Pharmacokinetics Pathway (ADME)',type:'SEQUENCE',locked:true,done:false},
+  {id:'act4',title:'Activity 4',subtitle:'Route Selection & Drug Interactions',type:'BRANCHING',locked:true,done:false},
+  {id:'act5',title:'Activity 5',subtitle:'Pharmacology Misconception Mastery Check',type:'TRUFALSE',locked:true,done:false}
+];
+
+let currentView='cover';
+let savedReflectionQuestion='';
+
+/* ==========================================================
+   STORAGE
+========================================================== */
+const STORAGE_KEY='ch4-shell-v1';
+const partADone=new Array(5).fill(false);
+
+function saveProgress(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({
+    currentView,
+    done:ACTIVITIES.map(a=>a.done),
+    locked:ACTIVITIES.map(a=>a.locked),
+    partADone:[...partADone],
+    reflectionQ:savedReflectionQuestion
+  }));
+}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(!d||!Array.isArray(d.done)||d.done.length!==ACTIVITIES.length) return;
+    currentView=d.currentView!==undefined?d.currentView:'cover';
+    ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
+    ACTIVITIES[0].locked=false;
+    if(Array.isArray(d.partADone)) d.partADone.forEach((v,i)=>{if(i<partADone.length) partADone[i]=!!v;});
+    savedReflectionQuestion=d.reflectionQ||'';
+    announce('Your previous progress has been restored.');
+  }catch(e){}
+}
+function doneCount(){return ACTIVITIES.filter(a=>a.done).length;}
+
+/* ==========================================================
+   SIDEBAR
+========================================================== */
+function renderSidebar(){
+  const nav=document.getElementById('nav-list');
+  nav.innerHTML='';
+  const done=doneCount();
+  const pct=Math.round((done/ACTIVITIES.length)*100);
+  document.getElementById('overallProgressFill').style.width=pct+'%';
+  document.getElementById('overallProgressBar').setAttribute('aria-valuenow',done);
+  const sfEl=document.getElementById('sidebar-footer'); if(sfEl) sfEl.textContent=`${done} of ${ACTIVITIES.length} activities complete`;
+  renderStepDots();
+
+  const cover=document.createElement('div');
+  cover.className='nav-item'+(currentView==='cover'?' active':'');
+  cover.tabIndex=0; cover.setAttribute('role','button'); cover.setAttribute('aria-label','Cover page');
+  cover.innerHTML=`<span class="nav-title">📋 Cover Page</span>`;
+  cover.onclick=()=>showCover();
+  cover.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cover.click();}};
+  nav.appendChild(cover);
+
+  ACTIVITIES.forEach((a,i)=>{
+    const item=document.createElement('div');
+    const isActive=currentView===i;
+    item.className=`nav-item${isActive?' active':''}${a.locked?' locked':''}${a.done?' done':''}`;
+    item.tabIndex=a.locked?-1:0;
+    item.setAttribute('role','button');
+    item.setAttribute('aria-disabled',a.locked?'true':'false');
+    item.setAttribute('aria-label',`${a.title}: ${a.subtitle}${a.done?' – Completed':a.locked?' – Locked':''}`);
+    item.innerHTML=`<span class="nav-title">${a.title}<br><small style="font-weight:400;font-size:.78rem;color:#555">${a.subtitle}</small></span>${a.locked?'<span class="lock-icon" aria-hidden="true">🔒</span>':''}`;
+    item.onclick=()=>{if(!a.locked){showActivity(i);}else{announce('This activity is locked. Complete the previous activity first.');}};
+    item.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();item.click();}};
+    nav.appendChild(item);
+  });
+
+  // Review tab — only visible after all activities complete
+  if(done===ACTIVITIES.length){
+    const review=document.createElement('div');
+    const isActive=currentView==='review';
+    review.className='nav-item review-item'+(isActive?' active':'');
+    review.tabIndex=0;review.setAttribute('role','button');review.setAttribute('aria-label','Review key concepts');
+    review.innerHTML=`<span class="nav-title">📖 Review &amp; Study Guide</span>`;
+    review.onclick=()=>showReview();
+    review.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();review.click();}};
+    nav.appendChild(review);
+  }
+}
+
+/* ==========================================================
+   STEP DOTS
+========================================================== */
+function renderStepDots(){
+  const dots=document.getElementById('stepDots');
+  dots.innerHTML='';
+  ACTIVITIES.forEach((a,i)=>{
+    const dot=document.createElement('div');
+    dot.className='step-dot';
+    if(a.done)               dot.classList.add('done');
+    else if(currentView===i) dot.classList.add('active');
+    else if(a.locked)        dot.classList.add('locked');
+    dot.title=`${a.title}: ${a.done?'Complete':a.locked?'Locked':'In Progress'}`;
+    dot.setAttribute('aria-label',dot.title);
+    dots.appendChild(dot);
+  });
+  document.getElementById('stepLabel').textContent=`${doneCount()}/${ACTIVITIES.length}`;
+}
+
+/* sidebar toggle */
+document.getElementById('toggleBtn').addEventListener('click',()=>{
+  const collapsed=document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('toggleBtn').setAttribute('aria-expanded',!collapsed);
+  announce(collapsed?'Navigation hidden':'Navigation shown');
+});
+
+/* ==========================================================
+   COVER PAGE
+========================================================== */
+const actDescriptions=[
+  {num:1,name:'Core Pharmacology Vocabulary',desc:'Flip through key terms: pharmacokinetics, pharmacodynamics, ADME, bioavailability, half-life, efficacy, potency, therapeutic index, synergism, and antagonism.',tag:'Flip Card Carousel · Remember'},
+  {num:2,name:'Routes of Drug Administration',desc:'Sort drug administration statements and examples into three route categories based on characteristics, speed, and mechanism.',tag:'Card Sort (3 Buckets) · Understand'},
+  {num:3,name:'The Pharmacokinetics Pathway (ADME)',desc:'Drag the steps of absorption, distribution, metabolism, and excretion into the correct sequence, including the role of the first-pass effect.',tag:'Process Ordering · Apply'},
+  {num:4,name:'Route Selection & Drug Interactions',desc:'Work through realistic pharmacology scenarios: choose the best route of administration and predict synergistic or antagonistic drug interaction outcomes.',tag:'Branching Scenario · Analyze'},
+  {num:5,name:'Pharmacology Misconception Mastery Check',desc:'Evaluate common true/false statements about pharmacology — including tricky misconceptions directly drawn from the quiz. Justify each answer.',tag:'True/False Quiz · Evaluate'}
+];
+
+function showCover(){
+  currentView='cover';
+  document.getElementById('topBarTitle').textContent='Chapter 4 – Pharmacology';
+  renderSidebar();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  const pg=document.createElement('div');
+  pg.id='cover-page';
+  pg.innerHTML=`
+    <div class="cover-badge">PSYC 333 · Chapter 4</div>
+    <h1 class="cover-title">Pharmacology</h1>
+    <p class="cover-subtitle">This chapter explores the fundamental principles of how drugs enter, move through, and are eliminated from the body — and how their effects are measured, compared, and combined. Complete all 5 activities to master the concepts tested on the Chapter 4 quiz.</p>
+    <div class="cover-instructions">
+      <strong>How to use this module:</strong>
+      Complete each activity in order. Every activity must be finished correctly before the next one unlocks. Your progress is saved automatically so you can return where you left off.
+    </div>
+    <div class="cover-cards">${actDescriptions.map(a=>`
+      <div class="cover-card">
+        <div class="cover-card-num">${a.num}</div>
+        <div class="cover-card-body">
+          <h3>${a.name}</h3>
+          <p>${a.desc}</p>
+          <span class="cover-tag">${a.tag}</span>
+        </div>
+      </div>`).join('')}
+    </div>
+    <button class="get-started-btn" id="coverStartBtn">▶ Begin Activity 1</button>
+  `;
+  area.appendChild(pg);
+  qs('#coverStartBtn').addEventListener('click',()=>showActivity(0));
+  saveProgress();
+}
+
+/* ==========================================================
+   SHOW ACTIVITY
+========================================================== */
+function showActivity(index){
+  rushGuard.reset();
+  currentView=index;
+  const a=ACTIVITIES[index];
+  document.getElementById('topBarTitle').textContent=`${a.title} – ${a.subtitle}`;
+  renderSidebar();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  area.scrollTop=0;
+
+  if(a.locked){
+    area.innerHTML=`<div class="interaction-wrapper"><div style="text-align:center;padding:60px 20px;color:#666;"><div style="font-size:3rem;">🔒</div><p style="margin-top:16px;font-size:1rem;">This activity is locked. Complete the previous activity first.</p></div></div>`;
+    return;
+  }
+
+  const fns=[renderAct1,renderAct2,renderAct3,renderAct4,renderAct5];
+  fns[index](area);
+}
+
+function completeActivity(index){
+  ACTIVITIES[index].done=true;
+  if(index+1<ACTIVITIES.length) ACTIVITIES[index+1].locked=false;
+  saveProgress();
+  renderSidebar();
+  if(index===ACTIVITIES.length-1){
+    savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+    saveProgress();
+    setTimeout(()=>showCompletionModal(),800);
+  }
+}
+
+/* ==========================================================
+   ACTIVITY 1 – FLIP CARD CAROUSEL (Remember)
+   Core pharmacology vocabulary
+========================================================== */
+function renderAct1(area){
+  const cards=[
+    {term:'Pharmacokinetics',def:'The study of "what the body does to the drug" — covers Absorption, Distribution, Metabolism, and Excretion (ADME).'},
+    {term:'Pharmacodynamics',def:'The study of the biochemical and physiological effects of drugs and their mechanisms of action — what the drug does to the body.'},
+    {term:'Bioavailability',def:'The portion of the original drug dose that reaches its site of action. Determined by absorption and distribution together.'},
+    {term:'Half-Life',def:'The time required for the amount of drug in the body to be reduced by half. Varies by drug and individual.'},
+    {term:'First-Pass Effect',def:'Metabolism of an orally taken drug by the GI tract and liver before it reaches systemic circulation, reducing the drug\'s bioavailability.'},
+    {term:'Zero-Order Kinetics',def:'A rate of drug elimination that is independent of its concentration in the blood. Alcohol is the classic example.'},
+    {term:'First-Order Kinetics',def:'A rate of elimination where the amount metabolized per unit time depends on how much drug is in the blood. Most drugs follow this law.'},
+    {term:'Efficacy',def:'The peak or maximum level of drug effect — the height of the plateau on a dose-effect curve.'},
+    {term:'Drug Potency',def:'The minimum dose of a drug required to yield its efficacy. A more potent drug requires a lower dose to achieve the same peak effect.'},
+    {term:'Slope (Dose-Effect Curve)',def:'The steepness of the dose-effect curve. A steeper slope means a larger change in effect for a given dose change — often linked to a smaller therapeutic index.'},
+    {term:'Effective Dose (ED)',def:'The dose at which a given percentage of individuals show a particular effect. ED50 = dose producing effect in 50% of subjects.'},
+    {term:'Lethal Dose (LD)',def:'The dose at which a given percentage of nonhuman subjects die within a specified time. LD50 is the standard reference.'},
+    {term:'Therapeutic Index',def:'A measure of a drug\'s safety: LD50 ÷ ED50. A higher therapeutic index means a wider margin between effective and lethal doses.'},
+    {term:'Synergism (Potentiation)',def:'An enhancing drug interaction — the combined effect of two drugs is greater than either drug alone. Represented by a left-shift in the dose-effect curve.'},
+    {term:'Antagonism',def:'A diminishing drug interaction — the presence of one drug reduces the effect of another. Represented by a right-shift in the dose-effect curve.'}
+  ];
+  shuffle(cards);
+
+  const visited=new Array(cards.length).fill(false);
+  let visitedCount=0;
+  let currentIdx=0;
+  let isFlipped=false;
+
+  // ── Flip-card rush guard ───────────────────────────────
+  // Tracks time spent on each card. If a student navigates
+  // away from a card (or flips without reading) in < 10s,
+  // it counts as a "rush". Uses the same rushGuard cycle.
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Core Pharmacology Vocabulary</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:18px;">
+      <strong>Activity 1 – Flip Card Carousel</strong> (Bloom's: Remember)<br>
+      Study each term and definition carefully before moving on. Read both the term and the full definition, then navigate through all ${cards.length} cards to unlock Activity 2.
+    </div>
+    <div class="flip-deck">
+      <div class="flip-progress-row">
+        <span class="ix-counter" style="margin:0;">Viewed: <span id="a1-viewed">0</span>/${cards.length}</span>
+        <div class="flip-progress-bar"><div class="flip-progress-fill" id="a1-prog-fill" style="width:0%"></div></div>
+      </div>
+      <div class="flip-counter" id="a1-counter" aria-live="polite">Card 1 of ${cards.length}</div>
+      <div class="flip-card-wrap" id="a1-card" tabindex="0" role="button"
+           aria-label="Flip card. Press Enter to flip." aria-roledescription="flip card">
+        <div class="flip-card-inner">
+          <div class="flip-face flip-front">
+            <div class="flip-label">Term</div>
+            <div class="flip-term" id="a1-term"></div>
+            <div class="flip-tap-hint">Click, tap, or press Enter to flip</div>
+          </div>
+          <div class="flip-face flip-back">
+            <div class="flip-label" style="color:var(--sky);">Definition</div>
+            <div class="flip-def" id="a1-def"></div>
+            <div class="flip-tap-hint" style="color:#888;">Click or press Enter to flip back</div>
+          </div>
+        </div>
+      </div>
+      <div class="viewed-badge" id="a1-badge"><span style="width:7px;height:7px;border-radius:50%;background:var(--sky);display:inline-block;"></span><span id="a1-badge-text">Not yet viewed</span></div>
+      <div class="flip-nav">
+        <button class="flip-nav-btn" id="a1-prev" aria-label="Previous card">⟨ Previous</button>
+        <button class="flip-nav-btn" id="a1-next" aria-label="Next card">Next ⟩</button>
+      </div>
+    </div>
+    <button id="act1-continue" class="ix-continue-btn" disabled>Continue to Activity 2</button>
+  `;
+  area.appendChild(w);
+
+  function updateCard(){
+    const c=cards[currentIdx];
+    qs('#a1-term',w).textContent=c.term;
+    qs('#a1-def',w).textContent=c.def;
+    qs('#a1-counter',w).textContent=`Card ${currentIdx+1} of ${cards.length}`;
+    qs('#a1-card',w).classList.remove('flipped');
+    qs('#a1-prev',w).disabled=currentIdx===0;
+    qs('#a1-next',w).disabled=currentIdx===cards.length-1;
+    isFlipped=false;
+    updateBadge();
+  }
+
+  function updateBadge(){
+    const done=visited[currentIdx];
+    const badge=qs('#a1-badge',w);
+    const dot=badge.querySelector('span');
+    qs('#a1-badge-text',w).textContent=done?'Viewed ✓':'Not yet viewed';
+    badge.style.background=done?'#e6f9ee':'#f0f7ff';
+    badge.style.borderColor=done?'#a3e4bc':var_accent();
+    dot.style.background=done?'#34c759':var_sky();
+  }
+  function var_accent(){return '#D3E3FF';}
+  function var_sky(){return '#00A3E0';}
+
+  function markViewed(){
+    if(!visited[currentIdx]){
+      visited[currentIdx]=true;
+      visitedCount++;
+      const pct=Math.round(visitedCount/cards.length*100);
+      qs('#a1-viewed',w).textContent=visitedCount;
+      qs('#a1-prog-fill',w).style.width=pct+'%';
+      updateBadge();
+      if(visitedCount===cards.length){
+        qs('#act1-continue',w).disabled=false;
+        announce('All cards viewed! Continue button is now available.');
+      }
+    }
+  }
+
+  function toggleFlip(){
+    const card=qs('#a1-card',w);
+    isFlipped=!isFlipped;
+    card.classList.toggle('flipped',isFlipped);
+    if(isFlipped){
+      markViewed();
+      announce('Definition: '+cards[currentIdx].def);
+    } else {
+      announce('Term: '+cards[currentIdx].term);
+    }
+  }
+
+  function navigateCard(dir){
+    const newIdx = currentIdx + dir;
+    if(newIdx < 0 || newIdx >= cards.length) return;
+    currentIdx = newIdx;
+    updateCard();
+    announce(`Card ${currentIdx+1} of ${cards.length}: ${cards[currentIdx].term}`);
+  }
+
+  qs('#a1-card',w).addEventListener('click',toggleFlip);
+  qs('#a1-card',w).addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleFlip();}
+    if(e.key==='ArrowRight'){e.preventDefault();navigateCard(1);}
+    if(e.key==='ArrowLeft'){e.preventDefault();navigateCard(-1);}
+  });
+  qs('#a1-prev',w).addEventListener('click',()=>navigateCard(-1));
+  qs('#a1-next',w).addEventListener('click',()=>navigateCard(1));
+
+  document.addEventListener('keydown',function arrowNav(e){
+    if(!document.contains(w)){document.removeEventListener('keydown',arrowNav);return;}
+    if(document.activeElement===qs('#a1-card',w)) return;
+    if(e.key==='ArrowRight') navigateCard(1);
+    else if(e.key==='ArrowLeft') navigateCard(-1);
+  });
+
+  qs('#act1-continue',w).addEventListener('click',()=>{completeActivity(0);showActivity(1);});
+  updateCard();
+}
+
+/* ==========================================================
+   ACTIVITY 2 – CARD SORT 3 BUCKETS (Understand)
+   Routes of drug administration sorted into 3 buckets
+========================================================== */
+function renderAct2(area){
+  const allCards=[
+    // Oral bucket
+    {id:'a2c0',text:'Safest, most convenient, most economical route',bucket:'oral'},
+    {id:'a2c1',text:'Drug absorbed primarily through the small intestine',bucket:'oral'},
+    {id:'a2c2',text:'Food in the stomach delays absorption and reduces maximum drug level',bucket:'oral'},
+    {id:'a2c3',text:'Stomach acids may break down some drugs before absorption',bucket:'oral'},
+    {id:'a2c4',text:'Drug passes through the liver before reaching the brain (first-pass effect)',bucket:'oral'},
+    // Injection bucket
+    {id:'a2c5',text:'Intravenous (IV): fastest absorption, effects can be immediate',bucket:'injection'},
+    {id:'a2c6',text:'Subcutaneous: slow, constant absorption rate just below the skin',bucket:'injection'},
+    {id:'a2c7',text:'Intramuscular: faster than subcutaneous when blood flow is good',bucket:'injection'},
+    {id:'a2c8',text:"Bypasses the body's natural barriers (skin, mucous membranes)",bucket:'injection'},
+    {id:'a2c9',text:'Risk of disease transmission if needles are shared (e.g., HIV)',bucket:'injection'},
+    // Other routes bucket
+    {id:'a2c10',text:'Inhalation: rapid absorption through the lungs',bucket:'other'},
+    {id:'a2c11',text:'Intranasal (sniffing): absorbed through nasal mucous membranes, requires fat and water solubility',bucket:'other'},
+    {id:'a2c12',text:'Sublingual: tablet placed under the tongue, faster than oral administration',bucket:'other'},
+    {id:'a2c13',text:'Transdermal: absorbed through the skin; works best with high cutaneous blood flow',bucket:'other'},
+    {id:'a2c14',text:'Nicotine patches and nitroglycerin patches are examples of this route',bucket:'other'}
+  ];
+  shuffle(allCards);
+
+  const wrongCounts={};
+  let correct=0;
+  const total=allCards.length;
+  let selectedCard=null;
+
+  const ROTS=[-2,1.5,-1,2,-1.5,1,-0.5,2.5,-1.8,1.2,-2.2,0.8,-1.3,2.1,-0.7];
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Routes of Drug Administration</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:12px;">
+      <strong>Activity 2 – Card Sort</strong> (Bloom's: Understand)<br>
+      Drag each card from the stack into the correct category below. Correctly placed cards stack in the column; wrong drops return the card to the pool.
+    </div>
+    <div class="ix-counter" id="a2-prog">Progress: 0/${total}</div>
+    <div id="a2-pool-label">Cards to Sort</div>
+    <div id="a2-pool-wrap"><div id="a2-pool"></div></div>
+    <div class="col-sort-grid">
+      <div class="col-sort-col">
+        <div class="col-sort-head">Oral Administration</div>
+        <div class="col-sort-zone" id="a2-oral" data-bucket="oral" tabindex="0" role="region" aria-label="Oral administration drop zone"></div>
+      </div>
+      <div class="col-sort-col">
+        <div class="col-sort-head">Injection Routes<br><small style="font-weight:400;">(Subcutaneous, Intramuscular, Intravenous)</small></div>
+        <div class="col-sort-zone" id="a2-injection" data-bucket="injection" tabindex="0" role="region" aria-label="Injection routes drop zone"></div>
+      </div>
+      <div class="col-sort-col">
+        <div class="col-sort-head">Other Routes<br><small style="font-weight:400;">(Inhalation, Intranasal, Sublingual, Transdermal)</small></div>
+        <div class="col-sort-zone" id="a2-other" data-bucket="other" tabindex="0" role="region" aria-label="Other routes drop zone"></div>
+      </div>
+    </div>
+    <div id="a2-feedback" class="ix-feedback"></div>
+    <button id="act2-continue" class="ix-continue-btn" disabled>Continue to Activity 3</button>
+  `;
+  area.appendChild(w);
+
+  const pool=qs('#a2-pool',w);
+
+  function updateProg(){qs('#a2-prog',w).textContent=`Progress: ${correct}/${total}`;}
+
+  function restackPool(){
+    const cards=[...pool.children];
+    cards.forEach((c,i)=>{
+      c.style.setProperty('--stack-i',i);
+      c.style.setProperty('--stack-rot',ROTS[i%ROTS.length]);
+      c.style.setProperty('--stack-z',i+1);
+    });
+  }
+
+  function dropCard(card,zone){
+    if(card.classList.contains('placed')) return;
+    if(card.dataset.bucket===zone.dataset.bucket){
+      // Correct — clone into zone, remove from pool
+      const placed=card.cloneNode(true);
+      placed.classList.add('placed');
+      placed.setAttribute('draggable','false');
+      placed.setAttribute('tabindex','-1');
+      zone.appendChild(placed);
+      zone.classList.add('correct-zone');
+      card.classList.add('placed');
+      card.remove();
+      correct++; updateProg();
+      restackPool();
+      const fb=qs('#a2-feedback',w);
+      fb.textContent='\u2705 Correct!'; fb.className='ix-feedback correct visible';
+      announce('Correct placement.');
+      if(correct===total){
+        qs('#act2-continue',w).disabled=false;
+        fb.textContent='\u2705 All routes sorted correctly! The route of administration strongly influences how quickly and completely a drug is absorbed.';
+        announce('Activity 2 complete.');
+      }
+    } else {
+      wrongCounts[card.id]=(wrongCounts[card.id]||0)+1;
+      const wc=wrongCounts[card.id];
+      const correctLabel={oral:'Oral Administration',injection:'Injection Routes',other:'Other Routes'}[card.dataset.bucket];
+      const fb=qs('#a2-feedback',w);
+      if(wc===1) fb.textContent='Not quite — think about what type of route this describes.';
+      else if(wc===2) fb.textContent='Hint: Oral = swallowed; Injection = needle into body; Other = inhalation, nasal, sublingual, or skin.';
+      else fb.textContent=`Answer: This card belongs in "${correctLabel}".`;
+      fb.className='ix-feedback incorrect visible';
+      // Shake the top card
+      const topCard=pool.lastElementChild;
+      if(topCard){ topCard.classList.add('shake'); setTimeout(()=>topCard.classList.remove('shake'),450); }
+      rushGuard.recordWrong(w);
+      announce('Incorrect. Try again.');
+    }
+    if(selectedCard===card){card.classList.remove('selected');selectedCard=null;}
+  }
+
+  // ── Touch/pointer drag for pool cards ──────────────────────────
+  let activeDrag=null;
+  function addTouchDrag(card){
+    card.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='mouse') return;
+      if(card.classList.contains('placed')||activeDrag) return;
+      e.preventDefault();
+      card.setPointerCapture(e.pointerId);
+      const rect=card.getBoundingClientRect();
+      const clone=card.cloneNode(true);
+      clone.style.cssText=`position:fixed;z-index:9999;opacity:.88;pointer-events:none;
+        width:${rect.width}px;left:${rect.left}px;top:${rect.top}px;margin:0;
+        transform:rotate(0deg) scale(1.03);
+        box-shadow:0 10px 24px rgba(0,0,0,.4);transition:none;`;
+      document.body.appendChild(clone);
+      card.style.opacity='0.3';
+      activeDrag={card,clone,startX:e.clientX,startY:e.clientY,origLeft:rect.left,origTop:rect.top};
+      qsa('.col-sort-zone',w).forEach(z=>z.style.borderStyle='dashed');
+    },{passive:false});
+
+    card.addEventListener('pointermove',e=>{
+      if(!activeDrag||activeDrag.card!==card) return;
+      e.preventDefault();
+      const {startX,startY,origLeft,origTop}=activeDrag;
+      activeDrag.clone.style.left=(origLeft+e.clientX-startX)+'px';
+      activeDrag.clone.style.top=(origTop+e.clientY-startY)+'px';
+    },{passive:false});
+
+    card.addEventListener('pointerup',e=>{
+      if(!activeDrag||activeDrag.card!==card) return;
+      const {card:c,clone}=activeDrag;
+      const cx=parseFloat(clone.style.left)+parseFloat(clone.style.width)/2;
+      const cy=parseFloat(clone.style.top)+parseFloat(clone.style.width)/2;
+      clone.remove();
+      c.style.opacity='';
+      activeDrag=null;
+      qsa('.col-sort-zone',w).forEach(z=>z.style.borderStyle='');
+      const el=document.elementFromPoint(e.clientX,e.clientY);
+      if(el){ const zone=el.closest('.col-sort-zone'); if(zone) dropCard(c,zone); }
+    });
+  }
+
+  // ── Build pool cards ────────────────────────────────────────────
+  allCards.forEach((item,i)=>{
+    const card=document.createElement('div');
+    card.className='ix-card';
+    card.textContent=item.text;
+    card.setAttribute('draggable','true');
+    card.setAttribute('tabindex','0');
+    card.dataset.bucket=item.bucket;
+    card.id=item.id;
+    card.style.setProperty('--stack-i',i);
+    card.style.setProperty('--stack-rot',ROTS[i%ROTS.length]);
+    card.style.setProperty('--stack-z',i+1);
+    pool.appendChild(card);
+
+    // Mouse drag
+    card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',card.id);card.classList.add('dragging');});
+    card.addEventListener('dragend',()=>card.classList.remove('dragging'));
+
+    // Touch drag
+    addTouchDrag(card);
+
+    // Keyboard select
+    card.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();
+        if(selectedCard===card){selectedCard=null;card.classList.remove('selected');announce('Card deselected.');}
+        else{if(selectedCard)selectedCard.classList.remove('selected');selectedCard=card;card.classList.add('selected');announce(`${item.text} selected. Tab to a category and press Enter.`);}
+      }
+    });
+  });
+
+  // ── Wire drop zones ─────────────────────────────────────────────
+  ['#a2-oral','#a2-injection','#a2-other'].forEach(sel=>{
+    const zone=qs(sel,w);
+    zone.addEventListener('dragover',e=>e.preventDefault());
+    zone.addEventListener('dragenter',()=>zone.classList.add('drag-over'));
+    zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+    zone.addEventListener('drop',e=>{
+      e.preventDefault(); zone.classList.remove('drag-over');
+      const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+      if(card) dropCard(card,zone);
+    });
+    zone.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&selectedCard){
+        e.preventDefault(); dropCard(selectedCard,zone);
+        if(selectedCard)selectedCard.classList.remove('selected'); selectedCard=null;
+      }
+    });
+  });
+
+  qs('#act2-continue',w).addEventListener('click',()=>{completeActivity(1);showActivity(2);});
+}
+
+/* ==========================================================
+   ACTIVITY 3 – SEQUENCE ORDERING (Apply)
+   ADME pharmacokinetics pathway
+========================================================== */
+function renderAct3(area){
+  const steps=[
+    {text:'A specific dose (mg/kg of body weight) is determined',step:'1'},
+    {text:'Drug is administered via a chosen route (oral, IV, inhalation, etc.)',step:'2'},
+    {text:'Drug is absorbed into the bloodstream from the site of administration',step:'3'},
+    {text:'Drug is distributed via the blood to its site(s) of action',step:'4'},
+    {text:'Drug produces a pharmacological effect at its site of action',step:'5'},
+    {text:'Drug is metabolized — primarily by liver enzymes — into by-products',step:'6'},
+    {text:'Drug and metabolites are excreted — primarily by the kidneys — from the body',step:'7'}
+  ];
+  const shuffled=[...steps]; shuffle(shuffled);
+
+  const wrongCounts={};
+  let correct=0;
+  let selectedCard=null;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>The Pharmacokinetics Pathway (ADME)</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Activity 3 – Process Ordering</strong> (Bloom's: Apply)<br>
+      Drag each step of the pharmacokinetics pathway into the correct numbered slot, from the first step through drug elimination. All 7 steps must be correctly placed.
+    </div>
+    <div class="ix-counter" id="a3-prog">Progress: 0/7</div>
+    <div class="seq-layout">
+      <div>
+        <div class="seq-col-title">Steps (drag to sequence)</div>
+        <div id="a3-pool" class="seq-pool"></div>
+      </div>
+      <div>
+        <div class="seq-col-title">Correct Order</div>
+        <div id="a3-slots" class="seq-slots"></div>
+      </div>
+    </div>
+    <div id="a3-feedback" class="ix-feedback" style="margin-top:12px;"></div>
+    <button id="act3-continue" class="ix-continue-btn" disabled>Continue to Activity 4</button>
+  `;
+  area.appendChild(w);
+
+  function updateProg(){qs('#a3-prog',w).textContent=`Progress: ${correct}/7`;}
+
+  function dropStep(card,slot){
+    if(card.classList.contains('placed')) return;
+    if(slot.querySelector('.ix-card')) return;
+    if(card.dataset.step===slot.dataset.step){
+      slot.appendChild(card);
+      slot.classList.add('correct-zone');
+      card.classList.add('placed');
+      card.setAttribute('draggable','false');
+      card.setAttribute('tabindex','-1');
+      correct++; updateProg();
+      const fb=qs('#a3-feedback',w);
+      fb.className='ix-feedback correct visible';
+      if(correct===7){
+        fb.textContent='✅ All 7 steps in order! This ADME sequence explains why route of administration, food, and liver metabolism all affect how much drug reaches its site of action.';
+        qs('#act3-continue',w).disabled=false;
+        announce('Activity 3 complete.');
+      } else {
+        fb.textContent='✅ Correct step! Keep going.';
+        announce('Correct step placement.');
+      }
+    } else {
+      const slotKey=slot.dataset.step;
+      wrongCounts[slotKey]=(wrongCounts[slotKey]||0)+1;
+      const wc=wrongCounts[slotKey];
+      const correct4slot=steps.find(s=>s.step===slot.dataset.step);
+      const fb=qs('#a3-feedback',w);
+      if(wc===1) fb.textContent='Not right — think about which step in the drug journey happens at this point.';
+      else if(wc===2) fb.textContent='Hint: Remember the ADME order — Dose → Route → Absorption → Distribution → Effect → Metabolism → Excretion.';
+      else fb.textContent=`Answer for slot ${slot.dataset.step}: "${correct4slot?correct4slot.text:'see sequence'}"`;
+      fb.className='ix-feedback incorrect visible';
+      rushGuard.recordWrong(w);
+      announce('Incorrect sequence placement.');
+    }
+  }
+
+  // Pool cards
+  const pool=qs('#a3-pool',w);
+  shuffled.forEach((item,i)=>{
+    const card=document.createElement('div');
+    card.className='ix-card';
+    card.textContent=item.text;
+    card.setAttribute('draggable','true');
+    card.setAttribute('tabindex','0');
+    card.dataset.step=item.step;
+    card.id='a3card-'+i;
+    pool.appendChild(card);
+    card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',card.id);card.classList.add('dragging');});
+    card.addEventListener('dragend',()=>card.classList.remove('dragging'));
+    card.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();
+        if(selectedCard===card){selectedCard=null;card.classList.remove('selected');announce('Deselected.');}
+        else{if(selectedCard)selectedCard.classList.remove('selected');selectedCard=card;card.classList.add('selected');announce('Step card selected. Tab to a slot and press Enter.');}
+      }
+    });
+  });
+
+  // Slots
+  const slotsEl=qs('#a3-slots',w);
+  for(let i=1;i<=7;i++){
+    const row=document.createElement('div'); row.className='seq-slot-row';
+    row.innerHTML=`<span class="seq-num">${i}.</span>`;
+    const drop=document.createElement('div');
+    drop.className='seq-drop';
+    drop.dataset.step=String(i);
+    drop.dataset.droptarget='1';
+    drop.setAttribute('tabindex','0'); drop.setAttribute('role','region');
+    drop.setAttribute('aria-label',`Step ${i} slot`);
+    drop.addEventListener('dragover',e=>e.preventDefault());
+    drop.addEventListener('dragenter',()=>drop.classList.add('drag-over'));
+    drop.addEventListener('dragleave',()=>drop.classList.remove('drag-over'));
+    drop.addEventListener('drop',e=>{
+      e.preventDefault(); drop.classList.remove('drag-over');
+      const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+      if(card) dropStep(card,drop);
+    });
+    drop.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&selectedCard){
+        e.preventDefault(); dropStep(selectedCard,drop);
+        if(selectedCard)selectedCard.classList.remove('selected'); selectedCard=null;
+      }
+    });
+    row.appendChild(drop); slotsEl.appendChild(row);
+  }
+
+  qs('#act3-continue',w).addEventListener('click',()=>{completeActivity(2);showActivity(3);});
+}
+
+/* ==========================================================
+   ACTIVITY 4 – BRANCHING SCENARIO (Analyze)
+   Route selection & drug interactions
+========================================================== */
+function renderAct4(area){
+  const scenarios=[
+    {
+      title:'Scenario A – Emergency Room',
+      context:'A patient arrives in the emergency room with severe chest pain. The physician needs the drug to produce an effect immediately. Time is critical.',
+      question:'Which route of administration should the physician use?',
+      choices:[
+        {text:'Oral — dissolve a tablet in water for the patient to drink',type:'poor',
+         feedback:'Oral administration is too slow in emergencies. Food or stomach acid can further delay absorption, and the first-pass effect reduces bioavailability. This is not appropriate when immediate effect is critical.'},
+        {text:'Intravenous (IV) — inject directly into the vein',type:'optimal',
+         feedback:'✅ Correct! IV administration bypasses all absorption barriers, delivering the drug directly into the bloodstream. Effects can be immediate, making it the route of choice in medical emergencies where time is critical.'},
+        {text:'Transdermal — apply a medicated patch to the skin',type:'poor',
+         feedback:'Transdermal absorption is very slow and is not suitable for emergencies. This route is designed for slow, sustained drug delivery, not immediate effects.'}
+      ]
+    },
+    {
+      title:'Scenario B – Food Interaction',
+      context:'James takes an extended-release medication in pill form that is supposed to be taken on an empty stomach. Instead, he takes it during dinner. The medication does not work as expected.',
+      question:'What is the most likely reason the medication failed?',
+      choices:[
+        {text:'The food caused the medication to dissolve too quickly',type:'poor',
+         feedback:'This is not the correct mechanism. Food does not speed up dissolution of most medications — it more commonly slows the overall process.'},
+        {text:'Food encapsulated the drug, preventing absorption — it was passed in feces',type:'optimal',
+         feedback:'✅ Correct! When food is present in the digestive tract, it can encapsulate an oral drug, preventing absorption and causing the drug to be excreted in feces rather than entering the bloodstream. This is why many medications must be taken on an empty stomach.'},
+        {text:'Taking the pill with food destroyed the drug\'s active ingredient',type:'acceptable',
+         feedback:'Partially relevant — stomach acid can break down some drugs. However, the primary mechanism here is physical encapsulation by food, not chemical destruction.'},
+        {text:'The food altered the mechanism of drug action at the receptor',type:'poor',
+         feedback:'Food does not directly alter receptor mechanisms. Its effect on this medication is pharmacokinetic (absorption), not pharmacodynamic (drug-receptor interaction).'}
+      ]
+    },
+    {
+      title:'Scenario C – The Coffee Myth',
+      context:'After a night of heavy drinking, a college student drinks several large coffees hoping the caffeine will counteract the alcohol\'s effects and allow them to drive safely.',
+      question:'Based on pharmacodynamics, what will actually happen?',
+      choices:[
+        {text:'Caffeine and alcohol are synergistic — the effects of both are amplified',type:'poor',
+         feedback:'This is incorrect. Caffeine is a CNS stimulant and alcohol is a CNS depressant — they are not synergistic. Synergism occurs when drugs with similar actions combine to produce greater-than-additive effects.'},
+        {text:'Caffeine effectively antagonizes alcohol\'s CNS depressant effects, improving driving ability',type:'poor',
+         feedback:'Research shows that caffeine does little to counter alcohol\'s effects on the CNS. While caffeine may reduce feelings of sleepiness, it does not restore reaction time, judgment, or motor coordination impaired by alcohol. Driving is still dangerous.'},
+        {text:'Caffeine may increase alertness slightly but does not reverse alcohol\'s impairment of motor skills and judgment',type:'optimal',
+         feedback:'✅ Correct! Although caffeine and alcohol might seem like antagonists, research shows caffeine does not meaningfully counteract alcohol\'s CNS effects. This is a common and dangerous misconception — feeling more alert does not mean you are safe to drive.'}
+      ]
+    },
+    {
+      title:'Scenario D – Dangerous Combination',
+      context:'A patient is prescribed Valium (diazepam), a benzodiazepine, for anxiety. At a party, they also consume several alcoholic drinks. Both alcohol and Valium are CNS depressants.',
+      question:'What type of drug interaction is occurring and what is the likely danger?',
+      choices:[
+        {text:'Antagonism — the two drugs cancel each other out, making both less effective',type:'poor',
+         feedback:'This is incorrect. Antagonism reduces the effect of one drug when another is present. Two CNS depressants do not cancel — they combine to enhance each other\'s sedative effects.'},
+        {text:'Synergism — the combined sedative effect is greater than either drug alone, potentially causing respiratory depression or death',type:'optimal',
+         feedback:'✅ Correct! When two CNS depressants like alcohol and benzodiazepines are combined, their effects are synergistic — the combined sedation exceeds either drug alone. This interaction has caused many accidental deaths and is one of the most dangerous drug combinations.'},
+        {text:'First-pass interaction — the liver metabolizes both drugs simultaneously, reducing their effects',type:'acceptable',
+         feedback:'While both drugs are metabolized by the liver, this is not the primary concern. The pharmacodynamic synergism between CNS depressants is the critical danger here — it can cause life-threatening respiratory depression.'}
+      ]
+    }
+  ];
+
+  let scenIdx=0;
+  let totalScore=0;
+  const answers=[];
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Route Selection & Drug Interactions</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Activity 4 – Branching Scenarios</strong> (Bloom's: Analyze)<br>
+      Read each pharmacology scenario carefully. Select the best answer and read the feedback before moving to the next scenario. Work through all 4 scenarios to unlock the mastery check.
+    </div>
+    <div class="scenario-progress" id="a4-prog">Scenario 1 of ${scenarios.length}</div>
+    <div id="a4-scenario-area"></div>
+    <button id="act4-continue" class="ix-continue-btn" disabled>Continue to Activity 5</button>
+  `;
+  area.appendChild(w);
+
+  function loadScenario(idx){
+    const sc=scenarios[idx];
+    const progEl=qs('#a4-prog',w);
+    progEl.textContent=`Scenario ${idx+1} of ${scenarios.length}`;
+
+    const scArea=qs('#a4-scenario-area',w);
+    scArea.innerHTML=`
+      <div class="scenario-box">
+        <strong>${sc.title}</strong><br><br>${sc.context}
+      </div>
+      <div class="ix-prompt">${sc.question}</div>
+      <div class="branch-choices" id="a4-choices"></div>
+      <div id="a4-result" style="display:none;"></div>
+      <div style="margin-top:16px;text-align:right;" id="a4-next-wrap" style="display:none;"></div>
+    `;
+
+    const choicesEl=qs('#a4-choices',w);
+    const shuffledChoices=[...sc.choices]; shuffle(shuffledChoices);
+    shuffledChoices.forEach((ch,ci)=>{
+      const btn=document.createElement('div');
+      btn.className='branch-choice';
+      btn.setAttribute('tabindex','0');
+      btn.setAttribute('role','button');
+      btn.textContent=ch.text;
+      btn.addEventListener('click',()=>selectChoice(ch,shuffledChoices));
+      btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectChoice(ch,shuffledChoices);}});
+      choicesEl.appendChild(btn);
+    });
+  }
+
+  function selectChoice(choice,allChoices){
+    // Disable all choices
+    qsa('.branch-choice',w).forEach(b=>{b.style.pointerEvents='none';b.style.opacity='.6';});
+    answers.push({scenario:scenIdx,choice});
+    const pts=choice.type==='optimal'?2:choice.type==='acceptable'?1:0;
+    totalScore+=pts;
+
+    const resultEl=qs('#a4-result',w);
+    resultEl.style.display='block';
+    resultEl.className='branch-result '+choice.type;
+    resultEl.innerHTML=`<strong>${choice.type==='optimal'?'✅ Best Choice':'acceptable'=== choice.type?'⚠️ Acceptable but not ideal':'❌ Not the best choice'}</strong><br><br>${choice.feedback}`;
+
+    // Show next/finish button
+    const nextWrap=qs('#a4-next-wrap',w);
+    nextWrap.style.display='block';
+    const btn=document.createElement('button');
+    btn.className='flip-nav-btn';
+    btn.style.marginTop='12px';
+    if(scenIdx<scenarios.length-1){
+      btn.textContent='Next Scenario ⟩';
+      btn.addEventListener('click',()=>{scenIdx++;loadScenario(scenIdx);});
+    } else {
+      btn.textContent='See Results';
+      btn.addEventListener('click',()=>showResults());
+    }
+    nextWrap.appendChild(btn);
+    announce(choice.feedback);
+  }
+
+  function showResults(){
+    const scArea=qs('#a4-scenario-area',w);
+    const maxScore=scenarios.length*2;
+    const pct=Math.round(totalScore/maxScore*100);
+    let msg='';
+    if(pct>=85) msg='Excellent analysis! You identified the optimal pharmacological reasoning in most scenarios.';
+    else if(pct>=60) msg='Good work. Review the scenarios where you chose an acceptable rather than optimal answer to strengthen your analysis skills.';
+    else msg='Keep studying! Review the scenarios and the chapter section on routes of administration and drug interactions before the quiz.';
+
+    scArea.innerHTML=`
+      <div class="scenario-box" style="border-left-color:var(--navy);">
+        <strong>Activity 4 Complete</strong><br><br>
+        Score: ${totalScore}/${maxScore} (${pct}%)<br><br>${msg}
+      </div>
+      <div style="margin-top:16px;">
+        ${answers.map((a,i)=>`
+          <div class="branch-result ${a.choice.type}" style="margin-bottom:12px;">
+            <strong>Scenario ${i+1}:</strong> ${a.choice.type==='optimal'?'✅ Best choice':'⚠️ '+a.choice.type}<br>
+            <span style="font-size:.88rem;">${a.choice.feedback}</span>
+          </div>`).join('')}
+      </div>
+    `;
+    qs('#act4-continue',w).disabled=false;
+    announce('Activity 4 complete. Continue button available.');
+  }
+
+  qs('#act4-continue',w).addEventListener('click',()=>{completeActivity(3);showActivity(4);});
+  loadScenario(0);
+}
+
+/* ==========================================================
+   ACTIVITY 5 – TRUE/FALSE MASTERY CHECK (Evaluate)
+   Misconception correction — mirrors quiz format closely
+========================================================== */
+function renderAct5(area){
+  const questions=[
+    {
+      stmt:'A drug administered via inhalation is absorbed through the nasal membranes and sinuses.',
+      answer:false,
+      explanation:'False. Inhalation absorbs the drug through the LUNG membranes, not the nasal membranes. Intranasal (sniffing/snorting) is the route that uses the nasal mucous membranes. This distinction is directly tested on the quiz.'
+    },
+    {
+      stmt:'Alcohol is considered a zero-order kinetic drug.',
+      answer:true,
+      explanation:'True. Alcohol is the classic example of a zero-order kinetic drug — its rate of metabolism is constant regardless of its concentration in the blood. Most other drugs follow first-order kinetics.'
+    },
+    {
+      stmt:'Drug potency refers to the largest amount of a drug that can be taken safely.',
+      answer:false,
+      explanation:'False. Drug potency is the MINIMUM dose of a drug that yields its efficacy (peak effect). The concept of largest safe amount relates more to the therapeutic index and LD/ED relationship. Confusing potency with safety is a common quiz error.'
+    },
+    {
+      stmt:'Drugs that are more soluble in lipids (fats) are less readily absorbed than other drugs.',
+      answer:false,
+      explanation:'False. Lipid-soluble drugs are MORE readily absorbed, because cell membranes consist largely of lipids. Higher fat solubility means easier passage through membranes. This is also why fat-soluble drugs cross the blood-brain barrier more easily.'
+    },
+    {
+      stmt:'The safest of the three methods of injecting drugs is the intravenous method.',
+      answer:false,
+      explanation:'False. Intravenous (IV) is actually the most DANGEROUS injection route, not the safest. Because large quantities of drug reach the site of action immediately, there is little room for error. Subcutaneous is the safest injection route due to its slow, constant absorption rate.'
+    },
+    {
+      stmt:'The sublingual route of drug administration is slower and less efficient than oral administration.',
+      answer:false,
+      explanation:'False. Sublingual is actually FASTER and MORE efficient than oral administration. Drugs placed under the tongue are absorbed through the mucous membranes without passing through the digestive system, avoiding the first-pass effect.'
+    },
+    {
+      stmt:'The transdermal route of drug administration is effective for most drugs.',
+      answer:false,
+      explanation:'False. Transdermal is actually NOT effective for most drugs. The skin acts as a barrier to many chemicals and is relatively impermeable. Only drugs with specific chemical properties that allow them to penetrate intact skin can be administered this way.'
+    },
+    {
+      stmt:'Pharmacokinetics is the branch of pharmacology that concerns the absorption, distribution, biotransformation, and excretion of drugs.',
+      answer:true,
+      explanation:'True. Pharmacokinetics is the study of "what the body does to the drug" — covering the ADME processes: Absorption, Distribution, Metabolism (biotransformation), and Excretion.'
+    },
+    {
+      stmt:'When two drugs are combined and their effects are synergistic, this is represented graphically by a shift of the dose-effect curve to the right.',
+      answer:false,
+      explanation:'False. Synergism shifts the dose-effect curve to the LEFT — meaning a lower dose of Drug A achieves a larger effect when Drug B is also present. A rightward shift represents antagonism (diminished effect).'
+    },
+    {
+      stmt:'The kidney is the most important organ for the excretion of drugs and their metabolites.',
+      answer:true,
+      explanation:'True. The kidney is by far the most important organ for drug excretion. The LIVER is the primary site of drug METABOLISM, but the kidney handles excretion. This distinction is commonly confused on quizzes.'
+    }
+  ];
+  shuffle(questions);
+
+  const wrongCounts=new Array(questions.length).fill(0);
+  const answered=new Array(questions.length).fill(false);
+  const correct=new Array(questions.length).fill(false);
+  let correctCount=0;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Pharmacology Misconception Mastery Check</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Activity 5 – True / False Mastery Check</strong> (Bloom's: Evaluate)<br>
+      Evaluate each statement carefully. Many are deliberate misconceptions drawn directly from the Chapter 4 quiz. Answer all ${questions.length} questions correctly to complete the chapter.
+    </div>
+    <div class="ix-counter" id="a5-prog">Correct: 0/${questions.length}</div>
+    <div id="a5-questions"></div>
+    <div id="a5-feedback" class="ix-feedback" style="margin-top:16px;"></div>
+    <button id="a5-check" class="ix-continue-btn" style="margin-top:16px;background:var(--navy);">Check All Answers</button>
+    <button id="act5-continue" class="ix-continue-btn" disabled style="margin-top:12px;">✅ Complete Chapter 4</button>
+  `;
+  area.appendChild(w);
+
+  function updateProg(){qs('#a5-prog',w).textContent=`Correct: ${correctCount}/${questions.length}`;}
+
+  const qArea=qs('#a5-questions',w);
+  questions.forEach((q,qi)=>{
+    const block=document.createElement('div');
+    block.className='tf-block';
+    block.dataset.qi=qi;
+    block.innerHTML=`
+      <div class="tf-stmt">${qi+1}. ${q.stmt}</div>
+      <div class="tf-btns">
+        <button class="tf-btn" data-choice="true" aria-label="True">True</button>
+        <button class="tf-btn" data-choice="false" aria-label="False">False</button>
+      </div>
+      <div class="tf-exp" id="a5-exp-${qi}"></div>
+    `;
+    qsa('.tf-btn',block).forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        if(answered[qi]) return;
+        qsa('.tf-btn',block).forEach(b=>b.classList.remove('selected'));
+        btn.classList.add('selected');
+        block.dataset.choice=btn.dataset.choice;
+      });
+    });
+    qArea.appendChild(block);
+  });
+
+  qs('#a5-check',w).addEventListener('click',()=>{
+    let allAnswered=true;
+    correctCount=0;
+    questions.forEach((q,qi)=>{
+      const block=qs(`[data-qi="${qi}"]`,qArea);
+      const chosen=block.dataset.choice;
+      if(!chosen){allAnswered=false;return;}
+      answered[qi]=true;
+      const isCorrect=(chosen==='true')===q.answer;
+      correct[qi]=isCorrect;
+      if(isCorrect) correctCount++;
+      block.classList.remove('tf-correct','tf-incorrect');
+      block.classList.add(isCorrect?'tf-correct':'tf-incorrect');
+      const exp=qs(`#a5-exp-${qi}`,w);
+      exp.textContent=q.explanation;
+      exp.classList.add('visible');
+    });
+    if(!allAnswered){
+      const fb=qs('#a5-feedback',w);
+      fb.textContent='Please answer all questions before checking.';
+      fb.className='ix-feedback incorrect visible';
+      return;
+    }
+    updateProg();
+    const fb=qs('#a5-feedback',w);
+    if(correctCount===questions.length){
+      fb.textContent=`✅ Perfect score! You correctly evaluated all ${questions.length} statements. Chapter 4 complete!`;
+      fb.className='ix-feedback correct visible';
+      qs('#act5-continue',w).disabled=false;
+      qs('#a5-check',w).style.display='none';
+      announce('All correct! Chapter 4 mastery check complete.');
+    } else {
+      fb.innerHTML=`You got <strong>${correctCount} of ${questions.length}</strong> correct. Review the explanations shown in red below, then retry the incorrect ones.`;
+      fb.className='ix-feedback incorrect visible';
+      // Reset incorrect ones for retry
+      questions.forEach((q,qi)=>{
+        if(!correct[qi]){
+          answered[qi]=false;
+          const block=qs(`[data-qi="${qi}"]`,qArea);
+          qsa('.tf-btn',block).forEach(b=>b.classList.remove('selected'));
+          delete block.dataset.choice;
+          wrongCounts[qi]++;
+        }
+      });
+      qs('#a5-check',w).textContent='Check Answers Again';
+      announce(`${correctCount} of ${questions.length} correct. Review explanations and retry.`);
+    }
+  });
+
+  qs('#act5-continue',w).addEventListener('click',()=>{completeActivity(4);showActivity(4);});
+}
+
+/* ==========================================================
+   REFLECTION QUESTIONS  (5 randomised prompts — same for every chapter)
+========================================================== */
+const REFLECTION_QUESTIONS=[
+  'What was the most important concept in this chapter? Describe the concept in your own words and why it matters.',
+  'How does this chapter connect to something you already know? Explain both the new idea and the old idea and how they connect.',
+  'What part of the chapter seemed most useful or relevant to real life? Explain the idea or concept in your own words. How is it relevant or useful?',
+  'How could the information in this chapter apply to your future coursework or your future career? Select at least 1 idea or concept and describe it in your own words. How does it apply to your future?',
+  'What is one takeaway from this chapter that you will remember later? Describe the takeaway in your own words. Why will you remember it later?'
+];
+
+function showCompletionModal(){
+  const q=savedReflectionQuestion;
+  const qEl=document.getElementById('reflectionQuestion');
+  if(qEl) qEl.textContent=q;
+  const _cm=document.getElementById('completionModal');
+  _cm.classList.add('visible');
+  if(typeof _cm.showModal==='function'&&!_cm.open){try{_cm.showModal();}catch(e){}}
+  document.getElementById('closeCompletion').focus();
+  announce('Congratulations! You have completed all 5 Chapter 4 activities. A reflection question is now shown. Copy it into the Canvas text box below and answer in your own words.');
+}
+
+/* ==========================================================
+   MODALS & RESET
+========================================================== */
+document.getElementById('instrStartBtn').addEventListener('click',()=>{
+  const _im=document.getElementById('instructionsModal');
+  _im.classList.remove('visible');
+  if(typeof _im.close==='function'&&_im.open)_im.close();
+  if(currentView==='cover') showCover();
+  else if(typeof currentView==='number') showActivity(currentView);
+  else showCover();
+});
+
+document.getElementById('resetProgressBtn').addEventListener('click',()=>{
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.add('visible');
+  if(typeof _rst.showModal==='function'&&!_rst.open){try{_rst.showModal();}catch(e){}}
+});
+document.getElementById('resetCancelBtn').addEventListener('click',()=>{
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.remove('visible');
+  if(typeof _rst.close==='function'&&_rst.open)_rst.close();
+});
+document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
+  const _rst2=document.getElementById('resetModal');
+  _rst2.classList.remove('visible');
+  if(typeof _rst2.close==='function'&&_rst2.open)_rst2.close();
+  ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i>0);});
+  partADone.fill(false);
+  currentView='cover';
+  savedReflectionQuestion='';
+  localStorage.removeItem(STORAGE_KEY);
+  rushGuard.hardReset();
+  renderSidebar();
+  showCover();
+  announce('Progress has been reset. Activity 1 is now unlocked.');
+});
+
+document.getElementById('closeCompletion').addEventListener('click',()=>{
+  const _cm=document.getElementById('completionModal');
+  _cm.classList.remove('visible');
+  if(typeof _cm.close==='function'&&_cm.open)_cm.close();
+});
+document.getElementById('closeCompletion').addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    const _cm=document.getElementById('completionModal');
+    _cm.classList.remove('visible');
+    if(typeof _cm.close==='function'&&_cm.open)_cm.close();
+  }
+});
+document.getElementById('downloadGuideBtn').addEventListener('click',()=>downloadStudyGuide());
+
+function downloadStudyGuide(){
+  const guide=`Chapter 4 – Pharmacology: Study Notes
+
+PHARMACOKINETICS (what the body does to the drug)
+• ADME: Absorption → Distribution → Metabolism → Excretion
+• Pharmacokinetics determines BIOAVAILABILITY — how much drug reaches the site of action
+
+ROUTES OF ADMINISTRATION
+• Oral: safest, most economical, but slowest; food delays absorption; first-pass effect reduces drug reaching brain
+• Intravenous (IV): fastest, most dangerous; bypasses all absorption barriers
+• Subcutaneous: slow and constant; safer injection route
+• Intramuscular: faster than subcutaneous with good blood flow
+• Inhalation: absorbed through LUNGS (not nasal — that is intranasal/snorting)
+• Intranasal: absorbed through nasal mucous membranes; needs fat AND water solubility
+• Sublingual: FASTER than oral; absorbed through mouth membranes; no first-pass effect
+• Transdermal: NOT effective for most drugs; skin is a barrier; slow sustained delivery
+
+ABSORPTION FACTORS
+• Lipid-soluble drugs are MORE readily absorbed (pass membranes more easily)
+• Drugs in water solution absorb faster than solid or oily forms
+• Greater surface area and blood flow = faster absorption
+• IV bypasses all absorption barriers — most efficient route
+
+METABOLISM & EXCRETION
+• Liver: primary site of drug METABOLISM (first-pass effect for oral drugs)
+• Kidney: primary organ for drug EXCRETION
+• Zero-order kinetics: rate of elimination is CONSTANT regardless of blood concentration (example: alcohol)
+• First-order kinetics: amount metabolized depends on concentration in blood (most drugs)
+• Half-life: time for drug amount in body to be reduced by half
+
+PHARMACODYNAMICS (what the drug does to the body)
+• Dose-effect curve: S-shaped; shows relationship between dose and effect size
+• Efficacy: the PEAK effect (height of the plateau)
+• Drug Potency: MINIMUM dose to yield efficacy (more potent = lower dose needed)
+• Slope: steepness of curve; steeper = larger effect per dose change
+• Effective Dose (ED50): dose producing effect in 50% of subjects
+• Lethal Dose (LD50): dose killing 50% of subjects in animal studies
+• Therapeutic Index: LD50 ÷ ED50; higher = safer drug
+
+DRUG INTERACTIONS
+• Synergism (Potentiation): combined effect GREATER than either drug alone → LEFT-SHIFT of dose-effect curve
+• Antagonism: combined effect DIMINISHED → RIGHT-SHIFT of dose-effect curve
+• Alcohol + benzodiazepines = SYNERGISTIC and DANGEROUS (respiratory depression)
+• Caffeine + alcohol = caffeine does NOT meaningfully counteract alcohol's CNS effects
+
+QUIZ MISCONCEPTIONS TO REMEMBER
+✗ Inhalation ≠ nasal absorption (inhalation = lungs; intranasal = nasal membranes)
+✗ IV is the MOST dangerous injection route, not safest
+✗ Sublingual is FASTER than oral, not slower
+✗ Transdermal is NOT effective for most drugs
+✗ Lipid-soluble drugs are MORE readily absorbed
+✗ Liver = metabolism; Kidney = excretion (not vice versa)
+✗ Drug potency = MINIMUM effective dose (not maximum safe dose)
+✗ Synergism = LEFT shift (not right) on dose-effect curve
+✗ Caffeine does NOT counteract alcohol's CNS effects
+`;
+  const blob=new Blob([guide],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='Chapter4_Study_Notes.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ==========================================================
+   REVIEW PAGE  (unlocked after all 5 activities complete)
+========================================================== */
+function showReview(){
+  currentView='review';
+  document.getElementById('topBarTitle').textContent='Chapter 4 – Review & Study Guide';
+  renderSidebar();
+  saveProgress();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  area.scrollTop=0;
+
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
+
+  const page=document.createElement('div');
+  page.id='cover-page';
+  page.innerHTML=`
+    <div class="cover-badge">PSYC 333 · Chapter 4</div>
+    <h1 class="cover-title">Review &amp; Study Guide</h1>
+    <p class="cover-subtitle">Key concepts from all five activities. Use this as a reference while studying for the Chapter 4 quiz.</p>
+    ${reflectionBlock}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;">
+
+      <!-- Activity 1 -->
+      <div class="cover-card" style="flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div class="cover-card-num" style="background:#16a34a;">✓</div>
+          <h3 style="font-size:.95rem;font-weight:700;color:var(--navy);">Activity 1 – Core Vocabulary</h3>
+        </div>
+        <div style="font-size:.83rem;color:#333;line-height:1.6;">
+          <strong>Pharmacokinetics</strong> — what the body does to the drug (ADME)<br>
+          <strong>Pharmacodynamics</strong> — what the drug does to the body<br>
+          <strong>Bioavailability</strong> — fraction of dose reaching site of action<br>
+          <strong>Half-Life</strong> — time for drug amount in body to halve<br>
+          <strong>First-Pass Effect</strong> — liver metabolism before systemic circulation<br>
+          <strong>Zero-Order Kinetics</strong> — constant elimination rate (e.g., alcohol)<br>
+          <strong>First-Order Kinetics</strong> — elimination depends on concentration<br>
+          <strong>Efficacy</strong> — peak/maximum drug effect<br>
+          <strong>Drug Potency</strong> — minimum dose to achieve efficacy<br>
+          <strong>Therapeutic Index</strong> — LD50 ÷ ED50 (higher = safer)<br>
+          <strong>Synergism</strong> — combined effect &gt; either drug alone (left-shift)<br>
+          <strong>Antagonism</strong> — combined effect diminished (right-shift)
+        </div>
+      </div>
+
+      <!-- Activity 2 -->
+      <div class="cover-card" style="flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div class="cover-card-num" style="background:#16a34a;">✓</div>
+          <h3 style="font-size:.95rem;font-weight:700;color:var(--navy);">Activity 2 – Routes of Administration</h3>
+        </div>
+        <div style="font-size:.83rem;color:#333;line-height:1.6;">
+          <strong>Oral</strong> — safest, most economical, slowest; first-pass effect<br>
+          <strong>Intravenous (IV)</strong> — fastest, most dangerous; bypasses barriers<br>
+          <strong>Subcutaneous</strong> — slow, constant; just below the skin<br>
+          <strong>Intramuscular</strong> — faster than SC with good blood flow<br>
+          <strong>Inhalation</strong> — absorbed through <em>lungs</em> (not nasal membranes)<br>
+          <strong>Intranasal</strong> — nasal mucosa; requires fat &amp; water solubility<br>
+          <strong>Sublingual</strong> — <em>faster</em> than oral; no first-pass effect<br>
+          <strong>Transdermal</strong> — NOT effective for most drugs; skin is a barrier
+        </div>
+      </div>
+
+      <!-- Activity 3 -->
+      <div class="cover-card" style="flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div class="cover-card-num" style="background:#16a34a;">✓</div>
+          <h3 style="font-size:.95rem;font-weight:700;color:var(--navy);">Activity 3 – ADME Sequence</h3>
+        </div>
+        <div style="font-size:.83rem;color:#333;line-height:1.6;">
+          <strong>1.</strong> Dose determined (mg/kg body weight)<br>
+          <strong>2.</strong> Drug administered via chosen route<br>
+          <strong>3.</strong> Drug <em>absorbed</em> into bloodstream<br>
+          <strong>4.</strong> Drug <em>distributed</em> via blood to site of action<br>
+          <strong>5.</strong> Drug produces pharmacological <em>effect</em><br>
+          <strong>6.</strong> Drug <em>metabolized</em> — primarily by liver enzymes<br>
+          <strong>7.</strong> Drug &amp; metabolites <em>excreted</em> — primarily by kidneys
+        </div>
+      </div>
+
+      <!-- Activity 4 -->
+      <div class="cover-card" style="flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div class="cover-card-num" style="background:#16a34a;">✓</div>
+          <h3 style="font-size:.95rem;font-weight:700;color:var(--navy);">Activity 4 – Drug Interactions</h3>
+        </div>
+        <div style="font-size:.83rem;color:#333;line-height:1.6;">
+          <strong>Emergency → IV</strong> bypasses absorption; immediate effect<br>
+          <strong>Food &amp; oral drugs</strong> — food can encapsulate drug → excreted in feces<br>
+          <strong>Caffeine + alcohol</strong> — caffeine does NOT reverse alcohol's CNS effects<br>
+          <strong>Alcohol + benzodiazepines</strong> — synergistic; both CNS depressants; life-threatening respiratory depression<br>
+          <br>
+          Synergism = <em>left-shift</em> on dose-effect curve<br>
+          Antagonism = <em>right-shift</em> on dose-effect curve
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity 5 misconceptions -->
+    <div class="cover-card" style="flex-direction:column;gap:10px;margin-bottom:28px;">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div class="cover-card-num" style="background:#16a34a;">✓</div>
+        <h3 style="font-size:.95rem;font-weight:700;color:var(--navy);">Activity 5 – Common Misconceptions (Quiz Watch-Outs)</h3>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:.83rem;color:#333;line-height:1.6;">
+        <div>❌ Inhalation ≠ nasal membranes — it's <strong>lungs</strong></div>
+        <div>❌ IV is the <strong>most dangerous</strong> injection route, not safest</div>
+        <div>❌ Sublingual is <strong>faster</strong> than oral, not slower</div>
+        <div>❌ Transdermal is <strong>NOT</strong> effective for most drugs</div>
+        <div>❌ Lipid-soluble drugs are <strong>MORE</strong> readily absorbed</div>
+        <div>❌ Drug potency = <strong>minimum</strong> effective dose, not max safe dose</div>
+        <div>❌ Synergism = <strong>left</strong>-shift (not right) of dose-effect curve</div>
+        <div>❌ Kidney = excretion; Liver = metabolism (not vice versa)</div>
+      </div>
+    </div>
+
+    <button class="get-started-btn" id="reviewDownloadBtn">⬇ Download Study Notes</button>
+  `;
+  area.appendChild(page);
+  qs('#reviewDownloadBtn').addEventListener('click', downloadStudyGuide);
+  announce('Review page loaded. Use the sidebar to return to any activity.');
+}
+
+/* ==========================================================
+   INIT
+========================================================== */
+loadProgress();
+renderSidebar();
+const _im=document.getElementById('instructionsModal');
+_im.classList.add('visible');
+if(typeof _im.showModal==='function'&&!_im.open){try{_im.showModal();}catch(e){}}
+if(currentView==='cover') showCover();
+else if(currentView==='review') showReview();
+else if(typeof currentView==='number') showActivity(currentView);
+else showCover();
+/* ==========================================================
+   FULLSCREEN TOGGLE
+   Strategy 1 — Real Fullscreen API (works when Canvas iframe
+                has allow="fullscreen").
+   Strategy 2 — Pseudo-fullscreen via CSS (position:fixed,
+                always works inside any iframe / Canvas embed).
+========================================================== */
+(function(){
+  const btn=document.getElementById('fsBtn');
+  let pseudoFS=false;
+
+  function enterIcon(){ btn.textContent='✕'; btn.title='Exit fullscreen'; btn.setAttribute('aria-label','Exit fullscreen'); }
+  function exitIcon() { btn.textContent='⛶'; btn.title='Enter fullscreen'; btn.setAttribute('aria-label','Enter fullscreen'); }
+
+  function enterPseudo(){ document.body.classList.add('pseudo-fs'); pseudoFS=true; enterIcon(); announce('Fullscreen on.'); }
+  function exitPseudo() { document.body.classList.remove('pseudo-fs'); pseudoFS=false; exitIcon(); announce('Fullscreen off.'); }
+
+  const fsTarget=document.getElementById('app-wrapper');
+
+  function tryRealFS(){
+    if(fsTarget.requestFullscreen){
+      fsTarget.requestFullscreen().catch(()=>enterPseudo());
+    } else if(fsTarget.webkitRequestFullscreen){
+      try{ fsTarget.webkitRequestFullscreen(); } catch(e){ enterPseudo(); }
+    } else { enterPseudo(); }
+  }
+
+  function isRealFS(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+
+  document.addEventListener('fullscreenchange',       ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+  document.addEventListener('webkitfullscreenchange', ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+
+  btn.addEventListener('click',()=>{
+    if(isRealFS())      (document.exitFullscreen||document.webkitExitFullscreen||(()=>{})).call(document);
+    else if(pseudoFS)   exitPseudo();
+    else                tryRealFS();
+  });
+  btn.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); btn.click(); } });
+})();
+</script>
+</body>
+</html>

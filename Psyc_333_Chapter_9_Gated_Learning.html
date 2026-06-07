@@ -1,0 +1,3126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 9 – Alcohol</title>
+
+<style>
+/* ===================================================
+   GLOBAL / RESET
+=================================================== */
+:root{
+  --navy:#13294B;
+  --blue:#1D4F91;
+  --sky:#00A3E0;
+  --accent:#D3E3FF;
+  --bg:#F3F3F5;
+  --white:#FFFFFF;
+  --border:1px solid rgba(19,41,75,.15);
+  --shadow:0 10px 15px -3px rgba(0,0,0,.1);
+  --sidebar-w:300px;
+  --green-bg:#dcfce7;
+  --green-border:#14532d;
+  --red-bg:#fee2e2;
+  --red-border:#7f1d1d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',Tahoma,sans-serif;
+  background:var(--bg);
+  color:var(--navy);
+  display:flex;
+  justify-content:center;
+  overflow:hidden;
+  height:100vh;
+}
+#app-wrapper{
+  width:100%;
+  max-width:1200px;
+  height:100vh;
+  display:flex;
+  background:white;
+  box-shadow:0 25px 50px -12px rgba(0,0,0,.25);
+}
+/* SIDEBAR */
+#sidebar{
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  border-right:var(--border);
+  display:flex;
+  flex-direction:column;
+  transition:width .3s, min-width .3s;
+  overflow:hidden;
+}
+#sidebar.collapsed{width:0;min-width:0;border-right:none;}
+.sidebar-header{
+  background:var(--navy);
+  color:white;
+  padding:24px 20px;
+  font-weight:800;
+  font-size:1rem;
+  letter-spacing:.5px;
+  line-height:1.4;
+  flex-shrink:0;
+}
+.sidebar-header small{
+  display:block;
+  font-weight:400;
+  font-size:.75rem;
+  opacity:.75;
+  margin-top:4px;
+  letter-spacing:0;
+}
+.nav-list{overflow-y:auto;flex:1;}
+.nav-item{
+  padding:14px 18px;
+  border-bottom:1px solid rgba(0,0,0,.05);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+  font-size:.93rem;
+  transition:background .15s;
+  gap:8px;
+}
+.nav-item:hover:not(.locked){background:#f0f5ff}
+.nav-item:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.nav-item.active{background:var(--accent);font-weight:700}
+.nav-item.locked{opacity:.55;cursor:not-allowed}
+.nav-item.done .nav-title::after{content:' ✓';color:#16a34a;font-weight:700}
+.nav-title{flex:1}
+.lock-icon{font-size:.85rem;flex-shrink:0}
+.nav-progress{width:100%;height:4px;background:#e5e7eb;flex-shrink:0;}
+.nav-progress-fill{height:4px;background:var(--sky);transition:width .4s;}
+.sidebar-footer{padding:14px 18px;border-top:var(--border);font-size:.8rem;color:#666;}
+/* Progress dots */
+.progress-dots{display:flex;gap:6px;align-items:center;margin-left:auto;flex-shrink:0;}
+.progress-dot{width:10px;height:10px;border-radius:50%;background:#d1d5db;transition:background .3s,transform .2s;flex-shrink:0;}
+.progress-dot.done{background:#16a34a;transform:scale(1.1);}
+/* Sub-items */
+.nav-sublist{display:flex;flex-direction:column;gap:1px;padding:2px 0 6px 0;}
+.nav-subitem{
+  padding:7px 18px 7px 36px;font-size:.8rem;color:var(--navy);cursor:pointer;
+  display:flex;align-items:center;gap:8px;transition:background .1s;
+  border-left:2px solid transparent;
+}
+.nav-subitem:hover{background:#eef4ff;border-left-color:var(--sky);}
+.nav-subitem.sub-active{background:var(--accent);border-left-color:var(--blue);font-weight:700;}
+.nav-subitem.sub-done{color:#16a34a;}
+.nav-subitem.sub-done::after{content:' ✓';font-weight:700;}
+.nav-subitem.sub-locked{opacity:.45;cursor:default;}
+.sub-dot{width:7px;height:7px;border-radius:50%;background:#d1d5db;flex-shrink:0;}
+.sub-dot.done{background:#16a34a;}
+.sub-dot.active{background:var(--sky);}
+/* MAIN */
+#main-content{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.top-bar{
+  padding:12px 18px;
+  border-bottom:var(--border);
+  display:flex;align-items:center;gap:12px;
+  flex-shrink:0;background:white;
+}
+.menu-btn{
+  background:var(--blue);color:white;border:none;
+  padding:9px 16px;border-radius:6px;font-weight:bold;
+  cursor:pointer;font-size:.9rem;white-space:nowrap;touch-action:manipulation;
+}
+.menu-btn:focus{outline:3px solid var(--sky)}
+.top-bar-title{font-weight:700;color:var(--navy);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+.top-bar-progress{font-size:.82rem;color:#555;white-space:nowrap;flex-shrink:0;}
+.fs-btn{background:none;border:1px solid rgba(19,41,75,.25);border-radius:6px;padding:6px 10px;font-size:1rem;cursor:pointer;color:var(--navy);line-height:1;flex-shrink:0;transition:background .15s,border-color .15s;touch-action:manipulation;}
+.fs-btn:hover{background:var(--accent);border-color:var(--blue);}
+.fs-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+/* Pseudo-fullscreen: pins app over entire viewport — works inside Canvas iframes */
+body.pseudo-fs{overflow:auto;}
+body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-index:9999;box-shadow:none;}
+.content-scroll{flex:1;overflow-y:auto;padding:0;-webkit-overflow-scrolling:touch;}
+
+/* COVER */
+#cover-page{max-width:820px;margin:40px auto;padding:20px 20px 40px;}
+.cover-badge{
+  display:inline-block;background:var(--accent);color:var(--blue);
+  font-weight:700;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;
+  padding:5px 12px;border-radius:20px;margin-bottom:16px;
+}
+.cover-title{font-size:2rem;font-weight:800;color:var(--navy);line-height:1.2;margin-bottom:12px;}
+.cover-subtitle{font-size:1.05rem;color:#444;margin-bottom:32px;line-height:1.6;}
+.cover-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:36px;}
+.cover-card{
+  border:var(--border);border-radius:12px;padding:20px;background:white;
+  box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start;
+}
+.cover-card-num{
+  background:var(--navy);color:white;font-weight:800;font-size:.95rem;
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;
+}
+.cover-card-body h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:5px;}
+.cover-card-body p{font-size:.85rem;color:#555;line-height:1.5;}
+.cover-tag{
+  display:inline-block;background:#f0f5ff;color:var(--blue);font-size:.73rem;
+  font-weight:600;padding:2px 8px;border-radius:10px;margin-top:8px;border:1px solid var(--accent);
+}
+.cover-instructions{
+  background:#f8faff;border:var(--border);border-left:4px solid var(--sky);
+  border-radius:8px;padding:16px 20px;margin-bottom:28px;font-size:.9rem;line-height:1.7;color:#333;
+}
+.cover-instructions strong{display:block;margin-bottom:6px;color:var(--navy)}
+.get-started-btn{
+  display:inline-block;background:var(--navy);color:white;border:none;
+  padding:16px 40px;font-size:1.1rem;font-weight:700;border-radius:10px;cursor:pointer;
+  letter-spacing:.5px;touch-action:manipulation;transition:background .2s,transform .1s;
+}
+.get-started-btn:hover{background:var(--blue)}
+.get-started-btn:active{transform:scale(.98)}
+.get-started-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+
+/* INTERACTION */
+.interaction-wrapper{padding:30px 30px 50px;max-width:960px;margin:0 auto;width:100%;}
+.interaction-wrapper h1{margin-top:0;color:var(--navy);}
+
+/* SHARED INTERACTION STYLES */
+.ix-card{
+  background:white;border:var(--border);border-radius:8px;
+  padding:12px 14px;margin:8px 0;cursor:grab;font-size:.95rem;
+  user-select:none;-webkit-user-select:none;touch-action:none;
+  transition:box-shadow .15s,opacity .15s;
+}
+.ix-card:focus{outline:3px solid var(--sky)}
+.ix-card.placed{opacity:.45;cursor:default;pointer-events:none}
+.ix-card.dragging{opacity:.35;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+
+.ix-dropzone{
+  border:2px dashed var(--accent);border-radius:10px;padding:12px;
+  min-height:90px;margin-bottom:16px;transition:background .15s,border-color .15s;
+}
+.ix-dropzone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.ix-dropzone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+
+.ix-option{
+  border:var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px;
+  cursor:pointer;font-size:.95rem;transition:background .15s;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+.ix-option:hover{background:var(--accent)}
+.ix-option:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.ix-option.correct-opt{background:var(--green-bg);border-color:var(--green-border)}
+.ix-option.incorrect-opt{background:var(--red-bg);border-color:var(--red-border)}
+
+.ix-explanation{
+  margin-top:16px;padding:14px 16px;border-radius:8px;background:#eef6ff;
+  font-size:.92rem;line-height:1.6;display:none;
+}
+.ix-explanation.visible{display:block}
+
+.ix-feedback{
+  margin-top:18px;padding:14px 16px;border-radius:8px;
+  font-weight:600;font-size:.95rem;display:none;
+}
+.ix-feedback.visible{display:block}
+.ix-feedback.correct{background:var(--green-bg);color:#166534}
+.ix-feedback.incorrect{background:var(--red-bg);color:#991b1b}
+
+.ix-counter{font-weight:700;margin-bottom:10px;color:var(--blue);font-size:.9rem;}
+.ix-prompt{font-weight:600;margin-bottom:18px;font-size:1rem;line-height:1.5;}
+
+.ix-continue-btn{
+  display:block;margin-top:28px;padding:13px 28px;font-size:1rem;font-weight:700;
+  background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;
+  touch-action:manipulation;transition:background .15s,opacity .15s;
+}
+.ix-continue-btn:disabled{opacity:.35;cursor:default}
+.ix-continue-btn:not(:disabled):hover{background:var(--navy)}
+.ix-continue-btn:focus{outline:3px solid var(--sky)}
+
+/* col-sort (card sort columns) */
+.col-sort-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;}
+.col-sort-col{flex:1 1 160px;display:flex;flex-direction:column;gap:0;min-width:140px;}
+.col-sort-head{
+  background:var(--navy);color:#fff;font-weight:700;font-size:.84rem;
+  text-align:center;padding:9px 8px;border-radius:8px 8px 0 0;line-height:1.3;
+}
+.col-sort-zone{
+  border:2px dashed var(--accent);border-top:none;border-radius:0 0 8px 8px;
+  min-height:56px;padding:6px;display:flex;flex-direction:column;gap:5px;
+  transition:background .15s,border-color .15s;
+}
+.col-sort-zone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.col-sort-zone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.col-sort-zone .ix-card{font-size:.82rem;cursor:default;pointer-events:none;margin:0;line-height:1.3;}
+.col-sort-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.col-sort-bank .ix-card{font-size:.85rem;cursor:grab;}
+
+/* Sequence ordering */
+.seq-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;}
+.seq-col-title{font-size:.95rem;font-weight:700;margin-bottom:8px;color:var(--navy);}
+.seq-pool{display:flex;flex-direction:column;}
+.seq-slots{display:flex;flex-direction:column;gap:10px;}
+.seq-slot-row{display:flex;gap:8px;align-items:center;}
+.seq-num{min-width:22px;color:var(--sky);font-weight:800;}
+.seq-drop{
+  flex:1;min-height:52px;border:2px dashed var(--accent);
+  border-radius:10px;padding:8px;
+}
+.seq-drop.drag-over{background:#eef6ff;border-color:var(--sky);}
+.seq-drop.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+
+/* Flip cards */
+.flip-deck{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.flip-card-wrap{width:100%;max-width:560px;perspective:1000px;cursor:pointer;}
+.flip-card-inner{
+  position:relative;width:100%;height:200px;transition:transform .55s ease;
+  transform-style:preserve-3d;border-radius:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+}
+.flip-card-wrap.flipped .flip-card-inner{transform:rotateY(180deg);}
+.flip-face{
+  position:absolute;inset:0;backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px 28px;text-align:center;
+}
+.flip-front{background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);color:#fff;}
+.flip-back{background:#fff;color:var(--navy);transform:rotateY(180deg);border:2px solid var(--accent);}
+.flip-label{font-size:.7rem;letter-spacing:1.2px;text-transform:uppercase;opacity:.65;font-weight:600;margin-bottom:8px;}
+.flip-term{font-size:1.35rem;font-weight:800;line-height:1.2;}
+.flip-def{font-size:.92rem;line-height:1.6;color:#333;}
+.flip-tap-hint{font-size:.75rem;opacity:.55;margin-top:10px;}
+.flip-nav{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.flip-nav-btn{
+  background:var(--navy);color:white;border:none;border-radius:999px;
+  padding:8px 20px;font-size:.88rem;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  transition:background .2s,transform .1s;
+}
+.flip-nav-btn:not(:disabled):hover{background:var(--blue);transform:translateY(-1px);}
+.flip-nav-btn:disabled{opacity:.35;cursor:default;}
+.flip-nav-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+.flip-counter{font-size:.85rem;color:#555;font-weight:600;}
+.flip-progress-row{display:flex;align-items:center;gap:10px;width:100%;max-width:560px;}
+.flip-progress-bar{flex:1;height:7px;background:#e5e7eb;border-radius:999px;overflow:hidden;}
+.flip-progress-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--blue));transition:width .3s;}
+.viewed-badge{
+  display:inline-flex;align-items:center;gap:5px;background:#f0f7ff;
+  border:1px solid var(--accent);border-radius:999px;padding:4px 12px;
+  font-size:.78rem;font-weight:600;color:var(--blue);
+}
+
+/* Branching scenario */
+.scenario-box{
+  background:#f8faff;border:var(--border);border-left:4px solid var(--sky);
+  border-radius:10px;padding:16px 20px;margin-bottom:20px;
+  font-size:.95rem;line-height:1.65;color:#333;
+}
+.scenario-box strong{color:var(--navy);}
+.branch-result{
+  margin-top:16px;padding:14px 16px;border-radius:10px;
+  font-size:.93rem;line-height:1.6;
+}
+.branch-result.optimal{background:#dcfce7;border:1px solid #14532d;color:#166534;}
+.branch-result.acceptable{background:#fef9c3;border:1px solid #92400e;color:#78350f;}
+.branch-result.poor{background:#fee2e2;border:1px solid #7f1d1d;color:#991b1b;}
+.branch-choices{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.branch-choice{
+  border:var(--border);border-radius:8px;padding:14px 16px;
+  cursor:pointer;font-size:.92rem;line-height:1.5;
+  transition:background .15s,border-color .15s;user-select:none;touch-action:manipulation;
+}
+.branch-choice:hover{background:var(--accent);}
+.branch-choice:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.scenario-progress{font-size:.82rem;color:#555;margin-bottom:14px;}
+
+/* T/F quiz */
+.tf-block{
+  background:#f9fafb;border-radius:12px;padding:16px 18px;border:1px solid #dde3f0;
+  margin-bottom:14px;
+}
+.tf-block.tf-correct{border-color:var(--green-border);background:var(--green-bg);}
+.tf-block.tf-incorrect{border-color:var(--red-border);background:var(--red-bg);}
+.tf-stmt{font-size:.95rem;font-weight:600;color:var(--navy);margin-bottom:10px;line-height:1.5;}
+.tf-btns{display:inline-flex;gap:8px;}
+.tf-btn{
+  border-radius:999px;border:2px solid #d0d5dd;padding:6px 18px;
+  font-size:.88rem;font-weight:600;cursor:pointer;
+  background:#fff;color:var(--navy);font-family:inherit;
+  transition:border-color .15s,background .15s;
+}
+.tf-btn:hover{border-color:var(--sky);background:#f0f7ff;}
+.tf-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+.tf-btn.selected{border-color:var(--sky);background:var(--accent);}
+.tf-exp{font-size:.85rem;line-height:1.55;color:#333;margin-top:10px;display:none;}
+.tf-exp.visible{display:block;}
+
+/* Knowledge check */
+.kc-question{
+  background:#f9fafb;border-radius:10px;padding:16px 18px;border:1px solid #dde3f0;
+  margin-bottom:16px;
+}
+.kc-question.kc-correct{border-color:var(--green-border);background:var(--green-bg);}
+.kc-question.kc-incorrect{border-color:var(--red-border);background:var(--red-bg);}
+.kc-qtext{font-size:.95rem;font-weight:600;color:var(--navy);margin-bottom:10px;line-height:1.5;}
+.kc-options{display:flex;flex-direction:column;gap:8px;}
+.kc-opt{
+  border:var(--border);border-radius:8px;padding:11px 14px;
+  cursor:pointer;font-size:.9rem;transition:background .15s;
+  user-select:none;touch-action:manipulation;
+}
+.kc-opt:hover{background:var(--accent);}
+.kc-opt:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.kc-opt.kc-opt-correct{background:var(--green-bg);border-color:var(--green-border);pointer-events:none;}
+.kc-opt.kc-opt-wrong{background:var(--red-bg);border-color:var(--red-border);pointer-events:none;}
+.kc-exp{font-size:.85rem;line-height:1.55;color:#333;margin-top:10px;display:none;}
+.kc-exp.visible{display:block;}
+
+/* two-part banner */
+.two-part-banner{
+  display:flex;align-items:center;gap:14px;
+  background:linear-gradient(135deg,#1a3a6b 0%,#2563eb 100%);
+  color:#fff;border-radius:12px;padding:14px 18px;
+  margin-bottom:18px;font-size:.92rem;line-height:1.5;
+}
+.two-part-banner .tpb-icon{font-size:1.6rem;flex-shrink:0;}
+.tpb-badge{
+  display:inline-block;background:#fff;color:#1a3a6b;
+  font-weight:800;font-size:.75rem;padding:2px 8px;
+  border-radius:20px;margin-right:6px;
+}
+@keyframes fadeOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-12px)}}
+@keyframes fadeIn {from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.part-fade-out{animation:fadeOut .35s ease forwards;}
+.part-fade-in {animation:fadeIn .35s ease forwards;}
+
+/* Stage banner */
+.stage-banner{
+  display:flex;align-items:center;gap:12px;
+  background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);
+  color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:16px;
+  font-size:.9rem;line-height:1.4;
+}
+.stage-badge{
+  background:#fff;color:var(--navy);font-weight:800;font-size:.75rem;
+  padding:3px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;
+}
+
+/* Sequence pool */
+.seq-pool-cards{display:flex;flex-direction:column;gap:8px;}
+.seq-pool-card{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);
+  color:#fff;border-radius:8px;padding:11px 14px;font-size:.85rem;font-weight:600;
+  line-height:1.4;cursor:grab;user-select:none;-webkit-user-select:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);touch-action:none;
+}
+.seq-pool-card:focus{outline:3px solid var(--sky);}
+.seq-pool-card.selected-seq{outline:3px solid #fbbf24;outline-offset:2px;}
+.seq-pool-card.placed-seq{opacity:.35;cursor:default;pointer-events:none;}
+
+/* Matching */
+.match-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;}
+.match-col-head{font-weight:700;color:var(--navy);font-size:.88rem;padding:8px 12px;
+  background:var(--navy);color:#fff;border-radius:8px;text-align:center;margin-bottom:8px;}
+.match-left-item{
+  background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;
+  border-radius:8px;padding:11px 14px;font-size:.85rem;font-weight:600;
+  line-height:1.4;cursor:grab;user-select:none;-webkit-user-select:none;
+  margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);touch-action:none;
+}
+.match-left-item:focus{outline:3px solid var(--sky);}
+.match-left-item.selected-match{outline:3px solid #fbbf24;outline-offset:2px;}
+.match-left-item.placed-match{opacity:.35;cursor:default;pointer-events:none;}
+.match-drop{
+  border:2px dashed var(--accent);border-radius:8px;padding:10px;
+  min-height:52px;margin-bottom:8px;transition:background .15s,border-color .15s;
+  font-size:.83rem;
+}
+.match-drop.drag-over{background:#eef6ff;border-color:var(--sky);}
+.match-drop.match-correct{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.match-drop.match-wrong{border-style:solid;border-color:var(--red-border);background:var(--red-bg);}
+
+/* =====================================================
+   ACTIVITY 4 — STACKED CARD SORT
+===================================================== */
+.a4-cards-grid{
+  position:relative;
+  width:100%;
+  max-width:360px;
+  min-height:100px;
+  margin:0 auto 12px auto;
+}
+.a4-stack-card{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  min-height:72px;
+  background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);
+  color:#fff;
+  border-radius:10px;
+  padding:14px 18px;
+  font-size:.88rem;
+  font-weight:600;
+  line-height:1.4;
+  border:2px solid rgba(0,163,224,.4);
+  box-shadow:0 3px 12px rgba(0,0,0,.18);
+  user-select:none;
+  -webkit-user-select:none;
+  word-wrap:break-word;
+  overflow-wrap:break-word;
+  white-space:normal;
+  transition:box-shadow .2s, opacity .2s;
+}
+.a4-stack-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.22);}
+.a4-stack-card:focus{outline:3px solid var(--sky);outline-offset:2px;box-shadow:0 0 0 4px rgba(0,163,224,.25);}
+.a4-stack-card.a4-selected{outline:3px solid #fbbf24;box-shadow:0 0 0 4px rgba(251,191,36,.3);}
+.a4-stack-card.a4-dragging{opacity:.4;cursor:grabbing;}
+.a4-stack-card.a4-top{cursor:grab;}
+.a4-stack-card.a4-under{cursor:default;pointer-events:none;}
+
+/* Drop zones grid — 2 rows × 3 cols */
+.a4-zones-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-top:8px;
+  width:100%;
+}
+@media(max-width:600px){
+  .a4-zones-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:400px){
+  .a4-zones-grid{grid-template-columns:1fr;}
+}
+
+.a4-zone-wrap{display:flex;flex-direction:column;}
+.a4-cat-head{
+  background:var(--sky);
+  color:#fff;
+  font-weight:700;
+  font-size:.78rem;
+  padding:8px 10px;
+  border-radius:8px 8px 0 0;
+  line-height:1.3;
+  text-align:center;
+}
+.a4-cat-zone{
+  border:2px dashed var(--accent);
+  border-top:none;
+  border-radius:0 0 8px 8px;
+  min-height:52px;
+  padding:6px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  transition:background .15s,border-color .15s;
+  flex:1;
+}
+.a4-cat-zone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.a4-cat-zone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+
+/* Count badge shown inside each zone */
+.a4-zone-count{
+  font-size:.75rem;
+  font-weight:700;
+  color:#166534;
+  background:#bbf7d0;
+  border-radius:999px;
+  padding:2px 10px;
+  display:none;
+}
+.a4-zone-count.visible{display:inline-block;}
+
+/* Feedback box — single updating box below zones */
+.a4-sort-feedback{
+  margin-top:16px;
+  padding:14px 18px;
+  border-radius:10px;
+  font-size:.92rem;
+  line-height:1.6;
+  font-weight:600;
+  display:none;
+  animation:a4FeedbackPop .3s ease;
+}
+@keyframes a4FeedbackPop{
+  0%{opacity:0;transform:translateY(6px);}
+  100%{opacity:1;transform:translateY(0);}
+}
+.a4-sort-feedback.correct{
+  display:block;
+  background:var(--green-bg);
+  border:1px solid var(--green-border);
+  color:#166534;
+}
+.a4-sort-feedback.incorrect{
+  display:block;
+  background:var(--red-bg);
+  border:1px solid var(--red-border);
+  color:#991b1b;
+}
+
+@keyframes a4FadeOut{
+  0%  {opacity:1;transform:scale(1);}
+  100%{opacity:0;transform:scale(.85);}
+}
+.a4-disappearing{animation:a4FadeOut .35s ease forwards;}
+
+/* Modals */
+/* Modals — live inside #app-wrapper so they render in both pseudo-fs
+   (wrapper: position:fixed + z-index:9999) and real Fullscreen API mode.
+   position:fixed anchors to the viewport; z-index:10000 clears all children. */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);
+  display:none;justify-content:center;align-items:flex-start;z-index:10000;
+  padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+}
+.modal-overlay.visible{display:flex}
+.modal-box{
+  background:white;padding:40px 36px;max-width:520px;width:100%;
+  border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.3);text-align:center;
+  position:relative;max-height:calc(100vh - 40px);overflow-y:auto;margin:auto;
+}
+.modal-icon{font-size:3.5rem;margin-bottom:16px}
+.modal-box h2{color:var(--navy);font-size:1.6rem;font-weight:800;margin-bottom:12px;}
+.modal-box p{color:#444;line-height:1.7;margin-bottom:24px;font-size:.97rem;}
+.download-btn{
+  display:inline-block;background:var(--navy);color:white;
+  padding:14px 32px;font-size:1rem;font-weight:700;border:none;
+  border-radius:10px;cursor:pointer;text-decoration:none;touch-action:manipulation;
+}
+.download-btn:hover{background:var(--blue)}
+.download-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+.modal-close{
+  position:sticky;float:right;top:0;margin:-24px -16px 0 0;background:none;border:none;
+  font-size:1.4rem;cursor:pointer;color:#888;line-height:1;padding:4px 8px;z-index:1;
+}
+.modal-close:hover{color:var(--navy)}
+.modal-close:focus{outline:3px solid var(--sky)}
+.modal-checklist{text-align:left;background:#f8faff;border-radius:10px;padding:16px 20px;margin-bottom:24px;}
+.modal-checklist li{list-style:none;padding:5px 0;font-size:.9rem;color:#333;}
+.modal-checklist li::before{content:'✅ ';margin-right:4px}
+#instructionsModal .modal-box{text-align:left}
+#instructionsModal h2{text-align:center}
+.instr-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;font-size:.93rem;line-height:1.5;}
+.instr-icon{font-size:1.4rem;flex-shrink:0;margin-top:1px;}
+.reset-btn{
+  display:block;width:calc(100% - 28px);margin:10px 14px 0;padding:10px 0;
+  background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5;border-radius:8px;
+  font-size:.85rem;font-weight:600;cursor:pointer;transition:background .15s;touch-action:manipulation;
+}
+.reset-btn:hover{background:#fecaca;}
+.reset-btn:focus{outline:3px solid var(--sky);}
+.confirm-btn-row{display:flex;gap:10px;justify-content:center;margin-top:18px;}
+.confirm-yes{background:#dc2626;color:white;border:none;padding:11px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.95rem;}
+.confirm-yes:hover{background:#b91c1c;}
+.confirm-no{background:#e5e7eb;color:#333;border:none;padding:11px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.95rem;}
+.confirm-no:hover{background:#d1d5db;}
+
+/* Rush guard */
+#rushModal .modal-box{max-width:480px;}
+.activity-locked-overlay{
+  position:absolute;inset:0;background:rgba(255,255,255,.88);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;z-index:100;border-radius:12px;padding:30px;text-align:center;
+}
+.activity-locked-overlay h3{color:#dc2626;font-size:1.1rem;margin:0;}
+.activity-locked-overlay p{font-size:.9rem;color:#555;margin:0;line-height:1.5;}
+.lock-countdown{font-size:2rem;font-weight:800;color:#dc2626;}
+
+#aria-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+
+/* ── Completion popup extras ── */
+.completion-warning{display:flex;gap:12px;align-items:flex-start;background:#fef2f2;border:1px solid #fecaca;border-left:5px solid #dc2626;border-radius:10px;padding:14px 16px;margin:6px 0 20px;font-size:.92rem;line-height:1.55;color:#7f1d1d;text-align:left;}
+.completion-warning-icon{font-size:1.4rem;flex-shrink:0;line-height:1.2;}
+.reflection-block{background:#f0f5ff;border:1px solid var(--accent);border-left:5px solid var(--blue);border-radius:10px;padding:16px 18px;margin-bottom:18px;text-align:left;}
+.reflection-label{font-size:.78rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--blue);margin-bottom:8px;}
+.reflection-question{font-size:1rem;line-height:1.55;color:var(--navy);font-weight:600;margin:0;}
+.reflection-instructions{font-size:.9rem;color:#333;line-height:1.6;text-align:left;}
+.reflection-instructions ol{margin:10px 0 0;padding-left:22px;}
+.reflection-instructions li{margin-bottom:8px;}
+.reflection-note{margin-top:14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:.86rem;color:#92400e;font-weight:600;}
+.completion-divider{height:1px;background:rgba(19,41,75,.12);margin:24px 0 4px;}
+/* ── Review page ── */
+.review-screen{max-width:820px;margin:0 auto;padding:30px 28px 50px;}
+.review-badge{display:inline-block;background:#dcfce7;color:#166534;font-weight:700;font-size:.8rem;letter-spacing:.5px;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:14px;border:1px solid #bbf7d0;}
+.review-screen h2{color:var(--navy);font-size:1.4rem;font-weight:800;margin-bottom:16px;}
+.review-section{background:#f8faff;border:var(--border);border-left:4px solid var(--sky);border-radius:10px;padding:16px 20px;margin-bottom:16px;}
+.review-section h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:10px;}
+.review-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
+.review-list li{font-size:.88rem;color:#333;line-height:1.5;padding-left:18px;position:relative;}
+.review-list li::before{content:"•";position:absolute;left:0;color:var(--sky);font-weight:700;}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:640px){
+  #sidebar{width:260px;min-width:260px}
+  .cover-title{font-size:1.5rem}
+  .seq-layout{grid-template-columns:1fr}
+  .interaction-wrapper{padding:20px 16px 40px}
+  #cover-page{padding:16px 16px 40px}
+  .flip-card-inner{height:240px;}
+  .match-grid{grid-template-columns:1fr;}
+  .a4-cards-grid{max-width:100%;}
+}
+</style>
+</head>
+<body>
+
+<div id="aria-live" aria-live="polite" aria-atomic="true"></div>
+
+<!-- APP SHELL -->
+<div id="app-wrapper">
+  <aside id="sidebar" aria-label="Activity navigation">
+    <div class="sidebar-header">
+      Chapter 9
+      <small>Alcohol</small>
+    </div>
+    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="5" id="overallProgressBar">
+      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
+    </div>
+    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
+    <div class="sidebar-footer" id="sidebar-footer">0 of 5 activities complete</div>
+    <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">↺ Reset Progress</button>
+  </aside>
+
+  <main id="main-content">
+    <div class="top-bar">
+      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
+      <span class="top-bar-title" id="topBarTitle">Chapter 9 – Alcohol</span>
+      <span class="top-bar-progress" id="topBarProgress" aria-live="polite"></span>
+      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
+    </div>
+    <div class="content-scroll" id="content-area" tabindex="-1"></div>
+  </main>
+
+  <!-- ── MODALS (inside #app-wrapper so they overlay in both pseudo-fs and real-fs modes) ── -->
+
+  <!-- INSTRUCTIONS MODAL -->
+  <div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+    <div class="modal-box">
+      <h2 id="instrTitle">How to Use This Module</h2><br>
+      <div class="instr-row"><span class="instr-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Click or tap to interact. Drag and drop cards where required. Press Continue to advance.</div></div>
+      <div class="instr-row"><span class="instr-icon">⌨️</span><div><strong>Keyboard:</strong> Use <kbd>Tab</kbd> to move, <kbd>Enter</kbd> or <kbd>Space</kbd> to select. Arrow keys navigate flip cards.</div></div>
+      <div class="instr-row"><span class="instr-icon">🔒</span><div><strong>Gated Progress:</strong> Each activity must be completed correctly before the next unlocks. Your progress saves automatically.</div></div>
+      <div class="instr-row"><span class="instr-icon">⚠️</span><div><strong>Rush Guard:</strong> Rapidly flipping cards without reading may trigger warnings and temporary locks.</div></div><br>
+      <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
+    </div>
+  </div>
+
+  <!-- RESET MODAL -->
+  <div class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+    <div class="modal-box">
+      <div class="modal-icon">⚠️</div>
+      <h2 id="resetTitle">Reset All Progress?</h2>
+      <p>This will <strong>erase all completed activities</strong> and re-lock everything except Activity 1. This cannot be undone.</p>
+      <div class="confirm-btn-row">
+        <button class="confirm-no" id="resetCancelBtn">Cancel</button>
+        <button class="confirm-yes" id="resetConfirmBtn">Yes, Reset Everything</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLETION MODAL -->
+  <div class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
+    <div class="modal-box" style="max-width:600px;text-align:left;">
+      <button class="modal-close" id="closeCompletion" aria-label="Close">✕</button>
+      <div class="completion-warning" role="alert">
+        <span class="completion-warning-icon">⚠️</span>
+        <div><strong>You're not done yet!</strong> Finishing the activities is only part of this assignment. To receive credit, you must still answer the reflection question below in the Canvas text box.</div>
+      </div>
+      <div class="modal-icon" style="text-align:center;">🍺</div>
+      <h2 id="complTitle" style="text-align:center;">Activities Complete — One Step Left</h2>
+      <p style="text-align:center;">You've completed all five Chapter 9 activities on alcohol. Answer the reflection below to finish the assignment.</p>
+      <div class="reflection-block">
+        <div class="reflection-label">📝 Your Reflection Question</div>
+        <p class="reflection-question" id="reflectionQuestion">&nbsp;</p>
+      </div>
+      <div class="reflection-instructions">
+        <strong>To complete this assignment:</strong>
+        <ol>
+          <li><strong>Copy and paste the question above</strong> into the Canvas text box below this activity.</li>
+          <li>Answer the question in your <strong>own words</strong> — a minimum of <strong>one full paragraph of at least five sentences</strong>.</li>
+          <li><strong>Do not use AI</strong> to write or generate any part of your answer. The reflection must be entirely your own thinking.</li>
+        </ol>
+        <p class="reflection-note">⬇ Scroll down to the Canvas text box beneath this activity to submit your written response.</p>
+      </div>
+      <div class="completion-divider"></div>
+      <div style="text-align:center;margin-top:18px;">
+        <button class="download-btn" id="downloadGuideBtn">⬇ Download Study Notes</button>
+        <p style="font-size:.82rem;color:#666;margin-top:8px;">You can also access the full <strong>Review &amp; Study Guide</strong> from the sidebar menu at any time.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RUSH GUARD MODAL -->
+  <div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle">
+    <div class="modal-box" style="border-top:5px solid #f59e0b;max-width:480px;">
+      <div class="modal-icon" id="rushIcon">⚠️</div>
+      <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
+      <p id="rushMsg"></p>
+      <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
+      <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
+      <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ==========================================================
+   RUSH GUARD
+========================================================== */
+const rushGuard = (() => {
+  const WINDOW_MS  = 12000;
+  const THRESHOLD  = 4;
+  const COOLDOWN_S = 60;
+  const PASSWORD   = 'alcohol';
+
+  let wrongTimestamps = [];
+  let strikes         = 0;
+  let lockCycles      = 0;
+  let locked          = false;
+  let hardLocked      = false;
+  let cooldownTimer   = null;
+  let currentWrapper  = null;
+
+  const HARD_LOCK_KEY = 'ch9-hard-locked';
+
+  const $modal     = () => document.getElementById('rushModal');
+  const $icon      = () => document.getElementById('rushIcon');
+  const $title     = () => document.getElementById('rushTitle');
+  const $msg       = () => document.getElementById('rushMsg');
+  const $detail    = () => document.getElementById('rushDetail');
+  const $countdown = () => document.getElementById('rushCountdown');
+
+  function setModal(iconTxt,titleTxt,titleColor,borderColor,msgTxt,detailHTML,cdVisible,btnVisible,btnTxt){
+    const m=$modal();
+    m.querySelector('.modal-box').style.borderTopColor=borderColor;
+    $icon().textContent=iconTxt; $title().textContent=titleTxt; $title().style.color=titleColor;
+    $msg().textContent=msgTxt; $detail().innerHTML=detailHTML;
+    $countdown().style.display=cdVisible?'block':'none';
+    const btn=document.getElementById('rushDismissBtn');
+    btn.style.display=btnVisible?'block':'none';
+    btn.textContent=btnTxt||"I'll Read More Carefully";
+    m.classList.add('visible');
+  }
+
+  function showWarning(){
+    setModal('⚠️','Slow Down — Read the Content!','#92400e','#f59e0b',
+      "You're moving too quickly through the activities.",
+      "Take time to read each question and feedback carefully. These concepts appear directly on the quiz.<br><br>4 more rapid wrong answers and this activity locks for <strong>60 seconds</strong>.",
+      false,true,"I'll Take My Time");
+  }
+  function showTimeout(){
+    setModal('🔒','Activity Locked','#dc2626','#dc2626',
+      'Too many rapid wrong answers.',
+      `This activity is locked for <strong>${COOLDOWN_S} seconds</strong>. Use this time to review the content.`,
+      true,false,'');
+    $countdown().textContent=COOLDOWN_S+'s';
+    startCooldown();
+  }
+  function showHardLock(){
+    hardLocked=true; locked=true;
+    localStorage.setItem(HARD_LOCK_KEY,'1');
+    setModal('🔑','Assignment Permanently Locked','#7f1d1d','#7f1d1d',
+      'This assignment has been permanently locked.',
+      'Contact your instructor for the unlock password.',
+      false,true,'Enter Unlock Password');
+    applyHardOverlay();
+    document.getElementById('rushDismissBtn').addEventListener('click',promptPassword,{once:true});
+  }
+
+  function promptPassword(){
+    const detail=$detail();
+    detail.innerHTML=`<input id="rl-pwd" type="password" placeholder="Enter instructor password" style="width:100%;padding:8px 12px;border:2px solid #d0d5dd;border-radius:6px;font-size:.95rem;margin-bottom:8px;"><br><button id="rl-submit" class="ix-continue-btn" style="margin-top:4px;background:#1D4F91;">Submit</button><p id="rl-pmsg" style="color:#dc2626;font-size:.85rem;margin-top:6px;"></p>`;
+    const input=document.getElementById('rl-pwd');
+    const btn=document.getElementById('rl-submit');
+    const pmsg=document.getElementById('rl-pmsg');
+    function tryUnlock(){
+      if(input.value.trim().toLowerCase()===PASSWORD){
+        hardLocked=false; locked=false;
+        localStorage.removeItem(HARD_LOCK_KEY);
+        $modal().classList.remove('visible');
+        const ov=document.getElementById('rush-hard-overlay');
+        if(ov) ov.remove();
+      } else {
+        pmsg.textContent='Incorrect password. Contact your instructor.';
+        input.value=''; input.focus();
+      }
+    }
+    btn.addEventListener('click',tryUnlock);
+    input.addEventListener('keydown',e=>{if(e.key==='Enter') tryUnlock();});
+    input.focus();
+  }
+
+  function applyHardOverlay(){
+    const area=document.getElementById('content-area');
+    if(!area||document.getElementById('rush-hard-overlay')) return;
+    const ov=document.createElement('div');
+    ov.id='rush-hard-overlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:1400;background:rgba(127,29,29,.06);backdrop-filter:blur(2px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:30px;pointer-events:all;';
+    ov.innerHTML=`<div style="font-size:3rem;">🔑</div><h3 style="color:#7f1d1d;font-size:1.15rem;margin:0;">Assignment Locked</h3><p style="max-width:380px;font-size:.92rem;color:#555;margin:0;line-height:1.5;">Contact your instructor for the unlock password.</p>`;
+    area.style.position='relative';
+    area.appendChild(ov);
+  }
+
+  function startCooldown(){
+    locked=true;
+    let secs=COOLDOWN_S;
+    $countdown().textContent=secs+'s';
+    if(currentWrapper){
+      currentWrapper.style.position='relative';
+      let ov=document.getElementById('rush-lock-overlay');
+      if(!ov){ ov=document.createElement('div'); ov.className='activity-locked-overlay'; ov.id='rush-lock-overlay'; currentWrapper.appendChild(ov); }
+      ov.innerHTML=`<h3>🔒 Activity Locked</h3><p>Take ${COOLDOWN_S} seconds to study the content.</p><div class="lock-countdown" id="lock-secs">${secs}s</div><p style="font-size:.82rem;">Activity will reset when the timer ends.</p>`;
+    }
+    cooldownTimer=setInterval(()=>{
+      secs--;
+      const cd=$countdown(), ls=document.getElementById('lock-secs');
+      if(cd) cd.textContent=secs+'s';
+      if(ls) ls.textContent=secs+'s';
+      if(secs<=0){
+        clearInterval(cooldownTimer);
+        lockCycles++; locked=false; strikes=0; wrongTimestamps=[];
+        $modal().classList.remove('visible');
+        const ov=document.getElementById('rush-lock-overlay');
+        if(ov) ov.remove();
+        if(typeof currentView==='number') showActivity(currentView);
+        else if(currentView==='0a'||currentView==='0b'||currentView==='0c') showActivity(0);
+      }
+    },1000);
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    if(localStorage.getItem(HARD_LOCK_KEY)==='1'){
+      hardLocked=true; locked=true;
+      setTimeout(()=>showHardLock(),300);
+    }
+    document.getElementById('rushDismissBtn').addEventListener('click',()=>{
+      if(hardLocked) return;
+      $modal().classList.remove('visible');
+      wrongTimestamps=[];
+      flipRushCount=0;
+    });
+  });
+
+  let flipRushCount  = 0;
+  let flipStrikes    = 0;
+
+  function showFlipWarning(wrapper){
+    currentWrapper = wrapper;
+    if(lockCycles===0){
+      setModal('⚠️','Slow Down — Read the Cards!','#92400e','#f59e0b',
+        "You're moving through the vocabulary cards too quickly.",
+        "Flip each card and spend at least <strong>6 seconds reading the definition</strong> before moving on. These terms appear directly on the quiz.<br><br>6 more rapid moves and this activity locks for <strong>60 seconds</strong>.",
+        false,true,"I'll Read Each Definition Carefully");
+    } else if(lockCycles===1){
+      setModal('🚨','Final Warning — Read the Definitions!','#dc2626','#dc2626',
+        "You're still skipping through cards without reading them.",
+        "6 more rapid moves and this activity locks again for <strong>60 seconds</strong>.<br><br>⚠️ <strong>A third lockout will permanently lock this assignment</strong> and require an instructor password.",
+        false,true,"I Understand — I'll Take My Time");
+    } else {
+      setModal('🚨','Final Warning — Last Chance','#7f1d1d','#7f1d1d',
+        "You have already received two 60-second timeouts for rushing through cards.",
+        "⚠️ <strong>If you rush again, this assignment will be permanently locked</strong> and you will need to contact your instructor.",
+        false,true,"I Understand — This Is My Last Chance");
+    }
+  }
+
+  return {
+    reset(){
+      if(hardLocked) return;
+      wrongTimestamps=[]; strikes=0; locked=false;
+      flipRushCount=0; flipStrikes=0;
+      if(cooldownTimer){clearInterval(cooldownTimer);cooldownTimer=null;}
+      const ov=document.getElementById('rush-lock-overlay');
+      if(ov) ov.remove();
+    },
+    recordWrong(wrapper){
+      if(locked||hardLocked) return;
+      currentWrapper=wrapper;
+      const now=Date.now();
+      wrongTimestamps.push(now);
+      wrongTimestamps=wrongTimestamps.filter(t=>now-t<WINDOW_MS);
+      if(wrongTimestamps.length<THRESHOLD) return;
+      wrongTimestamps=[]; strikes++;
+      if(strikes===1){ showWarning(); }
+      else {
+        strikes=0;
+        if(lockCycles>=2){ showHardLock(); } else { showTimeout(); }
+      }
+    },
+    recordFlipRush(wrapper){
+      if(locked||hardLocked) return;
+      currentWrapper=wrapper;
+      flipRushCount++;
+      if(flipRushCount < 2) return;
+      flipRushCount=0; flipStrikes++;
+      if(flipStrikes===1){ showFlipWarning(wrapper); }
+      else { flipStrikes=0; if(lockCycles>=2){ showHardLock(); } else { showTimeout(); } }
+    },
+    isLocked(){ return locked||hardLocked; }
+  };
+})();
+
+/* ==========================================================
+   UTILITY
+========================================================== */
+function announce(msg){
+  const el=document.getElementById('aria-live');
+  el.textContent='';
+  setTimeout(()=>el.textContent=msg,60);
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+function qs(sel,root=document){return root.querySelector(sel)}
+function qsa(sel,root=document){return [...root.querySelectorAll(sel)]}
+
+function showPartTransition(fromEl, toEl, initFn){
+  fromEl.classList.add('part-fade-out');
+  setTimeout(()=>{
+    fromEl.style.display='none';
+    toEl.style.display='block';
+    toEl.classList.add('part-fade-in');
+    if(initFn) initFn();
+  },360);
+}
+
+/* ==========================================================
+   ACTIVITIES DEFINITION
+========================================================== */
+const ACTIVITIES=[
+  {id:'act1',title:'Activity 1',subtitle:'Alcohol Basics: Vocabulary & Clarifications',type:'FLIPCARD',locked:false,done:false},
+  {id:'act2',title:'Activity 2',subtitle:'Alcohol in Society: History & Culture',type:'SEQUENCE',locked:true,done:false},
+  {id:'act3',title:'Activity 3',subtitle:'BAC Reality Check',type:'MULTISTAGE',locked:true,done:false},
+  {id:'act4',title:'Activity 4',subtitle:'Tolerance, Dependence & Withdrawal',type:'CARDSORT',locked:true,done:false},
+  {id:'act5',title:'Activity 5',subtitle:'Alcohol, Behavior & Decision-Making',type:'BRANCHING',locked:true,done:false}
+];
+
+const ACT_SUBPARTS={
+  0:[
+    {key:'0a',label:'1a – Core Vocabulary'},
+    {key:'0b',label:'1b – Clarification Cards'},
+    {key:'0c',label:'1c – Understanding Check'}
+  ],
+  1:[
+    {key:'1a',label:'2a – Timeline Sequence'},
+    {key:'1b',label:'2b – Attitude Matching'},
+    {key:'1c',label:'2c – Interpretation Check'}
+  ],
+  2:[
+    {key:'2a',label:'3a – Absorption Sort'},
+    {key:'2c',label:'3b – College Scenarios'},
+    {key:'2d',label:'3c – Myth Check'}
+  ],
+  3:[
+    {key:'3a',label:'4a – Sort the Evidence'},
+    {key:'3b',label:'4b – Case Questions'}
+  ],
+  4:[
+    {key:'4a',label:'5 – Decision Scenarios'}
+  ]
+};
+
+let currentView='cover';
+
+/* ==========================================================
+   STORAGE
+========================================================== */
+const STORAGE_KEY='ch9-v4';
+const partADone=new Array(5).fill(false);
+const partBDone=new Array(5).fill(false);
+const partCDone=new Array(5).fill(false);
+const partDDone=new Array(5).fill(false);
+
+function saveProgress(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({
+    currentView,
+    done:ACTIVITIES.map(a=>a.done),
+    locked:ACTIVITIES.map(a=>a.locked),
+    partADone:[...partADone],
+    partBDone:[...partBDone],
+    partCDone:[...partCDone],
+    partDDone:[...partDDone]
+  }));
+}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(!d||!Array.isArray(d.done)||d.done.length!==ACTIVITIES.length) return;
+    currentView=d.currentView!==undefined?d.currentView:'cover';
+    ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
+    ACTIVITIES[0].locked=false;
+    if(Array.isArray(d.partADone)) d.partADone.forEach((v,i)=>{if(i<partADone.length) partADone[i]=!!v;});
+    if(Array.isArray(d.partBDone)) d.partBDone.forEach((v,i)=>{if(i<partBDone.length) partBDone[i]=!!v;});
+    if(Array.isArray(d.partCDone)) d.partCDone.forEach((v,i)=>{if(i<partCDone.length) partCDone[i]=!!v;});
+    if(Array.isArray(d.partDDone)) d.partDDone.forEach((v,i)=>{if(i<partDDone.length) partDDone[i]=!!v;});
+    announce('Your previous progress has been restored.');
+  }catch(e){}
+}
+
+function resolveCurrentViewIndex(){
+  if(currentView==='cover') return null;
+  if(currentView==='0a'||currentView==='0b'||currentView==='0c') return 0;
+  if(currentView==='1a'||currentView==='1b'||currentView==='1c') return 1;
+  if(currentView==='2a'||currentView==='2c'||currentView==='2d') return 2;
+  if(currentView==='3a'||currentView==='3b') return 3;
+  if(currentView==='4a') return 4;
+  if(typeof currentView==='number') return currentView;
+  const n=parseInt(currentView);
+  return isNaN(n)?null:n;
+}
+
+function doneCount(){return ACTIVITIES.filter(a=>a.done).length;}
+
+function isSubUnlocked(actIdx, partKey){
+  const a=ACTIVITIES[actIdx];
+  if(a.locked) return false;
+  if(actIdx===0){
+    if(partKey==='0a') return true;
+    if(partKey==='0b') return partADone[0];
+    if(partKey==='0c') return partBDone[0];
+  }
+  if(actIdx===1){
+    if(partKey==='1a') return true;
+    if(partKey==='1b') return partADone[1];
+    if(partKey==='1c') return partBDone[1];
+  }
+  if(actIdx===2){
+    if(partKey==='2a') return true;
+    if(partKey==='2c') return partADone[2];
+    if(partKey==='2d') return partBDone[2];
+  }
+  if(actIdx===3){
+    if(partKey==='3a') return true;
+    if(partKey==='3b') return partADone[3];
+  }
+  if(actIdx===4){
+    if(partKey==='4a') return true;
+  }
+  return false;
+}
+
+function isSubDone(actIdx, partKey){
+  if(actIdx===0){
+    if(partKey==='0a') return partADone[0];
+    if(partKey==='0b') return partBDone[0];
+    if(partKey==='0c') return ACTIVITIES[0].done;
+  }
+  if(actIdx===1){
+    if(partKey==='1a') return partADone[1];
+    if(partKey==='1b') return partBDone[1];
+    if(partKey==='1c') return ACTIVITIES[1].done;
+  }
+  if(actIdx===2){
+    if(partKey==='2a') return partADone[2];
+    if(partKey==='2c') return partBDone[2];
+    if(partKey==='2d') return ACTIVITIES[2].done;
+  }
+  if(actIdx===3){
+    if(partKey==='3a') return partADone[3];
+    if(partKey==='3b') return ACTIVITIES[3].done;
+  }
+  if(actIdx===4){
+    if(partKey==='4a') return ACTIVITIES[4].done;
+  }
+  return false;
+}
+
+/* ==========================================================
+   SIDEBAR
+========================================================== */
+function renderSidebar(){
+  const nav=document.getElementById('nav-list');
+  nav.innerHTML='';
+  const done=doneCount();
+  const pct=Math.round((done/ACTIVITIES.length)*100);
+  document.getElementById('overallProgressFill').style.width=pct+'%';
+  document.getElementById('overallProgressBar').setAttribute('aria-valuenow',done);
+  document.getElementById('sidebar-footer').textContent=`${done} of ${ACTIVITIES.length} activities complete`;
+
+  if(done===ACTIVITIES.length){
+    const reviewItem=document.createElement('div');
+    reviewItem.className='nav-item'+(currentView==='review'?' active':'');
+    reviewItem.tabIndex=0; reviewItem.setAttribute('role','button');
+    reviewItem.setAttribute('aria-label','Review and Study Guide');
+    reviewItem.innerHTML=`<span class="nav-title">📖 Review &amp; Study Guide</span>`;
+    reviewItem.onclick=()=>showReviewSummary();
+    reviewItem.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();reviewItem.click();}};
+    // appended after activities loop — stored for later insertion
+    nav.__reviewItem=reviewItem;
+  }
+
+  const dotsEl=document.getElementById('topBarProgress');
+  dotsEl.innerHTML='';
+  const dotWrap=document.createElement('div');
+  dotWrap.className='progress-dots';
+  dotWrap.setAttribute('aria-label',`${done} of ${ACTIVITIES.length} activities complete`);
+  ACTIVITIES.forEach(a=>{
+    const d=document.createElement('span');
+    d.className='progress-dot'+(a.done?' done':'');
+    d.title=a.subtitle+(a.done?' – Complete':a.locked?' – Locked':' – In progress');
+    dotWrap.appendChild(d);
+  });
+  dotsEl.appendChild(dotWrap);
+
+  const cover=document.createElement('div');
+  cover.className='nav-item'+(currentView==='cover'?' active':'');
+  cover.tabIndex=0; cover.setAttribute('role','button'); cover.setAttribute('aria-label','Cover page');
+  cover.innerHTML=`<span class="nav-title">📋 Cover Page</span>`;
+  cover.onclick=()=>showCover();
+  cover.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cover.click();}};
+  nav.appendChild(cover);
+
+  ACTIVITIES.forEach((a,i)=>{
+    const subparts=ACT_SUBPARTS[i]||[];
+    const isActive=subparts.some(s=>currentView===s.key)||currentView===i;
+    const item=document.createElement('div');
+    item.className=`nav-item${isActive?' active':''}${a.locked?' locked':''}${a.done?' done':''}`;
+    item.tabIndex=a.locked?-1:0;
+    item.setAttribute('role','button');
+    item.setAttribute('aria-disabled',a.locked?'true':'false');
+    item.setAttribute('aria-label',`${a.title}: ${a.subtitle}${a.done?' – Completed':a.locked?' – Locked':''}`);
+    item.innerHTML=`<span class="nav-title">${a.title}<br><small style="font-weight:400;font-size:.78rem;color:#555">${a.subtitle}</small></span>${a.locked?'<span class="lock-icon" aria-hidden="true">🔒</span>':''}`;
+    item.onclick=()=>{
+      if(!a.locked){
+        const firstSub=subparts[0];
+        if(firstSub){ currentView=firstSub.key; }
+        showActivity(i);
+      } else {
+        announce('This activity is locked. Complete the previous activity first.');
+      }
+    };
+    item.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();item.click();}};
+    nav.appendChild(item);
+
+    if(!a.locked && subparts.length>0){
+      const sublist=document.createElement('div');
+      sublist.className='nav-sublist';
+      subparts.forEach(sp=>{
+        const unlocked=isSubUnlocked(i,sp.key);
+        const done=isSubDone(i,sp.key);
+        const isSubActive=currentView===sp.key;
+        const sub=document.createElement('div');
+        sub.className='nav-subitem'+(isSubActive?' sub-active':'')+(done?' sub-done':'')+(unlocked?'':' sub-locked');
+        sub.innerHTML=`<span class="sub-dot${done?' done':isSubActive?' active':''}"></span>${sp.label}${!unlocked?' 🔒':''}`;
+        sub.setAttribute('tabindex',unlocked?'0':'-1');
+        if(unlocked){
+          sub.addEventListener('click',()=>{
+            currentView=sp.key;
+            showActivity(i);
+          });
+          sub.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();sub.click();}});
+        }
+        sublist.appendChild(sub);
+      });
+      nav.appendChild(sublist);
+    }
+  });
+  if(nav.__reviewItem) nav.appendChild(nav.__reviewItem);
+}
+
+document.getElementById('toggleBtn').addEventListener('click',()=>{
+  const collapsed=document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('toggleBtn').setAttribute('aria-expanded',!collapsed);
+  announce(collapsed?'Navigation hidden':'Navigation shown');
+});
+
+/* ==========================================================
+   COVER PAGE
+========================================================== */
+const actDescriptions=[
+  {num:1,name:'Alcohol Basics: Vocabulary & Clarifications',desc:'Study 8 core alcohol terms and 4 college-specific myth-busting cards using flip cards, then pass a 4-question understanding check.',tag:'Flip Cards + Knowledge Check · Remember → Understand'},
+  {num:2,name:'Alcohol in Society: History & Culture',desc:'Sequence 5 major historical eras of alcohol use, match social attitudes to time periods, and answer 3 interpretation questions connecting history to campus culture.',tag:'Sequence + Matching + MC · Understand'},
+  {num:3,name:'BAC Reality Check',desc:'Sort 8 absorption factors into categories, apply pharmacology to 6 college scenarios, and bust 4 sobering-up myths.',tag:'3-Part Activity · Apply → Analyze'},
+  {num:4,name:'Tolerance, Dependence & Withdrawal',desc:'Sort 20 evidence cards into 5 tolerance/dependence categories, then answer 5 case-based questions to confirm your understanding.',tag:'Card Sort + Case Checks · Analyze'},
+  {num:5,name:'Alcohol, Behavior & Decision-Making',desc:'Work through 5 realistic college scenarios involving drinking games, driving, aggression, sexual decision-making, and harm reduction.',tag:'Branching Scenario · Evaluate'}
+];
+
+function showCover(){
+  currentView='cover';
+  document.getElementById('topBarTitle').textContent='Chapter 9 – Alcohol';
+  renderSidebar();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  const pg=document.createElement('div');
+  pg.id='cover-page';
+  pg.innerHTML=`
+    <div class="cover-badge">PSYC 333 · Chapter 9</div>
+    <h1 class="cover-title">Alcohol</h1>
+    <p class="cover-subtitle">Alcohol is the most widely used psychoactive drug among college students. This module goes beyond memorization — you'll apply scientific evidence to realistic college-age drinking scenarios. Complete all 5 activities to prepare for the Chapter 9 quiz.</p>
+    <div class="cover-instructions">
+      <strong>How to use this module:</strong>
+      Complete each activity in order. Every activity must be finished correctly before the next one unlocks. Your progress is saved automatically so you can return where you left off.
+    </div>
+    <div class="cover-cards">${actDescriptions.map(a=>`
+      <div class="cover-card">
+        <div class="cover-card-num">${a.num}</div>
+        <div class="cover-card-body">
+          <h3>${a.name}</h3>
+          <p>${a.desc}</p>
+          <span class="cover-tag">${a.tag}</span>
+        </div>
+      </div>`).join('')}
+    </div>
+    <button class="get-started-btn" id="coverStartBtn">▶ Begin Activity 1</button>
+  `;
+  area.appendChild(pg);
+  qs('#coverStartBtn').addEventListener('click',()=>showActivity(0));
+  saveProgress();
+}
+
+
+/* ==========================================================
+   REFLECTION QUESTIONS (randomised on completion)
+========================================================== */
+const REFLECTION_QUESTIONS = [
+  'What was the most important concept in this chapter? Describe the concept in your own words and why it matters.',
+  'How does this chapter connect to something you already know? Explain both the new idea and the old idea and how they connect.',
+  'What part of the chapter seemed most useful or relevant to real life? Explain the idea or concept in your own words. How is it relevant or useful?',
+  'How could the information in this chapter apply to your future coursework or your future career? Select at least 1 idea or concept and describe it in your own words. How does it apply to your future?',
+  'What is one takeaway from this chapter that you will remember later? Describe the takeaway in your own words. Why will you remember it later?'
+];
+
+/* ==========================================================
+   REVIEW & STUDY GUIDE PAGE
+========================================================== */
+function showReviewSummary(){
+  currentView='review';
+  document.getElementById('topBarTitle').textContent='Chapter 9 – Review & Study Guide';
+  renderSidebar();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  const pg=document.createElement('div');
+  pg.className='review-screen';
+  pg.innerHTML=`
+    <div class="review-badge">✅ All Activities Complete</div>
+    <h2>Chapter 9 – Alcohol: Review &amp; Study Guide</h2>
+    <div class="review-section">
+      <h3>🔑 Foundational Vocabulary</h3>
+      <ul class="review-list">
+        <li><strong>Standard Drink:</strong> ~0.6 oz pure alcohol — 12 oz beer = 5 oz wine = 1.5 oz 80-proof liquor</li>
+        <li><strong>BAC (Blood Alcohol Concentration):</strong> % of alcohol in bloodstream; legal limit = 0.08% in all 50 states</li>
+        <li><strong>Intoxication:</strong> temporary physical/psychological impairment; can occur before "feeling drunk"</li>
+        <li><strong>Blackout:</strong> alcohol-induced memory loss while CONSCIOUS — NOT passing out</li>
+        <li><strong>Tolerance:</strong> more alcohol needed for same effect; does NOT lower BAC or reduce physical harm</li>
+        <li><strong>Physical Dependence:</strong> body adapts to alcohol; withdrawal occurs when use stops</li>
+        <li><strong>Heavy Drinking:</strong> defined by negative consequences (health, academic, legal, social) — not just quantity</li>
+      </ul>
+    </div>
+    <div class="review-section">
+      <h3>🏛️ Alcohol in Society — Historical Sequence</h3>
+      <ul class="review-list">
+        <li>Early Fermentation (China &amp; Egypt) → ritual and daily use; alcohol as social norm</li>
+        <li>Distilled Spirits Era → higher concentration, greater harm potential</li>
+        <li>Colonial America → alcohol embedded in daily life across ages and contexts</li>
+        <li>Temperance Movement → alcohol framed as moral/social problem</li>
+        <li>Prohibition &amp; Repeal → national ban failed; long-term U.S. ambivalence toward regulation</li>
+      </ul>
+    </div>
+    <div class="review-section">
+      <h3>⚗️ Pharmacokinetics &amp; Absorption</h3>
+      <ul class="review-list">
+        <li><strong>Speeds absorption:</strong> carbonation, fast drinking, high concentration drinks</li>
+        <li><strong>Slows absorption:</strong> food (especially milk)</li>
+        <li><strong>Myths (don't speed removal):</strong> coffee, exercise, cold showers</li>
+        <li>Peak BAC can occur <strong>30–90 minutes after stopping</strong> drinking</li>
+        <li>Metabolism = constant rate ~0.35 oz/hour (zero-order kinetics) — nothing speeds this up</li>
+      </ul>
+    </div>
+    <div class="review-section">
+      <h3>📊 Tolerance Types</h3>
+      <ul class="review-list">
+        <li><strong>Dispositional:</strong> liver metabolizes more efficiently; need more to maintain same BAC; reversible</li>
+        <li><strong>Acute:</strong> effects GREATER on rising BAC than falling at same level</li>
+        <li><strong>Protracted (Functional):</strong> brain adapts long-term; need more for same mood effect</li>
+        <li><strong>Cross-Tolerance:</strong> tolerance to one CNS depressant confers some tolerance to another</li>
+        <li><strong>Cross-Dependence:</strong> one CNS depressant can suppress withdrawal of another</li>
+      </ul>
+    </div>
+    <div class="review-section">
+      <h3>🚨 Withdrawal &amp; Dependence</h3>
+      <ul class="review-list">
+        <li>Withdrawal begins within hours to days after heavy use stops</li>
+        <li>Symptoms: sweating, racing heart, tremors, seizures, hallucinations</li>
+        <li>DSM-5: requires 2+ symptoms plus distress/impairment</li>
+        <li>Alcohol withdrawal CAN be fatal — one of few withdrawal syndromes that can kill</li>
+        <li>Benzodiazepines used medically to manage withdrawal (cross-dependence)</li>
+      </ul>
+    </div>
+    <div class="review-section">
+      <h3>🧠 Behavior &amp; Decision-Making</h3>
+      <ul class="review-list">
+        <li>Alcohol does NOT directly cause aggression; interacts with personality, expectations, and context</li>
+        <li>Driving: impairment begins at BAC ~0.05% — below the legal limit of 0.08%</li>
+        <li>Alcohol may increase perceived desire but REDUCES physiological arousal at moderate-high BAC</li>
+        <li>Harm reduction: reducing availability, pacing, and shifting social norms are most evidence-supported</li>
+      </ul>
+    </div>
+    <div class="review-section">
+      <h3>❌ Common Misconceptions</h3>
+      <ul class="review-list">
+        <li>Blackout ≠ passing out — person is CONSCIOUS during a blackout</li>
+        <li>Tolerance does NOT reduce BAC or physical harm</li>
+        <li>Legal limit (0.08%) ≠ safe to drive — impairment starts at 0.05% or lower</li>
+        <li>Coffee, exercise, cold showers DO NOT speed sobriety</li>
+        <li>Alcohol is a CNS DEPRESSANT (not excitant)</li>
+        <li>Beer contributes to BAC just like wine or liquor (standard drink equivalence)</li>
+      </ul>
+    </div>
+    <div style="text-align:center;margin-top:24px;">
+      <button class="download-btn" onclick="downloadStudyGuide()">⬇ Download Study Notes</button>
+    </div>
+  `;
+  area.appendChild(pg);
+}
+
+/* ==========================================================
+   COMPLETE ACTIVITY
+========================================================== */
+function completeActivity(index){
+  ACTIVITIES[index].done=true;
+  partADone[index]=true;
+  partBDone[index]=true;
+  partCDone[index]=true;
+  partDDone[index]=true;
+  if(index+1<ACTIVITIES.length){
+    ACTIVITIES[index+1].locked=false;
+  } else {
+    // Pick a random reflection question and populate the modal
+    const q=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+    document.getElementById('reflectionQuestion').textContent=q;
+    setTimeout(()=>document.getElementById('completionModal').classList.add('visible'),400);
+  }
+  renderSidebar();
+  saveProgress();
+  announce(`Activity ${index+1} complete!${index+1<ACTIVITIES.length?' Activity '+(index+2)+' is now unlocked.':' Chapter 9 complete!'}`);
+}
+
+/* ==========================================================
+   SHOW ACTIVITY
+========================================================== */
+function showActivity(index){
+  rushGuard.reset();
+  const a=ACTIVITIES[index];
+  document.getElementById('topBarTitle').textContent=`${a.title} – ${a.subtitle}`;
+  renderSidebar();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  area.scrollTop=0;
+
+  if(a.locked){
+    area.innerHTML=`<div class="interaction-wrapper"><div style="text-align:center;padding:60px 20px;color:#666;"><div style="font-size:3rem;">🔒</div><p style="margin-top:16px;font-size:1rem;">This activity is locked. Complete the previous activity first.</p></div></div>`;
+    return;
+  }
+
+  if(index===0){
+    if(currentView!=='0b'&&currentView!=='0c') currentView='0a';
+    renderSidebar();
+    renderAct1(area);
+  }
+  else if(index===1){
+    if(currentView!=='1b'&&currentView!=='1c') currentView='1a';
+    renderSidebar();
+    renderAct2(area);
+  }
+  else if(index===2){
+    if(currentView!=='2c'&&currentView!=='2d') currentView='2a';
+    renderSidebar();
+    renderAct3(area);
+  }
+  else if(index===3){
+    if(currentView!=='3b') currentView='3a';
+    renderSidebar();
+    renderAct4(area);
+  }
+  else if(index===4){
+    currentView='4a';
+    renderSidebar();
+    renderAct5(area);
+  }
+}
+
+/* ==========================================================
+   SHARED KC BUILDER
+========================================================== */
+function buildKCBlock(questions, containerEl, wrapperEl, onAllDone){
+  const shuffledQ=[...questions]; shuffle(shuffledQ);
+  let correctCount=0;
+  const wrongAttempts=new Array(shuffledQ.length).fill(0);
+
+  shuffledQ.forEach((q,qi)=>{
+    const block=document.createElement('div');
+    block.className='kc-question';
+    block.dataset.answered='false';
+    const shuffledOpts=[...q.options]; shuffle(shuffledOpts);
+    block.innerHTML=`
+      <div class="kc-qtext">${qi+1}. ${q.text}</div>
+      <div class="kc-options">${shuffledOpts.map(o=>`
+        <div class="kc-opt" tabindex="0" role="button" data-correct="${o.correct}">${o.text}</div>`).join('')}
+      </div>
+      <div class="kc-exp" id="kc-exp-${qi}-${Math.random().toString(36).slice(2)}"></div>
+    `;
+    const expId=block.querySelector('.kc-exp').id;
+    containerEl.appendChild(block);
+
+    qsa('.kc-opt',block).forEach(opt=>{
+      opt.addEventListener('click',()=>selectOpt(opt,block,q,qi,expId));
+      opt.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectOpt(opt,block,q,qi,expId);}});
+    });
+
+    function selectOpt(opt,block,q,qi,expId){
+      if(block.dataset.answered==='true') return;
+      const isCorrect=opt.dataset.correct==='true';
+      const exp=document.getElementById(expId);
+      if(isCorrect){
+        qsa('.kc-opt',block).forEach(o=>o.style.pointerEvents='none');
+        opt.classList.add('kc-opt-correct');
+        block.classList.remove('kc-incorrect'); block.classList.add('kc-correct');
+        block.dataset.answered='true';
+        exp.textContent='✅ '+q.explanation; exp.classList.add('visible');
+        announce('Correct! '+q.explanation);
+        correctCount++;
+        if(correctCount===shuffledQ.length) onAllDone();
+      } else {
+        opt.classList.add('kc-opt-wrong');
+        opt.style.pointerEvents='none';
+        block.classList.add('kc-incorrect');
+        wrongAttempts[qi]++;
+        rushGuard.recordWrong(wrapperEl);
+        const remaining=qsa('.kc-opt',block).filter(o=>!o.classList.contains('kc-opt-wrong')&&!o.classList.contains('kc-opt-correct'));
+        let hint='';
+        if(wrongAttempts[qi]===1) hint='❌ Not quite — re-read the question and try again.';
+        else if(wrongAttempts[qi]===2) hint=`❌ Hint: ${q.hint||'Think carefully about the definitions.'}`;
+        else hint='The correct answer is still available — select it to continue.';
+        if(remaining.length===0){
+          qsa('.kc-opt',block).forEach(o=>{if(o.dataset.correct==='true') o.classList.add('kc-opt-correct');});
+          block.dataset.answered='true';
+          exp.textContent='The correct answer is highlighted above. Review it carefully.';
+          exp.classList.add('visible');
+          correctCount++;
+          if(correctCount===shuffledQ.length) onAllDone();
+          announce('All options tried. Correct answer highlighted.');
+          return;
+        } else if(remaining.length===1){
+          qsa('.kc-opt',block).forEach(o=>{if(o.dataset.correct==='true') o.classList.add('kc-opt-correct');});
+          hint='The correct answer is now highlighted. Select it to continue.';
+        }
+        exp.textContent=hint; exp.classList.add('visible');
+        announce('Incorrect. '+hint);
+      }
+    }
+  });
+}
+
+/* ==========================================================
+   ACTIVITY 1 — ALCOHOL BASICS
+========================================================== */
+function renderAct1(area){
+  const jumpTo=currentView;
+
+  const partACards=[
+    {term:'Standard Drink',def:'A standard drink contains about 0.6 ounces of pure alcohol — such as 12 oz beer, 5 oz wine, or 1.5 oz of 80-proof liquor. It equalizes alcohol exposure across beverages.',hint1:'It equalizes beer, wine, and liquor.',hint2:'It\'s about alcohol content — not glass size.'},
+    {term:'Blood Alcohol Concentration (BAC)',def:'The percentage of alcohol in the bloodstream, used to estimate impairment. Law enforcement uses this number. 0.08% is the legal intoxication limit in the U.S.',hint1:'Law enforcement uses this number.',hint2:'0.08% is the legal intoxication limit in the U.S.'},
+    {term:'Intoxication',def:'A temporary state of physical and psychological impairment caused by alcohol in the central nervous system. It can occur before someone "feels drunk" and increases as BAC rises.',hint1:'This can occur before someone "feels drunk."',hint2:'It increases as BAC rises.'},
+    {term:'Blackout',def:'Alcohol-induced memory loss for events that occurred while the person was conscious. This is not passing out — the brain fails to store memories.',hint1:'This is not passing out.',hint2:'The brain fails to store memories.'},
+    {term:'Grayout',def:'Partial memory loss during drinking, often influenced by state-dependent learning. Some memories may return later depending on context and internal state.',hint1:'Some memories return later.',hint2:'Context and internal state matter.'},
+    {term:'Tolerance',def:'A condition in which more alcohol is required to achieve the same effect as before. Feeling "less drunk" does not mean lower BAC — tolerance does not protect the body.',hint1:'Feeling "less drunk" does not mean lower BAC.',hint2:'Tolerance does not protect the body.'},
+    {term:'Physical Dependence',def:'A state in which the body adapts to alcohol and experiences withdrawal symptoms when use stops. This involves biological adaptation and withdrawal can be medically serious.',hint1:'This involves biological adaptation.',hint2:'Withdrawal can be medically serious.'},
+    {term:'Heavy Drinking',def:'Drinking patterns associated with negative consequences — such as health, academic, legal, or social problems. It\'s not just about number of drinks; consequences define risk.',hint1:'It\'s not just about number of drinks.',hint2:'Consequences define risk.'}
+  ];
+
+  const partBCards=[
+    {term:'"Beer Isn\'t Really Alcohol" — Myth',def:'Beer contains alcohol and contributes to BAC just like wine or liquor when consumed as standard drinks. Alcohol content — not drink type — matters.',hint1:'Alcohol content, not drink type, matters.',hint2:'Standard drinks equalize alcohol exposure.'},
+    {term:'"I Didn\'t Feel Drunk" — Misconception',def:'Subjective feelings of intoxication often lag behind actual impairment, especially during rapid drinking. BAC can rise faster than awareness — feeling "fine" is not a safety indicator.',hint1:'BAC can rise faster than awareness.',hint2:'Feeling "fine" is not a safety indicator.'},
+    {term:'"Tolerance Makes You Safer" — Myth',def:'Tolerance may reduce noticeable effects but does not reduce BAC or physical harm. The liver still processes alcohol at the same rate — legal and medical risk remain.',hint1:'The liver still processes alcohol at the same rate.',hint2:'Legal and medical risk remain.'},
+    {term:'"Blacking Out Means I Passed Out" — False',def:'Blackouts involve memory failure, not loss of consciousness. People may talk, walk, and make decisions during a blackout — the danger is impaired judgment without memory.',hint1:'People may talk, walk, and make decisions.',hint2:'The danger is impaired judgment without memory.'}
+  ];
+
+  const partCQuestions=[
+    {
+      text:'Which statement best describes a blackout?',
+      options:[
+        {text:'Loss of consciousness due to alcohol',correct:false},
+        {text:'Temporary memory failure while conscious',correct:true},
+        {text:'Feeling dizzy and nauseous',correct:false},
+        {text:'Falling asleep after drinking',correct:false}
+      ],
+      explanation:'A blackout is a memory storage failure, not passing out. The person is fully conscious during the events they cannot later recall.',
+      hint:'Think about what "blackout" means for memory vs. consciousness.'
+    },
+    {
+      text:'Why is "standard drink" an important concept?',
+      options:[
+        {text:'It measures how drunk someone feels',correct:false},
+        {text:'It standardizes alcohol exposure across beverages',correct:true},
+        {text:'It only applies to beer',correct:false},
+        {text:'It changes based on tolerance',correct:false}
+      ],
+      explanation:'Standard drinks allow accurate comparison of alcohol intake regardless of beverage type — 12 oz beer, 5 oz wine, and 1.5 oz liquor all contain the same amount of alcohol.',
+      hint:'Think about comparing beer, wine, and liquor fairly.'
+    },
+    {
+      text:'Which statement is TRUE about tolerance?',
+      options:[
+        {text:'It lowers BAC',correct:false},
+        {text:'It eliminates overdose risk',correct:false},
+        {text:'It reduces noticeable effects without reducing harm',correct:true},
+        {text:'It prevents withdrawal',correct:false}
+      ],
+      explanation:'Tolerance changes perception, not physiology. A tolerant person may feel less drunk at the same BAC, but their body is experiencing the same toxic effects.',
+      hint:'Tolerance affects how you feel — not what alcohol is doing to your body.'
+    },
+    {
+      text:'Heavy drinking is best defined by:',
+      options:[
+        {text:'Drinking daily',correct:false},
+        {text:'Number of drinks alone',correct:false},
+        {text:'Age of the drinker',correct:false},
+        {text:'Negative consequences associated with use',correct:true}
+      ],
+      explanation:'Public health definitions focus on outcomes — health, academic, legal, or social problems — not just quantity.',
+      hint:'Think about what makes drinking "heavy" from a public health perspective.'
+    }
+  ];
+
+  const wA=document.createElement('div'); wA.className='interaction-wrapper'; wA.style.display='none';
+  const wB=document.createElement('div'); wB.className='interaction-wrapper'; wB.style.display='none';
+  const wC=document.createElement('div'); wC.className='interaction-wrapper'; wC.style.display='none';
+
+  wA.innerHTML=`
+    <h1>Alcohol Basics – Core Vocabulary</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:18px;">
+      <strong>Activity 1 – Part A: Core Vocabulary Flip Cards</strong> (Bloom's: Remember)<br>
+      Study each term and definition carefully. Spend at least <strong>6 seconds per card</strong>. Navigate through all ${partACards.length} cards, then continue to Part B.
+    </div>
+    <div class="flip-deck">
+      <div class="flip-progress-row">
+        <span class="ix-counter" style="margin:0;">Viewed: <span id="a1a-viewed">0</span>/${partACards.length}</span>
+        <div class="flip-progress-bar"><div class="flip-progress-fill" id="a1a-prog-fill" style="width:0%"></div></div>
+      </div>
+      <div class="flip-counter" id="a1a-counter" aria-live="polite">Card 1 of ${partACards.length}</div>
+      <div class="flip-card-wrap" id="a1a-card" tabindex="0" role="button" aria-label="Flip card. Press Enter to flip." aria-roledescription="flip card">
+        <div class="flip-card-inner">
+          <div class="flip-face flip-front">
+            <div class="flip-label">Term</div>
+            <div class="flip-term" id="a1a-term"></div>
+            <div class="flip-tap-hint">Click, tap, or press Enter to flip</div>
+          </div>
+          <div class="flip-face flip-back">
+            <div class="flip-label" style="color:var(--sky);">Definition</div>
+            <div class="flip-def" id="a1a-def"></div>
+            <div class="flip-tap-hint" style="color:#888;">Click or press Enter to flip back</div>
+          </div>
+        </div>
+      </div>
+      <div class="viewed-badge" id="a1a-badge"><span style="width:7px;height:7px;border-radius:50%;background:var(--sky);display:inline-block;"></span><span id="a1a-badge-text">Not yet viewed</span></div>
+      <div class="flip-nav">
+        <button class="flip-nav-btn" id="a1a-prev" aria-label="Previous card">⟨ Previous</button>
+        <button class="flip-nav-btn" id="a1a-next" aria-label="Next card">Next ⟩</button>
+      </div>
+    </div>
+    <button id="a1a-continue" class="ix-continue-btn" disabled>Continue to Part B: Clarification Cards →</button>
+  `;
+
+  wB.innerHTML=`
+    <h1>Alcohol Basics – College Clarifications</h1>
+    <div class="two-part-banner">
+      <div class="tpb-icon">🎓</div>
+      <div><span class="tpb-badge">Part B</span>These cards address common student misconceptions. Read each one carefully before continuing to the knowledge check.</div>
+    </div>
+    <div class="flip-deck">
+      <div class="flip-progress-row">
+        <span class="ix-counter" style="margin:0;">Viewed: <span id="a1b-viewed">0</span>/${partBCards.length}</span>
+        <div class="flip-progress-bar"><div class="flip-progress-fill" id="a1b-prog-fill" style="width:0%"></div></div>
+      </div>
+      <div class="flip-counter" id="a1b-counter" aria-live="polite">Card 1 of ${partBCards.length}</div>
+      <div class="flip-card-wrap" id="a1b-card" tabindex="0" role="button" aria-label="Flip card. Press Enter to flip." aria-roledescription="flip card">
+        <div class="flip-card-inner">
+          <div class="flip-face flip-front">
+            <div class="flip-label">Misconception</div>
+            <div class="flip-term" id="a1b-term"></div>
+            <div class="flip-tap-hint">Click, tap, or press Enter to flip</div>
+          </div>
+          <div class="flip-face flip-back">
+            <div class="flip-label" style="color:var(--sky);">Reality</div>
+            <div class="flip-def" id="a1b-def"></div>
+            <div class="flip-tap-hint" style="color:#888;">Click or press Enter to flip back</div>
+          </div>
+        </div>
+      </div>
+      <div class="viewed-badge" id="a1b-badge"><span style="width:7px;height:7px;border-radius:50%;background:var(--sky);display:inline-block;"></span><span id="a1b-badge-text">Not yet viewed</span></div>
+      <div class="flip-nav">
+        <button class="flip-nav-btn" id="a1b-prev" aria-label="Previous card">⟨ Previous</button>
+        <button class="flip-nav-btn" id="a1b-next" aria-label="Next card">Next ⟩</button>
+      </div>
+    </div>
+    <button id="a1b-continue" class="ix-continue-btn" disabled>Continue to Part C: Understanding Check →</button>
+  `;
+
+  wC.innerHTML=`
+    <h1>Alcohol Basics – Understanding Check</h1>
+    <div class="two-part-banner">
+      <div class="tpb-icon">📝</div>
+      <div><span class="tpb-badge">Part C</span>Answer all 4 questions correctly to unlock Activity 2. Wrong answers eliminate that option and reveal hints.</div>
+    </div>
+    <div id="a1c-questions"></div>
+    <button id="a1c-continue" class="ix-continue-btn" disabled style="margin-top:20px;">✅ Continue to Activity 2</button>
+  `;
+
+  area.appendChild(wA); area.appendChild(wB); area.appendChild(wC);
+
+  function buildFlipEngine(cards,idPrefix,wrapper,onAllViewed){
+    const visited=new Array(cards.length).fill(false);
+    let visitedCount=0, currentIdx=0, isFlipped=false;
+    const MIN_CARD_MS=6000;
+    let cardArrivalTime=Date.now();
+    function recordExit(){ if(rushGuard.isLocked()) return; if(Date.now()-cardArrivalTime<MIN_CARD_MS) rushGuard.recordFlipRush(wrapper); }
+    function resetTimer(){ cardArrivalTime=Date.now(); }
+    function updateCard(){
+      const c=cards[currentIdx];
+      qs('#'+idPrefix+'-term',wrapper).textContent=c.term;
+      qs('#'+idPrefix+'-def',wrapper).textContent=c.def;
+      qs('#'+idPrefix+'-counter',wrapper).textContent=`Card ${currentIdx+1} of ${cards.length}`;
+      qs('#'+idPrefix+'-card',wrapper).classList.remove('flipped');
+      qs('#'+idPrefix+'-prev',wrapper).disabled=currentIdx===0;
+      qs('#'+idPrefix+'-next',wrapper).disabled=currentIdx===cards.length-1;
+      isFlipped=false; resetTimer(); updateBadge();
+    }
+    function updateBadge(){
+      const done=visited[currentIdx];
+      const badge=qs('#'+idPrefix+'-badge',wrapper);
+      const dot=badge.querySelector('span');
+      qs('#'+idPrefix+'-badge-text',wrapper).textContent=done?'Viewed ✓':'Not yet viewed';
+      badge.style.background=done?'#e6f9ee':'#f0f7ff';
+      badge.style.borderColor=done?'#a3e4bc':'#D3E3FF';
+      dot.style.background=done?'#34c759':'#00A3E0';
+    }
+    function markViewed(){
+      if(!visited[currentIdx]){
+        visited[currentIdx]=true; visitedCount++;
+        const pct=Math.round(visitedCount/cards.length*100);
+        qs('#'+idPrefix+'-viewed',wrapper).textContent=visitedCount;
+        qs('#'+idPrefix+'-prog-fill',wrapper).style.width=pct+'%';
+        updateBadge();
+        if(visitedCount===cards.length) onAllViewed();
+      }
+    }
+    function toggleFlip(){
+      if(rushGuard.isLocked()) return;
+      const card=qs('#'+idPrefix+'-card',wrapper);
+      isFlipped=!isFlipped;
+      card.classList.toggle('flipped',isFlipped);
+      if(isFlipped){ markViewed(); announce('Definition: '+cards[currentIdx].def); }
+      else{ resetTimer(); announce('Term: '+cards[currentIdx].term); }
+    }
+    function navigateCard(dir){
+      if(rushGuard.isLocked()) return;
+      recordExit(); if(rushGuard.isLocked()) return;
+      const newIdx=currentIdx+dir;
+      if(newIdx<0||newIdx>=cards.length) return;
+      currentIdx=newIdx; updateCard();
+      announce(`Card ${currentIdx+1} of ${cards.length}: ${cards[currentIdx].term}`);
+    }
+    qs('#'+idPrefix+'-card',wrapper).addEventListener('click',toggleFlip);
+    qs('#'+idPrefix+'-card',wrapper).addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleFlip();}
+      if(e.key==='ArrowRight'){e.preventDefault();navigateCard(1);}
+      if(e.key==='ArrowLeft'){e.preventDefault();navigateCard(-1);}
+    });
+    qs('#'+idPrefix+'-prev',wrapper).addEventListener('click',()=>navigateCard(-1));
+    qs('#'+idPrefix+'-next',wrapper).addEventListener('click',()=>navigateCard(1));
+    resetTimer(); updateCard();
+  }
+
+  function initPartA(){
+    buildFlipEngine(partACards,'a1a',wA,()=>{
+      qs('#a1a-continue',wA).disabled=false;
+      partADone[0]=true; renderSidebar(); saveProgress();
+      announce('All Part A cards viewed! Click Continue to proceed to Part B.');
+    });
+    qs('#a1a-continue',wA).addEventListener('click',()=>{
+      partADone[0]=true; currentView='0b'; renderSidebar(); saveProgress();
+      showPartTransition(wA,wB,initPartB);
+    });
+  }
+
+  function initPartB(){
+    buildFlipEngine(partBCards,'a1b',wB,()=>{
+      qs('#a1b-continue',wB).disabled=false;
+      partBDone[0]=true; renderSidebar(); saveProgress();
+      announce('All Part B cards viewed! Click Continue to proceed to the Understanding Check.');
+    });
+    qs('#a1b-continue',wB).addEventListener('click',()=>{
+      partBDone[0]=true; currentView='0c'; renderSidebar(); saveProgress();
+      showPartTransition(wB,wC,initPartC);
+    });
+  }
+
+  function initPartC(){
+    const qArea=qs('#a1c-questions',wC);
+    qArea.innerHTML='';
+    buildKCBlock(partCQuestions,qArea,wC,()=>{
+      qs('#a1c-continue',wC).disabled=false;
+      announce('All questions answered! Continue button is now available.');
+    });
+    qs('#a1c-continue',wC).addEventListener('click',()=>{completeActivity(0);showActivity(1);});
+  }
+
+  if(jumpTo==='0b'&&partADone[0]){ wB.style.display='block'; initPartB(); }
+  else if(jumpTo==='0c'&&partBDone[0]){ wC.style.display='block'; initPartC(); }
+  else { wA.style.display='block'; initPartA(); }
+}
+
+/* ==========================================================
+   ACTIVITY 2 — ALCOHOL IN SOCIETY
+========================================================== */
+function renderAct2(area){
+  const jumpTo=currentView;
+
+  const timelineEvents=[
+    {id:'te1',label:'Early Fermentation (China & Egypt)',desc:'Alcohol produced unintentionally through natural fermentation; used in rituals and daily life.',order:1},
+    {id:'te2',label:'Development of Distilled Spirits',desc:'Distillation increases alcohol concentration, leading to stronger effects and greater harm potential.',order:2},
+    {id:'te3',label:'Colonial American Drinking Culture',desc:'Alcohol embedded in daily life; drinking across ages, times, and social contexts.',order:3},
+    {id:'te4',label:'Temperance Movement',desc:'Alcohol framed as a moral and social problem; push toward abstinence.',order:4},
+    {id:'te5',label:'Prohibition and Repeal',desc:'National ban followed by repeal; long-term ambivalence toward alcohol regulation.',order:5}
+  ];
+
+  const matchPairs=[
+    {id:'mp1',era:'Early Fermentation',attitude:'Alcohol is a normal part of everyday life and social bonding.',eraId:'era1',attId:'att1'},
+    {id:'mp2',era:'Distilled Spirits Era',attitude:'Stronger alcohol increases the risk of harm compared to earlier beverages.',eraId:'era2',attId:'att2'},
+    {id:'mp3',era:'Temperance Movement',attitude:'Alcohol is a dangerous substance responsible for major social problems.',eraId:'era3',attId:'att3'},
+    {id:'mp4',era:'Prohibition Era',attitude:'Alcohol use should be controlled through law and policy.',eraId:'era4',attId:'att4'}
+  ];
+
+  const interpretationQs=[
+    {
+      text:'Which statement BEST explains why alcohol remains socially accepted on college campuses today?',
+      options:[
+        {text:'Alcohol is biologically less harmful than other drugs',correct:false},
+        {text:'Alcohol has long been embedded in social rituals and norms',correct:true},
+        {text:'College students metabolize alcohol differently',correct:false},
+        {text:'Alcohol has no legal restrictions',correct:false}
+      ],
+      explanation:'Alcohol\'s deep historical role in social bonding and ritual contributes to its continued acceptance, including on campuses.',
+      hint:'Think about the historical patterns you just sequenced.'
+    },
+    {
+      text:'What lasting effect did Prohibition have on U.S. alcohol policy?',
+      options:[
+        {text:'Alcohol use disappeared',correct:false},
+        {text:'Alcohol became completely deregulated',correct:false},
+        {text:'The U.S. developed long-term ambivalence toward alcohol regulation',correct:true},
+        {text:'Alcohol was treated like illicit drugs permanently',correct:false}
+      ],
+      explanation:'Prohibition\'s failure led to ongoing tension between regulation, taxation, and social acceptance — a pattern that continues today.',
+      hint:'Think about what happened after Prohibition ended.'
+    },
+    {
+      text:'Which feature of modern college drinking culture MOST reflects historical patterns?',
+      options:[
+        {text:'Emphasis on rapid intoxication',correct:false},
+        {text:'Drinking as part of social bonding and identity',correct:true},
+        {text:'Use of alcohol for medical purposes',correct:false},
+        {text:'Alcohol as a rare or special substance',correct:false}
+      ],
+      explanation:'Like earlier societies, alcohol is tied to social belonging and shared experiences — a pattern visible from early fermentation through today\'s campus culture.',
+      hint:'Look back at what alcohol "meant" across the eras you matched.'
+    }
+  ];
+
+  const wA=document.createElement('div'); wA.className='interaction-wrapper'; wA.style.display='none';
+  const wB=document.createElement('div'); wB.className='interaction-wrapper'; wB.style.display='none';
+  const wC=document.createElement('div'); wC.className='interaction-wrapper'; wC.style.display='none';
+  area.appendChild(wA); area.appendChild(wB); area.appendChild(wC);
+
+  function initPartA2(){
+    const shuffledEvents=[...timelineEvents]; shuffle(shuffledEvents);
+    let seqCorrect=0, seqSelected=null;
+
+    wA.innerHTML=`
+      <h1>Alcohol in Society – Historical Timeline</h1>
+      <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+        <strong>Activity 2 – Part A: Sequence the Timeline</strong> (Bloom's: Understand)<br>
+        Drag each historical event to the correct numbered position on the timeline. Place all 5 events in chronological order to continue.
+      </div>
+      <div class="ix-counter" id="a2a-prog">Placed: 0/5</div>
+      <div class="seq-layout" style="margin-top:16px;">
+        <div>
+          <div class="seq-col-title">📦 Event Cards — Drag to timeline</div>
+          <div id="a2a-pool" class="seq-pool-cards"></div>
+        </div>
+        <div>
+          <div class="seq-col-title">🕐 Timeline — Drop events in order</div>
+          <div class="seq-slots" id="a2a-slots"></div>
+        </div>
+      </div>
+      <div id="a2a-feedback" class="ix-feedback" style="margin-top:14px;"></div>
+      <button id="a2a-continue" class="ix-continue-btn" disabled>Continue to Part B: Matching →</button>
+    `;
+
+    const poolEl=qs('#a2a-pool',wA);
+    shuffledEvents.forEach(ev=>{
+      const card=document.createElement('div');
+      card.className='seq-pool-card';
+      card.id='seq-'+ev.id;
+      card.dataset.evId=ev.id;
+      card.dataset.order=ev.order;
+      card.textContent=ev.label;
+      card.setAttribute('draggable','true');
+      card.setAttribute('tabindex','0');
+      card.setAttribute('aria-label',ev.label+'. Drag to timeline position.');
+      card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',card.id);card.style.opacity='.4';});
+      card.addEventListener('dragend',()=>{card.style.opacity='1';});
+      card.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){
+          e.preventDefault();
+          if(seqSelected===card){seqSelected=null;card.classList.remove('selected-seq');announce('Deselected.');}
+          else{if(seqSelected) seqSelected.classList.remove('selected-seq');seqSelected=card;card.classList.add('selected-seq');announce(`"${ev.label}" selected. Tab to a slot and press Enter.`);}
+        }
+      });
+      poolEl.appendChild(card);
+    });
+
+    const slotsEl=qs('#a2a-slots',wA);
+    for(let i=1;i<=5;i++){
+      const row=document.createElement('div'); row.className='seq-slot-row';
+      const num=document.createElement('div'); num.className='seq-num'; num.textContent=i+'.';
+      const drop=document.createElement('div');
+      drop.className='seq-drop'; drop.dataset.slot=i;
+      drop.setAttribute('tabindex','0'); drop.setAttribute('role','region');
+      drop.setAttribute('aria-label',`Timeline slot ${i}`);
+      drop.addEventListener('dragover',e=>e.preventDefault());
+      drop.addEventListener('dragenter',()=>{if(!drop.dataset.filled) drop.classList.add('drag-over');});
+      drop.addEventListener('dragleave',()=>drop.classList.remove('drag-over'));
+      drop.addEventListener('drop',e=>{
+        e.preventDefault(); drop.classList.remove('drag-over');
+        const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+        if(card) dropSeqCard(card,drop);
+      });
+      drop.addEventListener('keydown',e=>{
+        if((e.key==='Enter'||e.key===' ')&&seqSelected&&!drop.dataset.filled){e.preventDefault();dropSeqCard(seqSelected,drop);}
+      });
+      row.appendChild(num); row.appendChild(drop);
+      slotsEl.appendChild(row);
+    }
+
+    function dropSeqCard(card,drop){
+      const cardOrder=parseInt(card.dataset.order);
+      const slotOrder=parseInt(drop.dataset.slot);
+      const fb=qs('#a2a-feedback',wA);
+      if(cardOrder===slotOrder){
+        const placed=document.createElement('div');
+        placed.style.cssText='background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;border-radius:8px;padding:10px 12px;font-size:.85rem;font-weight:600;line-height:1.4;';
+        placed.textContent=card.textContent;
+        drop.appendChild(placed);
+        drop.classList.add('correct-zone'); drop.dataset.filled='1';
+        card.style.transition='opacity .3s, transform .3s';
+        card.style.opacity='0'; card.style.transform='scale(.85)';
+        setTimeout(()=>card.remove(),320);
+        seqCorrect++;
+        qs('#a2a-prog',wA).textContent=`Placed: ${seqCorrect}/5`;
+        if(seqCorrect===5){
+          fb.textContent='✅ Correct order! From early fermentation through Prohibition, alcohol\'s role in society has always been contested.';
+          fb.className='ix-feedback correct visible';
+          qs('#a2a-continue',wA).disabled=false;
+          partADone[1]=true; renderSidebar(); saveProgress();
+          announce('All events placed correctly! Continue button available.');
+        } else {
+          fb.textContent='✅ Correct placement! Keep going.';
+          fb.className='ix-feedback correct visible';
+          announce('Correct placement.');
+        }
+      } else {
+        fb.textContent='Not quite — think about the chronological order of these historical periods.';
+        fb.className='ix-feedback incorrect visible';
+        rushGuard.recordWrong(wA);
+        announce('Incorrect placement. Try again.');
+      }
+      if(seqSelected){seqSelected.classList.remove('selected-seq');seqSelected=null;}
+    }
+
+    qs('#a2a-continue',wA).addEventListener('click',()=>{
+      partADone[1]=true; currentView='1b'; renderSidebar(); saveProgress();
+      showPartTransition(wA,wB,initPartB2);
+    });
+  }
+
+  function initPartB2(){
+    const shuffledAtts=[...matchPairs]; shuffle(shuffledAtts);
+    let matchCorrect=0, matchSelected=null;
+    const wrongCounts={};
+
+    wB.innerHTML=`
+      <h1>Alcohol in Society – Attitude Matching</h1>
+      <div class="two-part-banner">
+        <div class="tpb-icon">🔗</div>
+        <div><span class="tpb-badge">Part B</span>Match each historical attitude to the era where it BEST fits. Drag attitude cards from the right and drop them onto the correct era on the left.</div>
+      </div>
+      <div class="ix-counter" id="a2b-prog">Matched: 0/4</div>
+      <div class="match-grid">
+        <div>
+          <div class="match-col-head">📜 Eras — Drop matching attitude here</div>
+          <div id="a2b-drops"></div>
+        </div>
+        <div>
+          <div class="match-col-head">💬 Attitudes — Drag to matching era</div>
+          <div id="a2b-cards"></div>
+        </div>
+      </div>
+      <div id="a2b-feedback" class="ix-feedback" style="margin-top:14px;"></div>
+      <button id="a2b-continue" class="ix-continue-btn" disabled>Continue to Part C: Interpretation →</button>
+    `;
+
+    const dropsEl=qs('#a2b-drops',wB);
+    matchPairs.forEach(p=>{
+      const drop=document.createElement('div');
+      drop.className='match-drop';
+      drop.id='drop-'+p.eraId;
+      drop.dataset.eraId=p.eraId;
+      drop.setAttribute('tabindex','0');
+      drop.setAttribute('role','region');
+      drop.setAttribute('aria-label',`Drop zone for ${p.era}`);
+      drop.innerHTML=`<div style="font-size:.78rem;font-weight:700;color:var(--navy);margin-bottom:4px;">${p.era}</div>`;
+      drop.addEventListener('dragover',e=>e.preventDefault());
+      drop.addEventListener('dragenter',()=>{if(!drop.dataset.filled) drop.classList.add('drag-over');});
+      drop.addEventListener('dragleave',()=>drop.classList.remove('drag-over'));
+      drop.addEventListener('drop',e=>{
+        e.preventDefault(); drop.classList.remove('drag-over');
+        const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+        if(card) dropMatchCard(card,drop);
+      });
+      drop.addEventListener('keydown',e=>{
+        if((e.key==='Enter'||e.key===' ')&&matchSelected&&!drop.dataset.filled){e.preventDefault();dropMatchCard(matchSelected,drop);}
+      });
+      dropsEl.appendChild(drop);
+    });
+
+    const cardsEl=qs('#a2b-cards',wB);
+    shuffledAtts.forEach(p=>{
+      const card=document.createElement('div');
+      card.className='match-left-item';
+      card.id='att-'+p.attId;
+      card.dataset.eraId=p.eraId;
+      card.textContent=p.attitude;
+      card.setAttribute('draggable','true');
+      card.setAttribute('tabindex','0');
+      card.setAttribute('aria-label',p.attitude+'. Drag to matching era on the left.');
+      card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',card.id);card.style.opacity='.4';});
+      card.addEventListener('dragend',()=>{card.style.opacity='1';});
+      card.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){
+          e.preventDefault();
+          if(matchSelected===card){matchSelected=null;card.classList.remove('selected-match');announce('Deselected.');}
+          else{if(matchSelected) matchSelected.classList.remove('selected-match');matchSelected=card;card.classList.add('selected-match');announce(`"${p.attitude.substring(0,40)}..." selected. Tab to an era on the left and press Enter.`);}
+        }
+      });
+      cardsEl.appendChild(card);
+    });
+
+    function dropMatchCard(card,drop){
+      const cardEraId=card.dataset.eraId;
+      const dropEraId=drop.dataset.eraId;
+      const fb=qs('#a2b-feedback',wB);
+      if(cardEraId===dropEraId){
+        const placed=document.createElement('div');
+        placed.style.cssText='background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;border-radius:6px;padding:8px 10px;font-size:.82rem;font-weight:600;line-height:1.3;margin-top:4px;';
+        placed.textContent=card.textContent;
+        drop.appendChild(placed);
+        drop.classList.add('match-correct'); drop.dataset.filled='1';
+        card.style.transition='opacity .3s, transform .3s';
+        card.style.opacity='0'; card.style.transform='scale(.85)';
+        setTimeout(()=>card.remove(),320);
+        matchCorrect++;
+        qs('#a2b-prog',wB).textContent=`Matched: ${matchCorrect}/4`;
+        if(matchCorrect===4){
+          fb.textContent='✅ All attitudes matched! Notice how alcohol shifted from a social norm to a social problem and back — this ambivalence shapes policy today.';
+          fb.className='ix-feedback correct visible';
+          qs('#a2b-continue',wB).disabled=false;
+          partBDone[1]=true; renderSidebar(); saveProgress();
+          announce('All matched! Continue button available.');
+        } else {
+          fb.textContent='✅ Correct match!';
+          fb.className='ix-feedback correct visible';
+          announce('Correct match.');
+        }
+      } else {
+        const key=card.id;
+        wrongCounts[key]=(wrongCounts[key]||0)+1;
+        const wc=wrongCounts[key];
+        if(wc===1) fb.textContent='Not quite — think about whether alcohol was being celebrated, feared, or regulated during this period.';
+        else fb.textContent='Hint: Early Fermentation = social norm; Distilled Spirits = increased harm; Temperance = moral problem; Prohibition = legal control.';
+        fb.className='ix-feedback incorrect visible';
+        rushGuard.recordWrong(wB);
+        announce('Incorrect match. Try again.');
+      }
+      if(matchSelected){matchSelected.classList.remove('selected-match');matchSelected=null;}
+    }
+
+    qs('#a2b-continue',wB).addEventListener('click',()=>{
+      partBDone[1]=true; currentView='1c'; renderSidebar(); saveProgress();
+      showPartTransition(wB,wC,initPartC2);
+    });
+  }
+
+  function initPartC2(){
+    wC.innerHTML=`
+      <h1>Alcohol in Society – Interpretation Check</h1>
+      <div class="two-part-banner">
+        <div class="tpb-icon">🔍</div>
+        <div><span class="tpb-badge">Part C</span>Connect historical patterns to modern campus culture. Answer all 3 questions correctly to unlock Activity 3.</div>
+      </div>
+      <div id="a2c-questions"></div>
+      <button id="a2c-continue" class="ix-continue-btn" disabled style="margin-top:20px;">✅ Continue to Activity 3</button>
+    `;
+    const qArea=qs('#a2c-questions',wC);
+    buildKCBlock(interpretationQs,qArea,wC,()=>{
+      qs('#a2c-continue',wC).disabled=false;
+      announce('All questions answered!');
+    });
+    qs('#a2c-continue',wC).addEventListener('click',()=>{completeActivity(1);showActivity(2);});
+  }
+
+  if(jumpTo==='1b'&&partADone[1]){ wB.style.display='block'; initPartB2(); }
+  else if(jumpTo==='1c'&&partBDone[1]){ wC.style.display='block'; initPartC2(); }
+  else { wA.style.display='block'; initPartA2(); }
+}
+
+/* ==========================================================
+   ACTIVITY 3 — BAC REALITY CHECK (4 Stages)
+========================================================== */
+function renderAct3(area){
+  const jumpTo=currentView;
+
+  const stages=[
+    document.createElement('div'),
+    document.createElement('div'),
+    document.createElement('div')
+  ];
+  stages.forEach(s=>{s.className='interaction-wrapper';s.style.display='none';area.appendChild(s);});
+
+  function initS1(){
+    const sortCards=[
+      {id:'sc1',text:'Carbonated alcoholic drink (e.g., champagne or mixed drink with soda)',bucket:'speeds',feedback:'Carbonated beverages are absorbed more quickly.'},
+      {id:'sc2',text:'Eating while drinking',bucket:'slows',feedback:'Food in the stomach retards absorption.'},
+      {id:'sc3',text:'Drinking milk while drinking',bucket:'slows',feedback:'Milk is especially effective at slowing absorption.'},
+      {id:'sc4',text:'Drinking quickly (shots / chugging / pre-gaming fast)',bucket:'speeds',feedback:'Faster drinking increases absorption rate.'},
+      {id:'sc5',text:'Higher concentration drinks ("neat" liquor vs diluted)',bucket:'speeds',feedback:'Higher concentration drinks absorb faster.'},
+      {id:'sc6',text:'Beer "counts less" because it\'s weaker',bucket:'myth',feedback:'Beer still contributes to BAC; standard drink equivalence applies.'},
+      {id:'sc7',text:'Coffee to sober up',bucket:'myth',feedback:'Coffee doesn\'t hasten sobriety; the liver needs constant time.'},
+      {id:'sc8',text:'Vigorous exercise to sober up',bucket:'myth',feedback:'Exercise does not speed alcohol oxidation.'}
+    ];
+    shuffle(sortCards);
+
+    let s1Correct=0, s1Selected=null;
+    const s1WrongCounts={};
+
+    stages[0].innerHTML=`
+      <h1>BAC Reality Check</h1>
+      <div class="stage-banner"><span class="stage-badge">3a – Absorption Sort</span>Absorption &amp; Timing: Sort each factor into the correct category.</div>
+      <div class="ix-explanation visible" style="display:block;margin-bottom:14px;">
+        <strong>Drag each factor</strong> into the best category based on Chapter 9. Sort all 8 cards correctly to advance.
+      </div>
+      <div class="ix-counter" id="s1-prog">Sorted: 0/8</div>
+      <div style="position:relative;min-height:100px;margin-bottom:16px;">
+        <div id="s1-stack" style="position:relative;"></div>
+      </div>
+      <div class="col-sort-grid">
+        <div class="col-sort-col">
+          <div class="col-sort-head">⚡ Speeds Absorption</div>
+          <div class="col-sort-zone" id="s1-speeds" data-bucket="speeds" tabindex="0" role="region" aria-label="Speeds absorption bucket"></div>
+        </div>
+        <div class="col-sort-col">
+          <div class="col-sort-head">🐢 Slows Absorption</div>
+          <div class="col-sort-zone" id="s1-slows" data-bucket="slows" tabindex="0" role="region" aria-label="Slows absorption bucket"></div>
+        </div>
+        <div class="col-sort-col">
+          <div class="col-sort-head">🚫 Doesn't Speed Removal (Myth)</div>
+          <div class="col-sort-zone" id="s1-myth" data-bucket="myth" tabindex="0" role="region" aria-label="Myth bucket"></div>
+        </div>
+      </div>
+      <div id="s1-feedback" class="ix-feedback" style="margin-top:14px;"></div>
+      <button id="s1-continue" class="ix-continue-btn" disabled>Continue to 3b: College Scenarios →</button>
+    `;
+
+    const s1Stack=qs('#s1-stack',stages[0]);
+    function buildS1Stack(){
+      s1Stack.innerHTML='';
+      const remaining=sortCards.filter(c=>!c._placed);
+      if(!remaining.length){s1Stack.style.height='40px';return;}
+      remaining.forEach((c,i)=>{
+        const isTop=i===remaining.length-1;
+        const offset=(remaining.length-1-i)*4;
+        const card=document.createElement('div');
+        card.id='s1c-'+c.id; card.dataset.bucket=c.bucket;
+        card.textContent=c.text;
+        card.style.cssText=`position:absolute;top:${offset}px;left:${offset}px;right:${-offset}px;
+          background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;border-radius:10px;
+          padding:12px 14px;font-size:.88rem;font-weight:600;line-height:1.4;
+          box-shadow:0 4px 12px rgba(0,0,0,.18);user-select:none;-webkit-user-select:none;
+          cursor:${isTop?'grab':'default'};pointer-events:${isTop?'auto':'none'};z-index:${i};min-height:56px;`;
+        if(isTop){
+          card.setAttribute('draggable','true'); card.setAttribute('tabindex','0');
+          card.setAttribute('aria-label',c.text+'. Drag to a category.');
+          card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',card.id);card.style.opacity='.4';});
+          card.addEventListener('dragend',()=>{card.style.opacity='1';});
+          card.addEventListener('keydown',e=>{
+            if(e.key==='Enter'||e.key===' '){
+              e.preventDefault();
+              if(s1Selected===card){s1Selected=null;card.style.outline='';announce('Deselected.');}
+              else{s1Selected=card;card.style.outline='3px solid var(--sky)';announce(`"${c.text.substring(0,40)}..." selected.`);}
+            }
+          });
+        }
+        s1Stack.appendChild(card);
+      });
+      s1Stack.style.height=(remaining.length>0?80+(remaining.length-1)*4:40)+'px';
+    }
+
+    ['#s1-speeds','#s1-slows','#s1-myth'].forEach(sel=>{
+      const zone=qs(sel,stages[0]);
+      zone.addEventListener('dragover',e=>e.preventDefault());
+      zone.addEventListener('dragenter',()=>zone.classList.add('drag-over'));
+      zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+      zone.addEventListener('drop',e=>{
+        e.preventDefault(); zone.classList.remove('drag-over');
+        const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+        if(card) dropS1(card,zone);
+      });
+      zone.addEventListener('keydown',e=>{
+        if((e.key==='Enter'||e.key===' ')&&s1Selected){e.preventDefault();dropS1(s1Selected,zone);}
+      });
+    });
+
+    function dropS1(card,zone){
+      const cardBucket=card.dataset.bucket, zoneBucket=zone.dataset.bucket;
+      const item=sortCards.find(c=>c.id===card.id.replace('s1c-',''));
+      const fb=qs('#s1-feedback',stages[0]);
+      if(cardBucket===zoneBucket){
+        const placed=document.createElement('div');
+        placed.style.cssText='background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;border-radius:6px;padding:8px 10px;font-size:.8rem;font-weight:600;line-height:1.3;margin-bottom:4px;';
+        placed.textContent=card.textContent;
+        zone.appendChild(placed);
+        if(item) item._placed=true;
+        s1Correct++; qs('#s1-prog',stages[0]).textContent=`Sorted: ${s1Correct}/8`;
+        buildS1Stack();
+        if(s1Correct===8){
+          fb.textContent='✅ All sorted! Carbonation and speed increase absorption; food and milk slow it; coffee and exercise are myths.';
+          fb.className='ix-feedback correct visible';
+          qs('#s1-continue',stages[0]).disabled=false;
+          partADone[2]=true; renderSidebar(); saveProgress();
+          announce('All sorted correctly!');
+        } else {
+          fb.textContent=`✅ Correct! ${item?item.feedback:''}`;
+          fb.className='ix-feedback correct visible';
+          announce('Correct placement.');
+        }
+      } else {
+        const key=card.id;
+        s1WrongCounts[key]=(s1WrongCounts[key]||0)+1;
+        const wc=s1WrongCounts[key];
+        if(wc===1) fb.textContent='Not quite — think about whether this factor makes alcohol enter the bloodstream faster, slower, or is a myth about sobering up.';
+        else fb.textContent='Hint: Speeds = carbonation, fast drinking, high concentration. Slows = food, milk. Myths = coffee, exercise.';
+        fb.className='ix-feedback incorrect visible';
+        rushGuard.recordWrong(stages[0]);
+        announce('Incorrect placement.');
+      }
+      if(s1Selected){s1Selected.style.outline='';s1Selected=null;}
+    }
+
+    buildS1Stack();
+    qs('#s1-continue',stages[0]).addEventListener('click',()=>{
+      partADone[2]=true; currentView='2c'; renderSidebar(); saveProgress();
+      showPartTransition(stages[0],stages[1],initS3);
+    });
+  }
+
+  function initS3(){
+    const scenarioQs=[
+      {text:'Two students each consume 4 standard drinks total. Student A drinks them in 45 minutes before going out. Student B drinks them over 3 hours with food. Who is more likely to experience a faster BAC rise and earlier impairment?',options:[{text:'Student B, because food increases absorption',correct:false},{text:'Student A, because faster drinking increases absorption',correct:true},{text:'Same risk because total drinks are the same',correct:false},{text:'Student B, because metabolism is faster during long nights',correct:false}],explanation:'Faster drinking increases absorption; food slows it, and metabolism is constant-rate. Total drinks are the same but timing and food change the BAC curve.',hint:'Compare speed + food presence. "Faster drinking means faster absorption."'},
+      {text:'A student has a mixed drink with soda on an empty stomach and feels a quick "kick." What factor BEST explains this?',options:[{text:'Soda neutralizes alcohol',correct:false},{text:'Carbonation increases absorption rate',correct:true},{text:'Carbonation slows alcohol metabolism',correct:false},{text:'Alcohol is digested like food first',correct:false}],explanation:'Carbonated beverages are absorbed more quickly than noncarbonated ones — the "bubbles" speed up how fast alcohol enters the bloodstream.',hint:'"Bubbles" matter. Think about champagne vs. wine from the chapter.'},
+      {text:'Someone stops drinking at midnight and says at 12:05: "I\'m done — my BAC will start dropping now." Why could this be wrong?',options:[{text:'BAC never drops after drinking',correct:false},{text:'Peak BAC can occur 30–90 minutes after stopping',correct:true},{text:'Coffee immediately increases metabolism',correct:false},{text:'Beer metabolizes faster than liquor',correct:false}],explanation:'Time to peak BAC can range from 30–90 minutes after stopping. BAC may still be rising even after the last drink.',hint:'Think "delay" after stopping. Peak BAC can come later than you expect.'},
+      {text:'A friend says "I\'m under the legal limit, so I\'m safe to drive." Which statement BEST reflects research on alcohol and driving?',options:[{text:'Driving impairment begins only at BACs above 0.08%',correct:false},{text:'Divided-attention tasks can be impaired at BACs as low as 0.05%',correct:true},{text:'If you feel normal, your reaction time is normal',correct:false},{text:'Only vision is impaired by alcohol',correct:false}],explanation:'Alcohol impairs divided-attention tasks at BACs of 0.05% or lower — well below the legal limit. Legal limit ≠ no impairment.',hint:'Legal limit ≠ no impairment. The chapter explicitly notes impairment at 0.05% or lower.'},
+      {text:'A student pours a "solo cup" of liquor-heavy mixed drink and calls it "one drink." Which concept BEST addresses this misunderstanding?',options:[{text:'Proof',correct:false},{text:'Standard drink equivalence',correct:true},{text:'Acute tolerance',correct:false},{text:'Pylorospasm',correct:false}],explanation:'A standard drink is defined as ~0.6 oz of alcohol. Drink size ≠ standard drink — a large mixed drink may contain 2–3 standard drinks.',hint:'This is about comparing alcohol amounts across beverages. Standard drink definition includes beer/wine/spirits equivalence.'},
+      {text:'Chapter 9 describes binge drinking as drinking that brings BAC to:',options:[{text:'0.05%',correct:false},{text:'0.08% or higher',correct:true},{text:'0.10% or higher',correct:false},{text:'0.15% or higher',correct:false}],explanation:'Binge drinking is defined as BAC 0.08%+ — the same threshold as legal intoxication in the U.S. Often ~5 drinks (men) / 4 drinks (women) in ~2 hours.',hint:'Same threshold as legal intoxication in the U.S. Chapter ties binge definition to BAC 0.08%.'}
+    ];
+
+    stages[1].innerHTML=`
+      <h1>BAC Reality Check</h1>
+      <div class="stage-banner"><span class="stage-badge">3b – College Scenarios</span>College Scenarios — Apply pharmacology to real situations.</div>
+      <div id="s3-questions"></div>
+      <button id="s3-continue" class="ix-continue-btn" disabled>Continue to 3c: Myth Check →</button>
+    `;
+
+    const qArea=qs('#s3-questions',stages[1]);
+    const shuffledQ=[...scenarioQs]; shuffle(shuffledQ);
+    let s3Correct=0;
+    const s3Wrong=new Array(shuffledQ.length).fill(0);
+
+    shuffledQ.forEach((q,qi)=>{
+      const block=document.createElement('div');
+      block.className='kc-question'; block.dataset.answered='false';
+      const shuffledOpts=[...q.options]; shuffle(shuffledOpts);
+      const expId='s3-exp-'+qi+'-'+Math.random().toString(36).slice(2);
+      block.innerHTML=`
+        <div class="kc-qtext">${qi+1}. ${q.text}</div>
+        <div class="kc-options">${shuffledOpts.map(o=>`<div class="kc-opt" tabindex="0" role="button" data-correct="${o.correct}">${o.text}</div>`).join('')}</div>
+        <div class="kc-exp" id="${expId}"></div>
+      `;
+      qArea.appendChild(block);
+      qsa('.kc-opt',block).forEach(opt=>{
+        opt.addEventListener('click',()=>selectS3(opt,block,q,qi,expId));
+        opt.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectS3(opt,block,q,qi,expId);}});
+      });
+      function selectS3(opt,block,q,qi,expId){
+        if(block.dataset.answered==='true') return;
+        const isCorrect=opt.dataset.correct==='true';
+        const exp=document.getElementById(expId);
+        if(isCorrect){
+          qsa('.kc-opt',block).forEach(o=>o.style.pointerEvents='none');
+          opt.classList.add('kc-opt-correct'); block.classList.add('kc-correct'); block.dataset.answered='true';
+          exp.textContent='✅ '+q.explanation; exp.classList.add('visible');
+          s3Correct++;
+          if(s3Correct===shuffledQ.length){ qs('#s3-continue',stages[1]).disabled=false; partBDone[2]=true; renderSidebar(); saveProgress(); announce('All scenarios answered!'); }
+        } else {
+          opt.classList.add('kc-opt-wrong'); opt.style.pointerEvents='none'; block.classList.add('kc-incorrect');
+          s3Wrong[qi]++; rushGuard.recordWrong(stages[1]);
+          const remaining=qsa('.kc-opt',block).filter(o=>!o.classList.contains('kc-opt-wrong')&&!o.classList.contains('kc-opt-correct'));
+          const parts=q.hint.split('. ');
+          let hint=s3Wrong[qi]===1?`❌ Not quite. Hint 1: ${parts[0]}.`:`❌ Hint 2: ${parts[1]||parts[0]}`;
+          if(remaining.length<=1){
+            qsa('.kc-opt',block).forEach(o=>{if(o.dataset.correct==='true') o.classList.add('kc-opt-correct');});
+            block.dataset.answered='true'; exp.textContent='✅ '+q.explanation; exp.classList.add('visible');
+            s3Correct++;
+            if(s3Correct===shuffledQ.length){ qs('#s3-continue',stages[1]).disabled=false; partBDone[2]=true; renderSidebar(); saveProgress(); }
+            return;
+          }
+          exp.textContent=hint; exp.classList.add('visible'); announce('Incorrect. '+hint);
+        }
+      }
+    });
+
+    qs('#s3-continue',stages[1]).addEventListener('click',()=>{
+      partBDone[2]=true; currentView='2d'; renderSidebar(); saveProgress();
+      showPartTransition(stages[1],stages[2],initS4);
+    });
+  }
+
+  function initS4(){
+    const mythItems=[
+      {type:'tf',stmt:'Coffee helps you sober up faster.',answer:false,exp:'Coffee doesn\'t hasten sobriety; the liver needs constant time regardless of caffeine intake.'},
+      {type:'tf',stmt:'Exercising speeds up alcohol oxidation.',answer:false,exp:'Exercise does not speed alcohol oxidation. The liver metabolizes alcohol at a constant rate.'},
+      {type:'tf',stmt:'If you go to bed at 2 a.m. with a BAC of 0.15%, you could still be legally drunk hours later.',answer:true,exp:'BAC 0.15% at 2 a.m. → ~0.105% at 5 a.m. — not alcohol-free until around noon. The liver cannot be rushed.'},
+      {type:'mc',stmt:'What\'s the safest "sobering" strategy supported by the chapter?',options:[{text:'Cold shower',correct:false},{text:'Coffee',correct:false},{text:'Exercise',correct:false},{text:'Time (waiting for liver metabolism)',correct:true}],exp:'The chapter emphasizes little can hasten sobriety besides waiting for the liver to metabolize alcohol at its constant rate.'}
+    ];
+
+    let s4Correct=0;
+    const s4Wrong=new Array(mythItems.length).fill(0);
+
+    stages[2].innerHTML=`
+      <h1>BAC Reality Check</h1>
+      <div class="stage-banner"><span class="stage-badge">3c – Myth Check</span>Myth Check — Sobering up and morning-after risk.</div>
+      <div id="s4-items"></div>
+      <button id="s4-continue" class="ix-continue-btn" disabled>✅ Continue to Activity 4</button>
+    `;
+
+    const itemArea=qs('#s4-items',stages[2]);
+    mythItems.forEach((item,i)=>{
+      if(item.type==='tf'){
+        const block=document.createElement('div');
+        block.className='tf-block'; block.id='s4-tf-'+i; block.dataset.done='false';
+        block.innerHTML=`
+          <div class="tf-stmt">${i+1}. ${item.stmt}</div>
+          <div class="tf-btns">
+            <button class="tf-btn" data-val="true">True</button>
+            <button class="tf-btn" data-val="false">False</button>
+          </div>
+          <div class="tf-exp" id="s4-exp-${i}"></div>
+        `;
+        itemArea.appendChild(block);
+        qsa('.tf-btn',block).forEach(btn=>{
+          btn.addEventListener('click',()=>{
+            if(block.dataset.done==='true') return;
+            const chosen=(btn.dataset.val==='true');
+            const exp=qs('#s4-exp-'+i,stages[2]);
+            qsa('.tf-btn',block).forEach(b=>b.classList.remove('selected'));
+            btn.classList.add('selected');
+            if(chosen===item.answer){
+              block.classList.remove('tf-incorrect'); block.classList.add('tf-correct');
+              block.dataset.done='true'; exp.textContent='✅ '+item.exp; exp.classList.add('visible');
+              qsa('.tf-btn',block).forEach(b=>b.style.pointerEvents='none');
+              s4Correct++;
+              if(s4Correct===mythItems.length){ qs('#s4-continue',stages[2]).disabled=false; }
+              announce('Correct!');
+            } else {
+              block.classList.add('tf-incorrect'); s4Wrong[i]++; rushGuard.recordWrong(stages[2]);
+              const hint=s4Wrong[i]===1?'❌ Incorrect — reconsider and try again.':'❌ Re-read: '+item.exp;
+              exp.textContent=hint; exp.classList.add('visible'); announce('Incorrect. '+hint);
+              setTimeout(()=>{if(block.dataset.done!=='true') qsa('.tf-btn',block).forEach(b=>b.style.pointerEvents='');},400);
+            }
+          });
+        });
+      } else {
+        const block=document.createElement('div');
+        block.className='kc-question'; block.dataset.answered='false';
+        const shuffledOpts=[...item.options]; shuffle(shuffledOpts);
+        const expId='s4-exp-'+i;
+        block.innerHTML=`
+          <div class="kc-qtext">${i+1}. ${item.stmt}</div>
+          <div class="kc-options">${shuffledOpts.map(o=>`<div class="kc-opt" tabindex="0" role="button" data-correct="${o.correct}">${o.text}</div>`).join('')}</div>
+          <div class="kc-exp" id="${expId}"></div>
+        `;
+        itemArea.appendChild(block);
+        qsa('.kc-opt',block).forEach(opt=>{
+          opt.addEventListener('click',()=>{
+            if(block.dataset.answered==='true') return;
+            const isCorrect=opt.dataset.correct==='true';
+            const exp=qs('#'+expId,stages[2]);
+            if(isCorrect){
+              qsa('.kc-opt',block).forEach(o=>o.style.pointerEvents='none');
+              opt.classList.add('kc-opt-correct'); block.classList.add('kc-correct'); block.dataset.answered='true';
+              exp.textContent='✅ '+item.exp; exp.classList.add('visible');
+              s4Correct++;
+              if(s4Correct===mythItems.length){ qs('#s4-continue',stages[2]).disabled=false; }
+              announce('Correct!');
+            } else {
+              opt.classList.add('kc-opt-wrong'); opt.style.pointerEvents='none'; block.classList.add('kc-incorrect');
+              s4Wrong[i]++; rushGuard.recordWrong(stages[2]);
+              const remaining=qsa('.kc-opt',block).filter(o=>!o.classList.contains('kc-opt-wrong')&&!o.classList.contains('kc-opt-correct'));
+              let hint=s4Wrong[i]===1?'❌ Not quite — try again.':'❌ Hint: Only one strategy is supported by the chapter.';
+              if(remaining.length<=1){
+                qsa('.kc-opt',block).forEach(o=>{if(o.dataset.correct==='true') o.classList.add('kc-opt-correct');});
+                block.dataset.answered='true'; exp.textContent='✅ '+item.exp; exp.classList.add('visible');
+                s4Correct++;
+                if(s4Correct===mythItems.length){ qs('#s4-continue',stages[2]).disabled=false; }
+                return;
+              }
+              exp.textContent=hint; exp.classList.add('visible'); announce('Incorrect. '+hint);
+            }
+          });
+          opt.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();opt.click();}});
+        });
+      }
+    });
+
+    qs('#s4-continue',stages[2]).addEventListener('click',()=>{completeActivity(2);showActivity(3);});
+  }
+
+  if(jumpTo==='2c'&&partADone[2]){ stages[1].style.display='block'; initS3(); }
+  else if(jumpTo==='2d'&&partBDone[2]){ stages[2].style.display='block'; initS4(); }
+  else { stages[0].style.display='block'; initS1(); }
+}
+
+/* ==========================================================
+   ACTIVITY 4 — TOLERANCE, DEPENDENCE & WITHDRAWAL
+   Part A: Stacked Card Sort
+   - Correct sort: card fades out, feedback box UPDATES (no stacking)
+   - Drop zones show a count badge only (no placed cards)
+   Part B: Case Checks
+========================================================== */
+function renderAct4(area){
+  const jumpTo=currentView;
+
+  const sortData=[
+    {id:'dt1',text:'Needing more alcohol to maintain a certain BAC.',cat:'dispositional',explanation:'Dispositional tolerance is about maintaining a target BAC — the liver metabolizes alcohol more efficiently, so more is needed to reach the same blood level.'},
+    {id:'dt2',text:'Tolerance that can reverse after a period of abstinence.',cat:'dispositional',explanation:'Unlike functional tolerance, dispositional tolerance is reversible — the liver returns to normal efficiency after sustained abstinence.'},
+    {id:'dt3',text:'Increased consumption required to keep BAC at a target level.',cat:'dispositional',explanation:'This is the defining feature of dispositional tolerance: more alcohol is needed to maintain the same BAC due to increased metabolic efficiency.'},
+    {id:'dt4',text:'Primarily about changes that make the body handle alcohol differently (BAC-focused).',cat:'dispositional',explanation:'Dispositional tolerance is metabolic — it changes how the body processes alcohol, keeping BAC lower for a given amount consumed.'},
+    {id:'at1',text:'At the same BAC, impairment can be worse when BAC is rising than when it\'s falling.',cat:'acute',explanation:'Acute tolerance: the brain adapts within a single drinking session, so effects are greater on the ascending limb of the BAC curve than the descending limb.'},
+    {id:'at2',text:'Driving performance may improve on the descending limb compared to the ascending limb at the same BAC.',cat:'acute',explanation:'This is a direct consequence of acute tolerance — the same BAC produces less impairment when falling than when rising.'},
+    {id:'at3',text:'Effects differ depending on whether BAC is going up or down.',cat:'acute',explanation:'Acute tolerance explains why a person feels more impaired early in a drinking session (rising BAC) than later (falling BAC) at the same measured BAC.'},
+    {id:'pt1',text:'Over time, greater amounts are needed to achieve an effect once achieved with less.',cat:'protracted',explanation:'Protracted (functional) tolerance develops over months or years — the brain adapts so that more alcohol is needed for the same psychological effect.'},
+    {id:'pt2',text:'A person drinks more to achieve a mood change that used to require less alcohol.',cat:'protracted',explanation:'This is the hallmark of protracted tolerance: the psychological effect (mood change) requires increasing amounts of alcohol over time.'},
+    {id:'pt3',text:'Functional tolerance can outpace dispositional tolerance, increasing vulnerability to toxic effects.',cat:'protracted',explanation:'When functional tolerance outpaces dispositional tolerance, a person consumes more alcohol (feeling less effect) while their BAC — and toxic exposure — remains high.'},
+    {id:'pt4',text:'A person may not feel drunk at BACs above 0.08% but is still legally drunk.',cat:'protracted',explanation:'Protracted tolerance means the brain has adapted to high BAC levels — the person feels sober but is legally intoxicated and physiologically impaired.'},
+    {id:'ct1',text:'Alcohol shows cross-tolerance with other CNS depressant drugs.',cat:'cross',explanation:'Because alcohol and other CNS depressants (like benzodiazepines) act on similar receptor systems, tolerance to one confers some tolerance to others.'},
+    {id:'ct2',text:'Alcohol shows cross-dependence with benzodiazepines (one can suppress withdrawal of the other).',cat:'cross',explanation:'Cross-dependence means that benzodiazepines can substitute for alcohol in preventing withdrawal — this is why they are used medically to treat alcohol withdrawal.'},
+    {id:'ct3',text:'Cross-dependence has been used to help manage alcohol withdrawal.',cat:'cross',explanation:'Clinically, benzodiazepines are administered to prevent dangerous alcohol withdrawal symptoms, exploiting the cross-dependence between these two CNS depressants.'},
+    {id:'wd1',text:'Withdrawal can develop within hours or days after cessation.',cat:'withdrawal',explanation:'Alcohol withdrawal typically begins 6–24 hours after the last drink and can peak at 24–72 hours, depending on the severity of dependence.'},
+    {id:'wd2',text:'Withdrawal may require hospitalization when symptoms are severe.',cat:'withdrawal',explanation:'Severe alcohol withdrawal (delirium tremens) can be life-threatening and requires medical management, often including IV fluids and benzodiazepines.'},
+    {id:'wd3',text:'Withdrawal symptoms can include autonomic symptoms (e.g., sweating, racing heart).',cat:'withdrawal',explanation:'Autonomic hyperactivity — sweating, tachycardia, hypertension — is a hallmark of alcohol withdrawal, reflecting CNS rebound after chronic depressant use.'},
+    {id:'wd4',text:'Withdrawal symptoms can include hand tremors ("the shakes").',cat:'withdrawal',explanation:'Tremors are one of the earliest and most recognizable signs of alcohol withdrawal, caused by CNS hyperexcitability after removal of the depressant.'},
+    {id:'wd5',text:'Withdrawal symptoms can include seizures and hallucinations.',cat:'withdrawal',explanation:'Seizures and hallucinations (alcoholic hallucinosis) can occur in severe withdrawal — seizures are particularly dangerous and can be fatal without treatment.'},
+    {id:'wd6',text:'DSM-5 alcohol withdrawal requires 2+ symptoms plus distress/impairment.',cat:'withdrawal',explanation:'The DSM-5 diagnostic criteria require at least 2 withdrawal symptoms (from a list including tremor, sweating, anxiety, seizures, etc.) plus clinically significant distress or impairment.'}
+  ];
+  shuffle(sortData);
+
+  const caseQs=[
+    {text:'Jordan needs increasing amounts of alcohol to achieve the same mood change as before. This BEST reflects:',options:[{text:'Acute tolerance',correct:false},{text:'Dispositional tolerance',correct:false},{text:'Protracted tolerance',correct:true},{text:'Withdrawal',correct:false}],explanation:'Protracted tolerance involves needing more alcohol to achieve effects once achieved with less — a long-term psychological adaptation.',hint1:'Is this about BAC curve timing, maintaining BAC, long-term needing more for mood, other drugs, or withdrawal symptoms?',hint2:'Long-term needing more for the same mood change = protracted (functional) tolerance.'},
+    {text:'At BAC 0.10%, Sam is more impaired early in the night than later, even when BAC is again 0.10%. This BEST reflects:',options:[{text:'Cross-dependence',correct:false},{text:'Acute tolerance',correct:true},{text:'Protracted tolerance',correct:false},{text:'Dispositional tolerance',correct:false}],explanation:'Acute tolerance: effects can be greater on the rising BAC curve than on the falling curve at the same BAC level.',hint1:'Is this about BAC curve timing, maintaining BAC, long-term needing more for mood, other drugs, or withdrawal symptoms?',hint2:'Ascending vs. descending BAC = acute tolerance.'},
+    {text:'Avery must drink more alcohol than before to maintain the same BAC during a night out. This BEST reflects:',options:[{text:'Dispositional tolerance',correct:true},{text:'Acute tolerance',correct:false},{text:'Cross-dependence',correct:false},{text:'Withdrawal',correct:false}],explanation:'Dispositional tolerance: greater quantities needed to maintain a certain BAC — the liver metabolizes alcohol more efficiently.',hint1:'Is this about BAC curve timing, maintaining BAC, long-term needing more for mood, other drugs, or withdrawal symptoms?',hint2:'Maintaining a certain BAC = dispositional tolerance.'},
+    {text:'After heavy drinking, Morgan stops for two days and develops sweating, racing heart, tremors, and seizures. This BEST reflects:',options:[{text:'Acute tolerance',correct:false},{text:'Withdrawal syndrome',correct:true},{text:'Dispositional tolerance',correct:false},{text:'Alcohol intoxication',correct:false}],explanation:'Alcohol withdrawal can include autonomic symptoms, tremors, and seizures — it can be severe and life-threatening.',hint1:'Is this about BAC curve timing, maintaining BAC, long-term needing more for mood, other drugs, or withdrawal symptoms?',hint2:'Symptoms after stopping heavy use = withdrawal syndrome.'},
+    {text:'Which statement BEST describes cross-dependence as presented in the chapter?',options:[{text:'Alcohol prevents dependence on other drugs',correct:false},{text:'Using one CNS depressant can suppress withdrawal symptoms of another',correct:true},{text:'Cross-dependence occurs only with stimulants',correct:false},{text:'Cross-dependence is the same thing as acute tolerance',correct:false}],explanation:'Alcohol and benzodiazepines can show cross-dependence; one drug can suppress withdrawal symptoms of the other — this is why benzodiazepines are used medically to treat alcohol withdrawal.',hint1:'Is this about BAC curve timing, maintaining BAC, long-term needing more for mood, other drugs, or withdrawal symptoms?',hint2:'Cross-dependence = other drugs interacting with alcohol dependence.'}
+  ];
+
+  const categories=[
+    {id:'dispositional',label:'Dispositional Tolerance'},
+    {id:'acute',label:'Acute Tolerance'},
+    {id:'protracted',label:'Protracted (Functional) Tolerance'},
+    {id:'cross',label:'Cross-Tolerance / Cross-Dependence'},
+    {id:'withdrawal',label:'Physical Dependence & Withdrawal'}
+  ];
+
+  const wA=document.createElement('div'); wA.className='interaction-wrapper'; wA.style.display='none';
+  const wB=document.createElement('div'); wB.className='interaction-wrapper'; wB.style.display='none';
+  area.appendChild(wA); area.appendChild(wB);
+
+  /* ================================================================
+     PART A — STACKED CARD SORT
+     Feedback: single updating green box below zones (no card stacking)
+     Drop zones: show count badge only
+  ================================================================ */
+  function initPartA4(){
+    let a4Correct=0;
+    let a4Selected=null;
+    const a4WrongCounts={};
+    const zoneCounts={dispositional:0,acute:0,protracted:0,cross:0,withdrawal:0};
+
+    sortData.forEach(c=>{ c._placed=false; });
+
+    wA.innerHTML=`
+      <h1>Tolerance, Dependence &amp; Withdrawal</h1>
+      <div class="ix-explanation visible" style="display:block;margin-bottom:14px;">
+        <strong>Activity 4 – Part A: Sort the Evidence</strong> (Bloom's: Analyze)<br>
+        Drag the <strong>top card</strong> from the deck into the correct category below. Each correct sort updates the feedback box with an explanation. Sort all 20 cards to continue.
+      </div>
+      <div class="ix-counter" id="a4-prog">Sorted: 0 / 20</div>
+
+      <!-- DECK AREA -->
+      <div style="margin:16px 0 8px;">
+        <div style="font-weight:700;color:var(--navy);font-size:.88rem;margin-bottom:8px;">
+          📦 Card Deck — drag the top card to a category
+        </div>
+        <div id="a4-deck-outer" style="position:relative;width:100%;max-width:400px;">
+          <div class="a4-cards-grid" id="a4-deck"></div>
+        </div>
+        <div id="a4-deck-count" style="font-size:.8rem;color:#666;margin-top:6px;">20 cards remaining</div>
+      </div>
+
+      <!-- DROP ZONES -->
+      <div style="font-weight:700;color:var(--navy);font-size:.88rem;margin:18px 0 8px;">
+        🎯 Categories — drop cards here
+      </div>
+      <div class="a4-zones-grid" id="a4-zones"></div>
+
+      <!-- SINGLE UPDATING FEEDBACK BOX -->
+      <div id="a4-sort-feedback" class="a4-sort-feedback" aria-live="polite" aria-atomic="true"></div>
+
+      <button id="a4a-continue" class="ix-continue-btn" disabled>Continue to Case Questions →</button>
+    `;
+
+    /* ---- Build drop zones ---- */
+    const zonesEl = qs('#a4-zones', wA);
+    categories.forEach(c => {
+      const wrap = document.createElement('div');
+      wrap.className = 'a4-zone-wrap';
+
+      const head = document.createElement('div');
+      head.className = 'a4-cat-head';
+      head.textContent = c.label;
+
+      const zone = document.createElement('div');
+      zone.className = 'a4-cat-zone';
+      zone.id = 'a4-zone-' + c.id;
+      zone.dataset.cat = c.id;
+      zone.setAttribute('tabindex', '0');
+      zone.setAttribute('role', 'region');
+      zone.setAttribute('aria-label', c.label + ' drop zone');
+
+      /* Count badge inside zone */
+      const countBadge = document.createElement('span');
+      countBadge.className = 'a4-zone-count';
+      countBadge.id = 'a4-count-' + c.id;
+      countBadge.textContent = '0 sorted';
+      zone.appendChild(countBadge);
+
+      zone.addEventListener('dragover',  e => e.preventDefault());
+      zone.addEventListener('dragenter', () => zone.classList.add('drag-over'));
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        const id = e.dataTransfer.getData('text/plain');
+        const card = document.getElementById(id);
+        if (card) dropA4(card, zone);
+      });
+      zone.addEventListener('keydown', e => {
+        if ((e.key === 'Enter' || e.key === ' ') && a4Selected) {
+          e.preventDefault();
+          dropA4(a4Selected, zone);
+        }
+      });
+
+      wrap.appendChild(head);
+      wrap.appendChild(zone);
+      zonesEl.appendChild(wrap);
+    });
+
+    /* ---- Build / rebuild the stacked deck ---- */
+    const STACK_X = 2;
+    const STACK_Y = 3;
+    const ROTATIONS = [0, 0.8, -0.6, 1.0, -0.8, 0.6, -0.5, 0.8, -0.7, 0.5,
+                       0, 0.7, -0.5, 0.9, -0.7, 0.6, -0.4, 0.8, -0.6, 0.5];
+
+    function buildDeck() {
+      const deckEl = qs('#a4-deck', wA);
+      deckEl.innerHTML = '';
+      const remaining = sortData.filter(c => !c._placed);
+      const countEl   = qs('#a4-deck-count', wA);
+
+      if (!remaining.length) {
+        deckEl.style.height = '40px';
+        countEl.textContent = 'All cards sorted!';
+        return;
+      }
+
+      countEl.textContent = `${remaining.length} card${remaining.length !== 1 ? 's' : ''} remaining`;
+
+      remaining.forEach((c, i) => {
+        const isTop = (i === remaining.length - 1);
+        const layerFromTop = remaining.length - 1 - i;
+
+        const card = document.createElement('div');
+        card.className = 'a4-stack-card' + (isTop ? ' a4-top' : ' a4-under');
+        card.id = 'a4c-' + c.id;
+        card.dataset.cat = c.cat;
+        card.dataset.text = c.text;
+        card.dataset.explanation = c.explanation;
+        card.textContent = c.text;
+
+        card.style.top      = (layerFromTop * STACK_Y) + 'px';
+        card.style.left     = (layerFromTop * STACK_X) + 'px';
+        card.style.zIndex   = String(100 + i);
+        card.style.transform = `rotate(${ROTATIONS[layerFromTop % ROTATIONS.length]}deg)`;
+
+        if (isTop) {
+          card.setAttribute('draggable', 'true');
+          card.setAttribute('tabindex', '0');
+          card.setAttribute('aria-label', c.text + '. Drag to a category below.');
+
+          card.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('text/plain', card.id);
+            e.dataTransfer.effectAllowed = 'move';
+            card.classList.add('a4-dragging');
+          });
+          card.addEventListener('dragend', () => {
+            card.classList.remove('a4-dragging');
+          });
+          card.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (a4Selected === card) {
+                a4Selected = null;
+                card.classList.remove('a4-selected');
+                announce('Deselected.');
+              } else {
+                if (a4Selected) a4Selected.classList.remove('a4-selected');
+                a4Selected = card;
+                card.classList.add('a4-selected');
+                announce(`"${c.text.substring(0, 50)}…" selected. Tab to a category and press Enter.`);
+              }
+            }
+          });
+        } else {
+          card.setAttribute('draggable', 'false');
+          card.setAttribute('tabindex', '-1');
+          card.setAttribute('aria-hidden', 'true');
+        }
+
+        deckEl.appendChild(card);
+      });
+
+      requestAnimationFrame(() => {
+        const cards = deckEl.querySelectorAll('.a4-stack-card');
+        let mh = 0;
+        cards.forEach(cd => { if (cd.offsetHeight > mh) mh = cd.offsetHeight; });
+        const total = mh + ((remaining.length - 1) * STACK_Y) + 16;
+        deckEl.style.height = Math.max(total, 100) + 'px';
+      });
+    }
+
+    /* ---- Helper: update the single feedback box ---- */
+    function updateSortFeedback(type, html) {
+      const fb = qs('#a4-sort-feedback', wA);
+      /* Remove then re-add class to re-trigger animation */
+      fb.className = 'a4-sort-feedback';
+      void fb.offsetWidth; /* force reflow */
+      fb.className = 'a4-sort-feedback ' + type;
+      fb.innerHTML = html;
+    }
+
+    /* ---- Drop handler ---- */
+    function dropA4(card, zone) {
+      const cardCat = card.dataset.cat;
+      const zoneCat = zone.dataset.cat;
+      const item    = sortData.find(c => c.id === card.id.replace('a4c-', ''));
+
+      if (cardCat === zoneCat) {
+        /* Mark placed */
+        if (item) item._placed = true;
+        a4Correct++;
+        zoneCounts[zoneCat]++;
+
+        /* Update progress counter */
+        qs('#a4-prog', wA).textContent = `Sorted: ${a4Correct} / 20`;
+
+        /* Update zone count badge */
+        const badge = qs('#a4-count-' + zoneCat, wA);
+        if (badge) {
+          badge.textContent = zoneCounts[zoneCat] + ' sorted';
+          badge.classList.add('visible');
+        }
+
+        /* Mark zone as correct-zone once it has at least one card */
+        zone.classList.add('correct-zone');
+
+        /* Fade out the dragged card */
+        card.classList.add('a4-disappearing');
+        setTimeout(() => {
+          card.remove();
+          buildDeck();
+        }, 360);
+
+        /* Update the single feedback box with this card's explanation */
+        if (a4Correct === 20) {
+          updateSortFeedback('correct',
+            `✅ <strong>All 20 cards sorted correctly!</strong><br>
+             <span style="font-weight:400;font-size:.88rem;">Last card: ${card.dataset.explanation}</span><br><br>
+             <span style="font-weight:400;font-size:.88rem;">Now answer the case questions to complete this activity.</span>`
+          );
+          qs('#a4a-continue', wA).disabled = false;
+          partADone[3] = true;
+          renderSidebar();
+          saveProgress();
+          announce('All cards sorted! Continue to case questions.');
+        } else {
+          updateSortFeedback('correct',
+            `✅ <strong>Correct!</strong> &nbsp;<span style="font-weight:400;">${card.dataset.explanation}</span>`
+          );
+          announce('Correct. ' + card.dataset.explanation);
+        }
+
+      } else {
+        /* Wrong zone */
+        const key = card.id;
+        a4WrongCounts[key] = (a4WrongCounts[key] || 0) + 1;
+        const wc = a4WrongCounts[key];
+        const hint = wc === 1
+          ? 'Think: Dispositional = maintaining BAC; Acute = rising vs. falling BAC; Protracted = long-term mood effect; Cross = other drugs; Withdrawal = symptoms after stopping.'
+          : 'Re-read the card carefully. Dispositional = BAC maintenance; Acute = ascending/descending curve; Protracted = long-term mood; Cross = other CNS depressants; Withdrawal = symptoms after stopping.';
+
+        updateSortFeedback('incorrect', `❌ <strong>Not quite.</strong> &nbsp;<span style="font-weight:400;">${hint}</span>`);
+        rushGuard.recordWrong(wA);
+        announce('Incorrect placement. ' + hint);
+      }
+
+      if (a4Selected) { a4Selected.classList.remove('a4-selected'); a4Selected = null; }
+    }
+
+    /* ---- Touch support ---- */
+    (function setupTouch() {
+      let touchCard = null, clone = null;
+
+      function onTouchStart(e) {
+        const card = e.target.closest('.a4-top');
+        if (!card) return;
+        touchCard = card;
+        const t = e.touches[0];
+        clone = card.cloneNode(true);
+        clone.style.cssText = `
+          position:fixed;width:${card.offsetWidth}px;opacity:.85;pointer-events:none;
+          z-index:9999;border-radius:10px;padding:14px 18px;font-size:.88rem;font-weight:600;
+          background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;
+          left:${t.clientX - card.offsetWidth/2}px;top:${t.clientY - 30}px;
+          box-shadow:0 8px 24px rgba(0,0,0,.3);transform:rotate(2deg);
+        `;
+        document.body.appendChild(clone);
+        card.style.opacity = '.35';
+        e.preventDefault();
+      }
+
+      function onTouchMove(e) {
+        if (!clone) return;
+        const t = e.touches[0];
+        clone.style.left = (t.clientX - clone.offsetWidth / 2) + 'px';
+        clone.style.top  = (t.clientY - 30) + 'px';
+        qs('#a4-zones', wA).querySelectorAll('.a4-cat-zone').forEach(z => z.classList.remove('drag-over'));
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        const zone = el && el.closest('.a4-cat-zone');
+        if (zone) zone.classList.add('drag-over');
+        e.preventDefault();
+      }
+
+      function onTouchEnd(e) {
+        if (!clone || !touchCard) return;
+        const t = e.changedTouches[0];
+        clone.remove(); clone = null;
+        touchCard.style.opacity = '1';
+        qs('#a4-zones', wA).querySelectorAll('.a4-cat-zone').forEach(z => z.classList.remove('drag-over'));
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        const zone = el && el.closest('.a4-cat-zone');
+        if (zone) dropA4(touchCard, zone);
+        touchCard = null;
+      }
+
+      const deckOuter = qs('#a4-deck-outer', wA);
+      deckOuter.addEventListener('touchstart', onTouchStart, { passive: false });
+      deckOuter.addEventListener('touchmove',  onTouchMove,  { passive: false });
+      deckOuter.addEventListener('touchend',   onTouchEnd,   { passive: false });
+    })();
+
+    buildDeck();
+
+    qs('#a4a-continue', wA).addEventListener('click', () => {
+      partADone[3] = true;
+      currentView  = '3b';
+      renderSidebar();
+      saveProgress();
+      showPartTransition(wA, wB, initA4Cases);
+    });
+  }
+
+  /* ================================================================
+     PART B — CASE CHECKS
+  ================================================================ */
+  function initA4Cases(){
+    wB.innerHTML=`
+      <h1>Tolerance, Dependence &amp; Withdrawal – Case Checks</h1>
+      <div class="two-part-banner">
+        <div class="tpb-icon">🩺</div>
+        <div><span class="tpb-badge">Part B</span>Apply what you sorted to 5 real cases. Answer all correctly to complete Activity 4.</div>
+      </div>
+      <div id="a4b-questions"></div>
+      <button id="a4b-continue" class="ix-continue-btn" disabled style="margin-top:20px;">✅ Continue to Activity 5</button>
+    `;
+
+    const qArea=qs('#a4b-questions',wB);
+    const shuffledQ=[...caseQs]; shuffle(shuffledQ);
+    let caseCorrect=0;
+    const caseWrong=new Array(shuffledQ.length).fill(0);
+
+    shuffledQ.forEach((q,qi)=>{
+      const block=document.createElement('div');
+      block.className='kc-question'; block.dataset.answered='false';
+      const shuffledOpts=[...q.options]; shuffle(shuffledOpts);
+      const expId='a4b-exp-'+qi+'-'+Math.random().toString(36).slice(2);
+      block.innerHTML=`
+        <div class="kc-qtext">${qi+1}. ${q.text}</div>
+        <div class="kc-options">${shuffledOpts.map(o=>`<div class="kc-opt" tabindex="0" role="button" data-correct="${o.correct}">${o.text}</div>`).join('')}</div>
+        <div class="kc-exp" id="${expId}"></div>
+      `;
+      qArea.appendChild(block);
+      qsa('.kc-opt',block).forEach(opt=>{
+        opt.addEventListener('click',()=>selectA4B(opt,block,q,qi,expId));
+        opt.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectA4B(opt,block,q,qi,expId);}});
+      });
+      function selectA4B(opt,block,q,qi,expId){
+        if(block.dataset.answered==='true') return;
+        const isCorrect=opt.dataset.correct==='true';
+        const exp=document.getElementById(expId);
+        if(isCorrect){
+          qsa('.kc-opt',block).forEach(o=>o.style.pointerEvents='none');
+          opt.classList.add('kc-opt-correct'); block.classList.add('kc-correct'); block.dataset.answered='true';
+          exp.textContent='✅ '+q.explanation; exp.classList.add('visible');
+          announce('Correct!');
+          caseCorrect++;
+          if(caseCorrect===shuffledQ.length){ qs('#a4b-continue',wB).disabled=false; announce('All case questions answered!'); }
+        } else {
+          opt.classList.add('kc-opt-wrong'); opt.style.pointerEvents='none'; block.classList.add('kc-incorrect');
+          caseWrong[qi]++; rushGuard.recordWrong(wB);
+          const remaining=qsa('.kc-opt',block).filter(o=>!o.classList.contains('kc-opt-wrong')&&!o.classList.contains('kc-opt-correct'));
+          let hint=caseWrong[qi]===1?`❌ Not quite. Hint 1: ${q.hint1}`:`❌ Hint 2: ${q.hint2}`;
+          if(remaining.length<=1){
+            qsa('.kc-opt',block).forEach(o=>{if(o.dataset.correct==='true') o.classList.add('kc-opt-correct');});
+            block.dataset.answered='true'; exp.textContent='✅ '+q.explanation; exp.classList.add('visible');
+            caseCorrect++;
+            if(caseCorrect===shuffledQ.length){ qs('#a4b-continue',wB).disabled=false; }
+            return;
+          }
+          exp.textContent=hint; exp.classList.add('visible'); announce('Incorrect. '+hint);
+        }
+      }
+    });
+
+    qs('#a4b-continue',wB).addEventListener('click',()=>{completeActivity(3);showActivity(4);});
+  }
+
+  if(jumpTo==='3b'&&partADone[3]){ wB.style.display='block'; initA4Cases(); }
+  else { wA.style.display='block'; initPartA4(); }
+}
+
+/* ==========================================================
+   ACTIVITY 5 — ALCOHOL, BEHAVIOR & DECISION-MAKING
+========================================================== */
+function renderAct5(area){
+  currentView='4a';
+
+  const scenarios=[
+    {title:'Scenario 1 – Drinking Games & Rapid Intoxication',context:'You attend a college party where beer pong and shot-based games are popular. A friend says, "I don\'t feel drunk yet, so I\'m fine to keep playing."',question:'Which statement BEST explains the risk in this situation?',choices:[{text:'Drinking games increase tolerance, which reduces alcohol\'s harmful effects.',type:'poor',feedback:'Tolerance does not reduce BAC or toxicity. Drinking games may build tolerance over time, but this does not make the current situation safer — BAC is still rising.'},{text:'Rapid consumption can raise BAC faster than subjective feelings of intoxication.',type:'optimal',feedback:'✅ Correct. Rapid drinking increases BAC quickly, often before a person feels intoxicated. Subjective feelings lag behind physiological impairment, increasing accident and injury risk.'},{text:'Beer is absorbed slowly enough that intoxication is unlikely.',type:'poor',feedback:'Beer can still raise BAC quickly when consumed rapidly. Absorption rate depends on speed of consumption, not just beverage type.'},{text:'Intoxication only occurs once a person feels dizzy or nauseous.',type:'poor',feedback:'Subjective feelings of intoxication often lag behind actual impairment. A person can be significantly impaired before feeling "drunk."'}]},
+    {title:'Scenario 2 – BAC, Impairment & Driving',context:'Later that night, the same friend says: "I\'m under the legal limit, so I\'m safe to drive."',question:'Which statement BEST reflects research on alcohol and driving?',choices:[{text:'Driving impairment begins only at BACs above 0.08%.',type:'poor',feedback:'False — impairment occurs below legal limits. The legal limit is not a "safe" threshold; it is a legal threshold.'},{text:'Younger drivers are less affected by alcohol than older drivers.',type:'poor',feedback:'Young drivers are actually more vulnerable to alcohol-related crash risk, not less. Inexperience compounds impairment.'},{text:'Divided-attention tasks are impaired at BACs as low as 0.05%.',type:'optimal',feedback:'✅ Correct. Alcohol impairs complex and divided-attention tasks at BACs below the legal limit, increasing crash risk. "Under the limit" does not mean unimpaired.'},{text:'Experience with drinking eliminates driving risk.',type:'poor',feedback:'Experience does not eliminate impairment. Tolerance may reduce perceived impairment but does not restore reaction time or divided-attention performance.'}]},
+    {title:'Scenario 3 – Aggression & Expectancies',context:'An argument breaks out at the party. Someone says: "Alcohol makes people violent — that\'s just what it does."',question:'Which explanation BEST reflects the scientific evidence?',choices:[{text:'Alcohol directly causes aggression through CNS excitation.',type:'poor',feedback:'Alcohol is a CNS depressant, not an excitant. It does not directly "cause" aggression through excitation.'},{text:'Alcohol releases aggression by eliminating moral reasoning.',type:'poor',feedback:'Disinhibition theory alone is insufficient. The relationship between alcohol and aggression is more complex than simply "removing inhibitions."'},{text:'Alcohol interacts with personality, expectations, and situational cues.',type:'optimal',feedback:'✅ Correct. Alcohol does not directly cause aggression; it interacts with situational and psychological factors — including what a person expects alcohol to do, their personality, and the social context.'},{text:'Aggression only occurs at very high BACs.',type:'poor',feedback:'Aggression can occur at moderate BACs depending on context, expectations, and individual factors. BAC level alone does not predict aggression.'}]},
+    {title:'Scenario 4 – Alcohol & Sexual Decision-Making',context:'A student claims: "Alcohol improves sexual performance and desire."',question:'Which statement is MOST accurate?',choices:[{text:'Alcohol increases physiological sexual arousal at all doses.',type:'poor',feedback:'This is contradicted by experimental evidence. Alcohol may increase perceived desire but reduces physiological arousal, especially at higher doses.'},{text:'Alcohol reduces arousal at moderate to high BACs despite increased desire.',type:'optimal',feedback:'✅ Correct. Alcohol often increases perceived desire but reduces physiological sexual performance, especially at higher BACs. This disconnect can contribute to risky decision-making.'},{text:'Alcohol has no effect on sexual behavior.',type:'poor',feedback:'Alcohol clearly affects sexual behavior — both physiologically and in terms of decision-making and consent.'},{text:'Alcohol improves performance equally for men and women.',type:'poor',feedback:'Effects differ by sex and dose. The relationship between alcohol and sexual function is not uniform across individuals.'}]},
+    {title:'Scenario 5 – Harm Reduction & Decision Quality',context:'You are asked to advise a campus group on reducing alcohol-related harm.',question:'Which recommendation is MOST supported by evidence?',choices:[{text:'Focus only on educating students about legal penalties.',type:'poor',feedback:'Education about legal penalties alone is insufficient for behavior change. Environmental and social norm strategies are more effective.'},{text:'Encourage drinking games with lower-proof alcohol.',type:'poor',feedback:'Games still promote rapid drinking regardless of proof. The speed of consumption — not just alcohol content — drives BAC increases.'},{text:'Reduce rapid consumption and availability while changing social norms.',type:'optimal',feedback:'✅ Correct. Environmental strategies — reducing availability, slowing consumption pace, and shifting social norms — are the most evidence-supported approaches to reducing alcohol-related harm on campuses.'},{text:'Promote tolerance-building strategies.',type:'poor',feedback:'Tolerance increases risk, not safety. A tolerant person may consume more alcohol, reaching higher BACs while feeling less impaired — increasing toxic exposure.'}]}
+  ];
+
+  let scenIdx=0, totalScore=0;
+  const answers=[];
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Alcohol, Behavior &amp; Decision-Making</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Activity 5 – Branching Scenarios</strong> (Bloom's: Evaluate)<br>
+      Read each situation carefully. Select the best response based on scientific evidence. Work through all 5 scenarios to complete Chapter 9.
+    </div>
+    <div class="scenario-progress" id="a5-prog">Scenario 1 of ${scenarios.length}</div>
+    <div id="a5-scenario-area"></div>
+    <button id="act5-continue" class="ix-continue-btn" disabled>🎉 Complete Chapter 9</button>
+  `;
+  area.appendChild(w);
+
+  function loadScenario(idx){
+    const sc=scenarios[idx];
+    qs('#a5-prog',w).textContent=`Scenario ${idx+1} of ${scenarios.length}`;
+    const scArea=qs('#a5-scenario-area',w);
+    scArea.innerHTML=`
+      <div class="scenario-box"><strong>${sc.title}</strong><br><br>${sc.context}</div>
+      <div class="ix-prompt">${sc.question}</div>
+      <div class="branch-choices" id="a5-choices"></div>
+      <div id="a5-result" style="display:none;"></div>
+      <div style="margin-top:16px;text-align:right;" id="a5-next-wrap"></div>
+    `;
+    const choicesEl=qs('#a5-choices',w);
+    const shuffledChoices=[...sc.choices]; shuffle(shuffledChoices);
+    shuffledChoices.forEach(ch=>{
+      const btn=document.createElement('div');
+      btn.className='branch-choice';
+      btn.setAttribute('tabindex','0'); btn.setAttribute('role','button');
+      btn.textContent=ch.text;
+      btn.addEventListener('click',()=>selectChoice(ch));
+      btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectChoice(ch);}});
+      choicesEl.appendChild(btn);
+    });
+  }
+
+  function selectChoice(choice){
+    qsa('.branch-choice',w).forEach(b=>{b.style.pointerEvents='none';b.style.opacity='.6';});
+    answers.push({scenario:scenIdx,choice});
+    const pts=choice.type==='optimal'?2:choice.type==='acceptable'?1:0;
+    totalScore+=pts;
+    const resultEl=qs('#a5-result',w);
+    resultEl.style.display='block';
+    resultEl.className='branch-result '+choice.type;
+    resultEl.innerHTML=`<strong>${choice.type==='optimal'?'✅ Best Choice':choice.type==='acceptable'?'⚠️ Acceptable but not ideal':'❌ Not the best choice'}</strong><br><br>${choice.feedback}`;
+    const nextWrap=qs('#a5-next-wrap',w);
+    nextWrap.style.display='block';
+    const btn=document.createElement('button');
+    btn.className='flip-nav-btn'; btn.style.marginTop='12px';
+    if(scenIdx<scenarios.length-1){
+      btn.textContent='Next Scenario ⟩';
+      btn.addEventListener('click',()=>{scenIdx++;loadScenario(scenIdx);});
+    } else {
+      btn.textContent='See Results';
+      btn.addEventListener('click',()=>showResults());
+    }
+    nextWrap.appendChild(btn);
+    announce(choice.feedback);
+  }
+
+  function showResults(){
+    const scArea=qs('#a5-scenario-area',w);
+    const maxScore=scenarios.length*2;
+    const pct=Math.round(totalScore/maxScore*100);
+    const msg=pct===100?'Excellent — you applied the evidence perfectly!':pct>=60?'Good work — review the feedback below for any missed concepts.':'Review the chapter concepts carefully before the quiz.';
+    scArea.innerHTML=`
+      <div class="scenario-box" style="border-left-color:#1D4F91;">
+        <strong>📊 Results: ${totalScore}/${maxScore} points (${pct}%)</strong><br>${msg}
+      </div>
+      <div>${answers.map((a,i)=>`
+        <div class="branch-result ${a.choice.type}" style="margin-bottom:14px;">
+          <strong>Scenario ${i+1}:</strong> ${scenarios[i].title}<br>
+          <em>Your choice:</em> ${a.choice.text}<br><br>
+          <span style="font-size:.88rem;">${a.choice.feedback}</span>
+        </div>`).join('')}
+      </div>
+    `;
+    qs('#act5-continue',w).disabled=false;
+    announce('Activity 5 complete. Complete Chapter 9 button is now available.');
+  }
+
+  qs('#act5-continue',w).addEventListener('click',()=>{completeActivity(4);});
+  loadScenario(0);
+}
+
+/* ==========================================================
+   MODALS & RESET
+========================================================== */
+document.getElementById('instrStartBtn').addEventListener('click',()=>{
+  document.getElementById('instructionsModal').classList.remove('visible');
+  const idx=resolveCurrentViewIndex();
+  if(currentView==='cover'||idx===null) showCover();
+  else showActivity(idx);
+});
+
+document.getElementById('resetProgressBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.add('visible');
+});
+document.getElementById('resetCancelBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.remove('visible');
+});
+document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.remove('visible');
+  ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i>0);});
+  partADone.fill(false); partBDone.fill(false); partCDone.fill(false); partDDone.fill(false);
+  currentView='cover';
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem('ch9-hard-locked');
+  const pov=document.getElementById('rush-hard-overlay');
+  if(pov) pov.remove();
+  rushGuard.reset();
+  renderSidebar();
+  showCover();
+  announce('Progress has been reset. Activity 1 is now unlocked.');
+});
+
+document.getElementById('closeCompletion').addEventListener('click',()=>{
+  document.getElementById('completionModal').classList.remove('visible');
+});
+document.getElementById('closeCompletion').addEventListener('keydown',e=>{
+  if(e.key==='Escape') document.getElementById('completionModal').classList.remove('visible');
+});
+
+function downloadStudyGuide(){
+  const guide=`Chapter 9 – Alcohol: Study Notes
+
+FOUNDATIONAL VOCABULARY
+• Standard Drink: ~0.6 oz pure alcohol — 12 oz beer = 5 oz wine = 1.5 oz 80-proof liquor
+• BAC (Blood Alcohol Concentration): % of alcohol in bloodstream; legal limit = 0.08% in all 50 states
+• Intoxication: temporary physical/psychological impairment from alcohol in the CNS; can occur before "feeling drunk"
+• Blackout: alcohol-induced memory loss while CONSCIOUS — NOT passing out; brain fails to store memories
+• Grayout: PARTIAL memory loss during drinking; influenced by state-dependent learning
+• Tolerance: more alcohol needed for same effect; does NOT lower BAC or reduce physical harm
+• Physical Dependence: body adapts to alcohol; withdrawal occurs when use stops; can be medically serious
+• Heavy Drinking: defined by NEGATIVE CONSEQUENCES (health, academic, legal, social) — not just quantity
+
+COMMON MISCONCEPTIONS
+✗ "Beer isn't really alcohol" — Beer contributes to BAC just like wine or liquor (standard drink equivalence)
+✗ "I didn't feel drunk" — Subjective feelings lag behind actual impairment; feeling fine ≠ safe
+✗ "Tolerance makes you safer" — Tolerance reduces perceived effects, NOT BAC or physical harm
+✗ "Blacking out = passing out" — Blackouts = memory failure while CONSCIOUS; person may walk, talk, make decisions
+
+ALCOHOL IN SOCIETY
+• Early Fermentation (China & Egypt): ritual and daily use; alcohol as social norm
+• Distilled Spirits Era: higher concentration → greater harm potential
+• Colonial America: alcohol embedded in daily life across ages and contexts
+• Temperance Movement: alcohol framed as moral/social problem; push for abstinence
+• Prohibition & Repeal: national ban failed → long-term U.S. ambivalence toward alcohol regulation
+• Modern campus culture reflects historical pattern: alcohol tied to social bonding and identity
+
+PHARMACOKINETICS & BAC
+• Absorption: mainly from small intestine; slowed by food (especially milk); increased by carbonation
+• BAC Formula (160-lb person): BAC ≈ (NSD × 0.025) − (NHD × 0.015)
+• Peak BAC: can occur 30–90 minutes AFTER stopping drinking
+• Metabolism: constant rate ~0.35 oz/hour (zero-order kinetics) — NOTHING speeds this up
+• Coffee, exercise, cold showers: DO NOT speed sobriety
+
+SPEEDS ABSORPTION: carbonation, fast drinking, high concentration drinks
+SLOWS ABSORPTION: food, milk
+MYTHS (don't speed removal): coffee, exercise
+
+BAC MATH EXAMPLES
+• 3 drinks / 1 hour: (3×0.025) − (1×0.015) = 0.06%
+• 5 drinks / 2 hours: (5×0.025) − (2×0.015) = 0.095% (above legal limit)
+• 4 drinks / 2 hours: (4×0.025) − (2×0.015) = 0.07%
+• 6 drinks / 3 hours: (6×0.025) − (3×0.015) = 0.105% (well above legal limit)
+
+DRIVING & IMPAIRMENT
+• Divided-attention tasks impaired at BAC 0.05% or LOWER
+• Legal limit (0.08%) ≠ safe limit
+• Binge drinking = BAC 0.08%+ (often 5 drinks men / 4 drinks women in ~2 hours)
+
+TOLERANCE TYPES
+• Dispositional Tolerance: liver metabolizes more efficiently; need more to maintain same BAC; REVERSIBLE with abstinence
+• Acute Tolerance: effects GREATER on rising BAC than falling BAC at same level (ascending > descending)
+• Protracted (Functional) Tolerance: brain adapts long-term; need more for same MOOD EFFECT; BAC still high; body still harmed
+• Cross-Tolerance: tolerance to one CNS depressant confers some tolerance to another
+• Cross-Dependence: one CNS depressant can suppress withdrawal of another (e.g., benzodiazepines treat alcohol withdrawal)
+
+PHYSICAL DEPENDENCE & WITHDRAWAL
+• Withdrawal develops within hours to days after cessation of heavy use
+• Symptoms: sweating, racing heart, tremors ("the shakes"), seizures, hallucinations
+• DSM-5: requires 2+ symptoms plus distress/impairment
+• Can be FATAL if untreated — one of few withdrawal syndromes that can kill
+• Benzodiazepines used medically to manage withdrawal (cross-dependence)
+
+ALCOHOL & BEHAVIOR
+• Aggression: alcohol does NOT directly cause aggression; interacts with personality, expectations, and situational cues
+• Sexual behavior: alcohol may increase perceived desire but REDUCES physiological arousal at moderate-high BAC
+• Driving: impairment begins below legal limit; experience does NOT eliminate impairment
+• Harm reduction: environmental strategies (availability, pacing, social norms) are most evidence-supported
+
+QUIZ REMINDERS
+✗ Blackout ≠ passing out (person is CONSCIOUS)
+✗ Tolerance does NOT reduce BAC or physical harm
+✗ Legal limit ≠ safe to drive (impairment starts at 0.05% or lower)
+✗ Coffee/exercise DO NOT speed sobriety
+✗ Alcohol is a CNS DEPRESSANT (not excitant)
+✗ Alcohol withdrawal CAN be fatal
+✗ Binge drinking threshold = 0.08% BAC
+✗ Peak BAC can occur 30–90 min AFTER last drink
+`;
+  const blob=new Blob([guide],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='Chapter9_Study_Notes.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('downloadGuideBtn').addEventListener('click',()=>downloadStudyGuide());
+
+/* ==========================================================
+   INIT
+========================================================== */
+loadProgress();
+renderSidebar();
+document.getElementById('instructionsModal').classList.add('visible');
+const _initIdx=resolveCurrentViewIndex();
+if(currentView==='review') showReviewSummary();
+else if(currentView==='cover'||_initIdx===null) showCover();
+else showActivity(_initIdx);
+
+/* ==========================================================
+   FULLSCREEN TOGGLE
+   Strategy 1 — Real Fullscreen API (works when Canvas iframe
+                has allow="fullscreen").
+   Strategy 2 — Pseudo-fullscreen via CSS (position:fixed,
+                always works inside any iframe / Canvas embed).
+========================================================== */
+(function(){
+  const btn=document.getElementById('fsBtn');
+  let pseudoFS=false;
+  function enterIcon(){ btn.textContent='✕'; btn.title='Exit fullscreen'; btn.setAttribute('aria-label','Exit fullscreen'); }
+  function exitIcon() { btn.textContent='⛶'; btn.title='Enter fullscreen'; btn.setAttribute('aria-label','Enter fullscreen'); }
+  function enterPseudo(){ document.body.classList.add('pseudo-fs'); pseudoFS=true; enterIcon(); announce('Fullscreen on.'); }
+  function exitPseudo() { document.body.classList.remove('pseudo-fs'); pseudoFS=false; exitIcon(); announce('Fullscreen off.'); }
+  const fsTarget=document.getElementById('app-wrapper');
+  function tryRealFS(){
+    if(fsTarget.requestFullscreen){ fsTarget.requestFullscreen().catch(()=>enterPseudo()); }
+    else if(fsTarget.webkitRequestFullscreen){ try{ fsTarget.webkitRequestFullscreen(); }catch(e){ enterPseudo(); } }
+    else { enterPseudo(); }
+  }
+  function isRealFS(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+  document.addEventListener('fullscreenchange', ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+  document.addEventListener('webkitfullscreenchange', ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+  btn.addEventListener('click',()=>{
+    if(isRealFS()) (document.exitFullscreen||document.webkitExitFullscreen||(()=>{})).call(document);
+    else if(pseudoFS) exitPseudo();
+    else tryRealFS();
+  });
+  btn.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); btn.click(); } });
+})();
+</script>
+</body>
+</html>

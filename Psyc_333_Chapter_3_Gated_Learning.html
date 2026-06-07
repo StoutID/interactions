@@ -1,0 +1,3980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 3 – Gated Sequential Learning</title>
+
+<style>
+/* ===================================================
+   GLOBAL / RESET
+=================================================== */
+:root{
+  --navy:#13294B;
+  --blue:#1D4F91;
+  --sky:#00A3E0;
+  --accent:#D3E3FF;
+  --bg:#F3F3F5;
+  --white:#FFFFFF;
+  --border:1px solid rgba(19,41,75,.15);
+  --shadow:0 10px 15px -3px rgba(0,0,0,.1);
+  --sidebar-w:300px;
+  --green-bg:#dcfce7;
+  --green-border:#14532d;
+  --red-bg:#fee2e2;
+  --red-border:#7f1d1d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',Tahoma,sans-serif;
+  background:var(--bg);
+  color:var(--navy);
+  display:flex;
+  justify-content:center;
+  overflow:hidden;
+  height:100vh;
+}
+
+/* ===================================================
+   LAYOUT SHELL
+=================================================== */
+#app-wrapper{
+  width:100%;
+  max-width:1200px;
+  height:100vh;
+  display:flex;
+  background:white;
+  box-shadow:0 25px 50px -12px rgba(0,0,0,.25);
+}
+
+/* ===================================================
+   SIDEBAR
+=================================================== */
+#sidebar{
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  border-right:var(--border);
+  display:flex;
+  flex-direction:column;
+  transition:width .3s, min-width .3s;
+  overflow:hidden;
+}
+#sidebar.collapsed{
+  width:0;
+  min-width:0;
+  border-right:none;
+}
+.sidebar-header{
+  background:var(--navy);
+  color:white;
+  padding:24px 20px;
+  font-weight:800;
+  font-size:1rem;
+  letter-spacing:.5px;
+  line-height:1.4;
+  flex-shrink:0;
+}
+.sidebar-header small{
+  display:block;
+  font-weight:400;
+  font-size:.75rem;
+  opacity:.75;
+  margin-top:4px;
+  letter-spacing:0;
+}
+.nav-list{
+  overflow-y:auto;
+  flex:1;
+}
+.nav-item{
+  padding:14px 18px;
+  border-bottom:1px solid rgba(0,0,0,.05);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+  font-size:.93rem;
+  transition:background .15s;
+  gap:8px;
+}
+.nav-item:hover:not(.locked){background:#f0f5ff}
+.nav-item:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.nav-item.active{background:var(--accent);font-weight:700}
+.nav-item.locked{opacity:.55;cursor:not-allowed}
+.nav-item.done .nav-title::after{content:' ✓';color:#16a34a;font-weight:700}
+.nav-title{flex:1}
+.lock-icon{font-size:.85rem;flex-shrink:0}
+.nav-progress{
+  width:100%;
+  height:4px;
+  background:#e5e7eb;
+  flex-shrink:0;
+}
+.nav-progress-fill{
+  height:4px;
+  background:var(--sky);
+  transition:width .4s;
+}
+.sidebar-footer{
+  padding:14px 18px;
+  border-top:var(--border);
+  font-size:.8rem;
+  color:#666;
+}
+
+/* ===================================================
+   MAIN CONTENT
+=================================================== */
+#main-content{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  overflow:hidden;
+}
+.top-bar{
+  padding:12px 18px;
+  border-bottom:var(--border);
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-shrink:0;
+  background:white;
+}
+.menu-btn{
+  background:var(--blue);
+  color:white;
+  border:none;
+  padding:9px 16px;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
+  font-size:.9rem;
+  white-space:nowrap;
+  touch-action:manipulation;
+}
+.menu-btn:focus{outline:3px solid var(--sky)}
+.top-bar-title{
+  font-weight:700;
+  color:var(--navy);
+  font-size:.95rem;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  flex:1;
+  min-width:0;
+}
+/* ── Step indicator dots ─────────────────────────────────── */
+.step-dots{
+  display:flex;align-items:center;gap:5px;
+  margin-left:auto;flex-shrink:0;
+}
+.step-dot{
+  width:12px;height:12px;border-radius:50%;
+  background:#e5e7eb;border:2px solid #d1d5db;
+  transition:background .3s,border-color .3s;flex-shrink:0;
+}
+.step-dot.done{background:#16a34a;border-color:#15803d;}
+.step-dot.active{background:var(--sky);border-color:#0284c7;}
+.step-dot.locked{background:#e5e7eb;border-color:#d1d5db;}
+.step-label{font-size:.75rem;color:#666;white-space:nowrap;margin-left:4px;}
+/* ── Fullscreen toggle ───────────────────────────────────── */
+.fs-btn{
+  background:none;border:1px solid rgba(19,41,75,.25);border-radius:6px;
+  padding:6px 10px;font-size:1rem;cursor:pointer;color:var(--navy);
+  line-height:1;flex-shrink:0;transition:background .15s,border-color .15s;
+  touch-action:manipulation;
+}
+.fs-btn:hover{background:var(--accent);border-color:var(--blue);}
+.fs-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+/* Pseudo-fullscreen: pins app over entire viewport — works inside Canvas iframes */
+body.pseudo-fs{overflow:auto;}
+body.pseudo-fs #app-wrapper{
+  position:fixed;inset:0;max-width:none;height:100%;
+  z-index:9999;box-shadow:none;
+}
+
+.content-scroll{
+  flex:1;
+  overflow-y:auto;
+  padding:0;
+  -webkit-overflow-scrolling:touch;
+}
+
+/* ===================================================
+   COVER PAGE
+=================================================== */
+#cover-page{
+  max-width:820px;
+  margin:40px auto;
+  padding:20px 20px 40px;
+}
+.cover-badge{
+  display:inline-block;
+  background:var(--accent);
+  color:var(--blue);
+  font-weight:700;
+  font-size:.8rem;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  padding:5px 12px;
+  border-radius:20px;
+  margin-bottom:16px;
+}
+.cover-title{
+  font-size:2rem;
+  font-weight:800;
+  color:var(--navy);
+  line-height:1.2;
+  margin-bottom:12px;
+}
+.cover-subtitle{
+  font-size:1.05rem;
+  color:#444;
+  margin-bottom:32px;
+  line-height:1.6;
+}
+.cover-cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:16px;
+  margin-bottom:36px;
+}
+.cover-card{
+  border:var(--border);
+  border-radius:12px;
+  padding:20px;
+  background:white;
+  box-shadow:var(--shadow);
+  display:flex;
+  gap:14px;
+  align-items:flex-start;
+}
+.cover-card-num{
+  background:var(--navy);
+  color:white;
+  font-weight:800;
+  font-size:.95rem;
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.cover-card-body h3{
+  font-size:.95rem;
+  font-weight:700;
+  color:var(--navy);
+  margin-bottom:5px;
+}
+.cover-card-body p{
+  font-size:.85rem;
+  color:#555;
+  line-height:1.5;
+}
+.cover-tag{
+  display:inline-block;
+  background:#f0f5ff;
+  color:var(--blue);
+  font-size:.73rem;
+  font-weight:600;
+  padding:2px 8px;
+  border-radius:10px;
+  margin-top:8px;
+  border:1px solid var(--accent);
+}
+.cover-instructions{
+  background:#f8faff;
+  border:var(--border);
+  border-left:4px solid var(--sky);
+  border-radius:8px;
+  padding:16px 20px;
+  margin-bottom:28px;
+  font-size:.9rem;
+  line-height:1.7;
+  color:#333;
+}
+.cover-instructions strong{display:block;margin-bottom:6px;color:var(--navy)}
+.get-started-btn{
+  display:inline-block;
+  background:var(--navy);
+  color:white;
+  border:none;
+  padding:16px 40px;
+  font-size:1.1rem;
+  font-weight:700;
+  border-radius:10px;
+  cursor:pointer;
+  letter-spacing:.5px;
+  touch-action:manipulation;
+  transition:background .2s, transform .1s;
+}
+.get-started-btn:hover{background:var(--blue)}
+.get-started-btn:active{transform:scale(.98)}
+.get-started-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+
+/* ===================================================
+   INTERACTION WRAPPER
+=================================================== */
+.interaction-wrapper{
+  padding:30px 30px 50px;
+  max-width:960px;
+  margin:0 auto;
+  width:100%;
+}
+.interaction-wrapper h1{
+  margin-top:0;
+  color:var(--navy);
+}
+
+/* ===================================================
+   SHARED INTERACTION STYLES
+=================================================== */
+.ix-instructions{
+  font-size:1.05rem;
+  margin-bottom:20px;
+  line-height:1.6;
+  color:#333;
+}
+.ix-card{
+  background:white;
+  border:var(--border);
+  border-radius:8px;
+  padding:12px 14px;
+  margin:8px 0;
+  cursor:grab;
+  font-size:.95rem;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:none;
+  transition:box-shadow .15s, opacity .15s;
+}
+.ix-card:focus{outline:3px solid var(--sky)}
+.ix-card.placed{opacity:.45;cursor:default;pointer-events:none}
+.ix-card.dragging{opacity:.35;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+
+.ix-dropzone{
+  border:2px dashed var(--accent);
+  border-radius:10px;
+  padding:12px;
+  min-height:90px;
+  margin-bottom:16px;
+  transition:background .15s, border-color .15s;
+}
+.ix-dropzone.drag-over{
+  background:#eef6ff;
+  border-color:var(--sky);
+}
+.ix-dropzone.correct-zone{
+  border-style:solid;
+  border-color:var(--green-border);
+  background:var(--green-bg);
+}
+
+.ix-term{
+  background:white;
+  border:var(--border);
+  border-radius:8px;
+  padding:12px 14px;
+  margin-bottom:10px;
+  cursor:grab;
+  font-size:.95rem;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:none;
+}
+.ix-term:focus{outline:3px solid var(--sky)}
+.ix-term.placed{opacity:.45;cursor:default;pointer-events:none}
+.ix-definition{
+  border:2px dashed var(--accent);
+  border-radius:10px;
+  padding:14px;
+  margin-bottom:16px;
+  min-height:72px;
+  font-size:.92rem;
+  transition:background .15s, border-color .15s;
+}
+.ix-definition.drag-over{background:#eef6ff;border-color:var(--sky)}
+.ix-definition.correct-def{border-style:solid;border-color:var(--green-border);background:var(--green-bg)}
+
+.ix-option{
+  border:var(--border);
+  border-radius:8px;
+  padding:14px 16px;
+  margin-bottom:12px;
+  cursor:pointer;
+  font-size:.95rem;
+  transition:background .15s;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:manipulation;
+}
+.ix-option:hover{background:var(--accent)}
+.ix-option:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.ix-option.correct-opt{background:var(--green-bg);border-color:var(--green-border)}
+.ix-option.incorrect-opt{background:var(--red-bg);border-color:var(--red-border)}
+
+.ix-explanation{
+  margin-top:16px;
+  padding:14px 16px;
+  border-radius:8px;
+  background:#eef6ff;
+  font-size:.92rem;
+  line-height:1.6;
+  display:none;
+}
+.ix-explanation.visible{display:block}
+
+.ix-feedback{
+  margin-top:18px;
+  padding:14px 16px;
+  border-radius:8px;
+  font-weight:600;
+  font-size:.95rem;
+  display:none;
+}
+.ix-feedback.visible{display:block}
+.ix-feedback.correct{background:var(--green-bg);color:#166534}
+.ix-feedback.incorrect{background:var(--red-bg);color:#991b1b}
+
+.ix-counter{
+  font-weight:700;
+  margin-bottom:10px;
+  color:var(--blue);
+  font-size:.9rem;
+}
+.ix-prompt{
+  font-weight:600;
+  margin-bottom:18px;
+  font-size:1rem;
+  line-height:1.5;
+}
+.ix-next-btn{
+  margin-top:12px;
+  padding:10px 22px;
+  background:var(--blue);
+  color:white;
+  border:none;
+  border-radius:8px;
+  font-size:.95rem;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+.ix-next-btn:focus{outline:3px solid var(--sky)}
+.ix-continue-btn{
+  display:block;
+  margin-top:28px;
+  padding:13px 28px;
+  font-size:1rem;
+  font-weight:700;
+  background:var(--blue);
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  touch-action:manipulation;
+  transition:background .15s, opacity .15s;
+}
+.ix-continue-btn:disabled{opacity:.35;cursor:default}
+.ix-continue-btn:not(:disabled):hover{background:var(--navy)}
+.ix-continue-btn:focus{outline:3px solid var(--sky)}
+.ix-columns-3{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:18px;
+  margin-top:16px;
+}
+.ix-columns-2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:28px;
+}
+.ix-col h2{
+  font-size:.95rem;
+  font-weight:700;
+  margin-bottom:8px;
+  color:var(--navy);
+}
+
+/* ===================================================
+   CHAPTER 3 EXACT-SHELL CUSTOMS
+=================================================== */
+.neuron-wrap{
+  position:relative;
+  width:100%;
+  max-width:860px;
+  margin:18px auto 0;
+}
+.neuron-wrap img{
+  width:100%;
+  display:block;
+  border-radius:10px;
+  border:var(--border);
+}
+.neuron-target{
+  position:absolute;
+  border:2px dashed var(--accent);
+  border-radius:10px;
+  background:rgba(211,227,255,.32);
+  color:var(--navy);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:4px;
+  font-size:.72rem;
+  font-weight:700;
+  line-height:1.15;
+}
+.neuron-target.drag-over{
+  background:#eef6ff;
+  border-color:var(--sky);
+}
+.neuron-target.correct-zone{
+  border-style:solid;
+  border-color:var(--green-border);
+  background:var(--green-bg);
+}
+.a1-term-row.correct-zone{
+  border-style:solid !important;
+  border-color:var(--green-border) !important;
+  background:var(--green-bg) !important;
+}
+.correct-slot{
+  background:#dcfce7 !important;
+  border-color:var(--green-border) !important;
+  color:#166534 !important;
+}
+.seq-layout{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+  margin-top:16px;
+}
+.seq-col-title{
+  font-size:.95rem;
+  font-weight:700;
+  margin-bottom:8px;
+  color:var(--navy);
+}
+.seq-pool{
+  display:flex;
+  flex-direction:column;
+}
+.seq-slots{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.seq-slot-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.seq-num{
+  min-width:22px;
+  color:var(--sky);
+  font-weight:800;
+}
+.seq-drop{
+  flex:1;
+  min-height:52px;
+  border:2px dashed var(--accent);
+  border-radius:10px;
+  padding:8px;
+}
+.seq-drop.drag-over{
+  background:#eef6ff;
+  border-color:var(--sky);
+}
+.locked-screen{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:60vh;
+  text-align:center;
+  color:#666;
+  gap:14px;
+}
+.locked-screen .lock-big{font-size:3.5rem}
+.locked-screen p{max-width:320px;line-height:1.6;font-size:.95rem}
+
+/* ===================================================
+   COMPLETION MODAL
+=================================================== */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;
+  justify-content:center;
+  align-items:flex-start;      /* top-align so tall modals don't get clipped */
+  z-index:2000;
+  padding:20px;
+  overflow-y:auto;             /* let the overlay scroll if the box is tall */
+  -webkit-overflow-scrolling:touch;
+}
+.modal-overlay.visible{display:flex}
+.modal-box{
+  background:white;
+  padding:40px 36px;
+  max-width:520px;
+  width:100%;
+  border-radius:16px;
+  box-shadow:0 30px 60px rgba(0,0,0,.3);
+  text-align:center;
+  position:relative;
+  max-height:calc(100vh - 40px);  /* never taller than the viewport */
+  overflow-y:auto;                /* scroll the modal's own content */
+  margin:auto;                    /* vertically centers when it fits, scrolls when it doesn't */
+}
+.modal-icon{font-size:3.5rem;margin-bottom:16px}
+.modal-box h2{
+  color:var(--navy);
+  font-size:1.6rem;
+  font-weight:800;
+  margin-bottom:12px;
+}
+.modal-box p{
+  color:#444;
+  line-height:1.7;
+  margin-bottom:24px;
+  font-size:.97rem;
+}
+.download-btn{
+  display:inline-block;
+  background:var(--navy);
+  color:white;
+  padding:14px 32px;
+  font-size:1rem;
+  font-weight:700;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  text-decoration:none;
+  touch-action:manipulation;
+  transition:background .2s;
+}
+.download-btn:hover{background:var(--blue)}
+.download-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+.modal-close{
+  position:sticky;             /* stays reachable while the modal scrolls */
+  float:right;
+  top:0;
+  margin:-24px -16px 0 0;      /* pull into the top-right corner of the padded box */
+  background:none;
+  border:none;
+  font-size:1.4rem;
+  cursor:pointer;
+  color:#888;
+  line-height:1;
+  padding:4px 8px;
+  z-index:1;
+}
+.modal-close:hover{color:var(--navy)}
+.modal-close:focus{outline:3px solid var(--sky)}
+.modal-checklist{
+  text-align:left;
+  background:#f8faff;
+  border-radius:10px;
+  padding:16px 20px;
+  margin-bottom:24px;
+}
+.modal-checklist li{
+  list-style:none;
+  padding:5px 0;
+  font-size:.9rem;
+  color:#333;
+}
+.modal-checklist li::before{content:'✅ ';margin-right:4px}
+/* --- Reflection question block (completion modal) --- */
+.reflection-block{
+  background:#f0f5ff;
+  border:1px solid var(--accent);
+  border-left:5px solid var(--blue);
+  border-radius:10px;
+  padding:16px 18px;
+  margin-bottom:18px;
+}
+.reflection-label{
+  font-size:.78rem;font-weight:800;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--blue);margin-bottom:8px;
+}
+.reflection-question{
+  font-size:1rem;line-height:1.55;color:var(--navy);
+  font-weight:600;margin:0;
+}
+.reflection-instructions{
+  font-size:.9rem;color:#333;line-height:1.6;
+}
+.reflection-instructions ol{margin:10px 0 0 0;padding-left:22px;}
+.reflection-instructions li{margin-bottom:8px;}
+.reflection-note{
+  margin-top:14px;background:#fffbeb;border:1px solid #fcd34d;
+  border-radius:8px;padding:10px 14px;font-size:.86rem;
+  color:#92400e;font-weight:600;
+}
+.completion-warning{
+  display:flex;gap:12px;align-items:flex-start;
+  background:#fef2f2;border:1px solid #fecaca;border-left:5px solid #dc2626;
+  border-radius:10px;padding:14px 16px;margin:6px 0 20px;
+  font-size:.92rem;line-height:1.55;color:#7f1d1d;
+}
+.completion-warning-icon{font-size:1.4rem;flex-shrink:0;line-height:1.2;}
+.completion-divider{
+  height:1px;background:rgba(19,41,75,.12);margin:24px 0 4px;
+}
+
+/* ===================================================
+   INSTRUCTIONS MODAL
+=================================================== */
+#instructionsModal .modal-box{text-align:left}
+#instructionsModal h2{text-align:center}
+.instr-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  margin-bottom:12px;
+  font-size:.93rem;
+  line-height:1.5;
+}
+.instr-icon{font-size:1.4rem;flex-shrink:0;margin-top:1px}
+
+/* ===================================================
+   ARIA LIVE
+=================================================== */
+#aria-live{
+  position:absolute;
+  width:1px;height:1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+}
+
+/* ===================================================
+   RESPONSIVE
+=================================================== */
+@media(max-width:640px){
+  #sidebar{width:260px;min-width:260px}
+  .cover-title{font-size:1.5rem}
+  .ix-columns-3{grid-template-columns:1fr}
+  .ix-columns-2{grid-template-columns:1fr}
+  .seq-layout{grid-template-columns:1fr}
+  .interaction-wrapper{padding:20px 16px 40px}
+  #cover-page{padding:16px 16px 40px}
+  .neuron-target{font-size:.62rem}
+}
+
+/* Reset confirm modal */
+#resetModal .modal-box { text-align:center; }
+.reset-btn {
+  display:block;
+  width:calc(100% - 28px);
+  margin:10px 14px 0;
+  padding:10px 0;
+  background:#fee2e2;
+  color:#7f1d1d;
+  border:1px solid #fca5a5;
+  border-radius:8px;
+  font-size:.85rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:background .15s;
+  touch-action:manipulation;
+}
+.reset-btn:hover { background:#fecaca; }
+.reset-btn:focus { outline:3px solid var(--sky); }
+.confirm-btn-row { display:flex; gap:10px; justify-content:center; margin-top:18px; }
+.confirm-yes { background:#dc2626; color:white; border:none; padding:11px 28px; border-radius:8px; font-weight:700; cursor:pointer; font-size:.95rem; }
+.confirm-yes:hover { background:#b91c1c; }
+.confirm-no  { background:#e5e7eb; color:#333; border:none; padding:11px 28px; border-radius:8px; font-weight:700; cursor:pointer; font-size:.95rem; }
+.confirm-no:hover { background:#d1d5db; }
+
+/* Activity columns layout */
+.ix-columns-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
+.ix-col h2{font-size:.88rem;font-weight:700;color:var(--navy);margin:0 0 8px 0;}
+.ix-dropzone{
+  border:2px dashed var(--accent);border-radius:10px;padding:10px 12px;
+  min-height:60px;margin-bottom:10px;transition:background .15s,border-color .15s;
+  display:flex;flex-direction:column;gap:6px;
+}
+.ix-dropzone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.ix-dropzone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.ix-prompt{
+  font-size:.95rem;font-weight:600;color:var(--navy);
+  background:#f0f4ff;border-left:4px solid var(--sky);
+  padding:12px 14px;border-radius:0 8px 8px 0;margin:10px 0;line-height:1.5;
+}
+.ix-option{
+  padding:11px 16px;border:2px solid var(--accent);border-radius:8px;
+  margin-bottom:8px;cursor:pointer;font-size:.92rem;line-height:1.45;
+  transition:background .12s,border-color .12s;
+}
+.ix-option:hover{background:#f0f4ff;border-color:var(--sky);}
+.ix-option:focus{outline:3px solid var(--sky);}
+.ix-option.correct-opt{background:#dcfce7;border-color:var(--green-border);color:#166534;cursor:default;}
+.ix-option.incorrect-opt{background:#fee2e2;border-color:#fca5a5;color:#7f1d1d;cursor:default;}
+.ix-next-btn{
+  background:var(--sky);color:white;border:none;padding:9px 22px;
+  border-radius:8px;font-weight:700;cursor:pointer;font-size:.9rem;margin-top:4px;
+}
+.ix-next-btn:hover{background:var(--navy);}
+.ix-next-btn:focus{outline:3px solid var(--accent);}
+@media(max-width:640px){
+  .ix-columns-2{grid-template-columns:1fr;}
+}
+
+/* ── Mobile-responsive improvements ───────────────────── */
+@media(max-width:600px){
+  .interaction-wrapper{padding:14px 10px;}
+  .ix-columns-2{grid-template-columns:1fr;}
+  h1{font-size:1.25rem;}
+}
+/* ── Activity 1 horizontal letter bank ────────────────── */
+#a1-letter-bank-h{
+  display:flex;flex-wrap:wrap;gap:8px;
+  justify-content:flex-start;
+  margin-bottom:16px;
+}
+#a1-letter-bank-h .ix-card{
+  width:52px;height:52px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:1.2rem;
+  flex-shrink:0;padding:0;margin:0;
+  touch-action:none;
+}
+.a1-def-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:10px;
+}
+.a1-def-card{
+  border:2px dashed var(--accent);border-radius:10px;
+  padding:10px;min-height:80px;
+  display:flex;flex-direction:column;gap:6px;
+  transition:background .15s,border-color .15s;
+  cursor:default;
+}
+.a1-def-card.drag-over{background:#eef6ff;border-color:var(--sky);}
+.a1-def-card.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.a1-def-card-slot{
+  width:36px;height:36px;border:2px dashed #aac4ff;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:1rem;color:var(--navy);background:#f8faff;
+  flex-shrink:0;
+}
+.a1-def-card-slot.filled{background:#dcfce7;border-color:var(--green-border);color:#166534;}
+/* ── Activity 4 two-step row cards ────────────────────── */
+.a4-nt-row{
+  border:2px solid var(--accent);border-radius:10px;
+  padding:10px 12px;margin-bottom:10px;
+  display:grid;grid-template-columns:130px 1fr;gap:10px;align-items:center;
+  background:#fff;
+}
+.a4-nt-label{
+  background:var(--navy);color:#fff;font-weight:700;font-size:.85rem;
+  padding:8px 10px;border-radius:7px;text-align:center;
+}
+.a4-drop-slot{
+  border:2px dashed var(--accent);border-radius:8px;
+  min-height:48px;padding:8px;
+  display:flex;align-items:center;
+  transition:background .15s,border-color .15s;
+  font-size:.85rem;color:#888;
+}
+.a4-drop-slot.drag-over{background:#eef6ff;border-color:var(--sky);}
+.a4-drop-slot.correct-zone{
+  border-style:solid;border-color:var(--green-border);background:var(--green-bg);
+  color:var(--navy);font-weight:600;
+}
+.a4-drop-slot .ix-card{
+  width:100%;box-sizing:border-box;margin:0;cursor:default;
+  font-size:.85rem;pointer-events:none;
+}
+.a4-bank{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.a4-bank .ix-card{font-size:.85rem;cursor:grab;}
+@media(max-width:540px){
+  .a4-nt-row{grid-template-columns:1fr;}
+}
+
+/* ── Two-part activity intro banner ───────────────────── */
+.two-part-banner{
+  display:flex;align-items:center;gap:14px;
+  background:linear-gradient(135deg,#1a3a6b 0%,#2563eb 100%);
+  color:#fff;border-radius:12px;padding:14px 18px;
+  margin-bottom:18px;font-size:.92rem;line-height:1.5;
+}
+.two-part-banner .tpb-icon{font-size:1.6rem;flex-shrink:0;}
+.two-part-badge{
+  display:inline-block;background:#fff;color:#1a3a6b;
+  font-weight:800;font-size:.75rem;padding:2px 8px;
+  border-radius:20px;margin-right:6px;
+}
+/* ── Part transition fade ──────────────────────────────── */
+@keyframes fadeOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-12px)}}
+@keyframes fadeIn {from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.part-fade-out{animation:fadeOut .35s ease forwards;}
+.part-fade-in {animation:fadeIn .35s ease forwards;}
+/* ── Activity 4 horizontal columns ────────────────────── */
+.a4-grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:10px;
+  margin-top:12px;
+}
+@media(max-width:700px){
+  .a4-grid{grid-template-columns:repeat(3,1fr);}
+}
+@media(max-width:420px){
+  .a4-grid{grid-template-columns:repeat(2,1fr);}
+}
+.a4-col{
+  display:flex;flex-direction:column;align-items:stretch;gap:6px;
+}
+.a4-nt-head{
+  background:var(--navy);color:#fff;font-weight:700;
+  font-size:.82rem;text-align:center;padding:8px 6px;
+  border-radius:8px;min-height:44px;display:flex;
+  align-items:center;justify-content:center;
+}
+.a4-drop-col{
+  border:2px dashed var(--accent);border-radius:8px;
+  min-height:54px;padding:6px;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;font-size:.78rem;color:#aaa;
+  transition:background .15s,border-color .15s;
+}
+.a4-drop-col.drag-over{background:#eef6ff;border-color:var(--sky);}
+.a4-drop-col.correct-zone{
+  border-style:solid;border-color:var(--green-border);
+  background:var(--green-bg);
+}
+.a4-drop-col .ix-card{
+  width:100%;box-sizing:border-box;margin:0;
+  font-size:.78rem;text-align:center;cursor:default;
+  pointer-events:none;line-height:1.3;
+}
+.a4-card-bank{
+  display:flex;flex-wrap:wrap;gap:8px;
+  margin-bottom:14px;
+}
+.a4-card-bank .ix-card{font-size:.82rem;cursor:grab;}
+
+
+/* ── Act4-style column layout (shared) ──────────────────── */
+.col-sort-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:8px;
+}
+.col-sort-col{
+  flex:1 1 160px;
+  display:flex;flex-direction:column;gap:0;
+  min-width:140px;
+}
+.col-sort-head{
+  background:var(--navy);color:#fff;
+  font-weight:700;font-size:.84rem;
+  text-align:center;padding:9px 8px;
+  border-radius:8px 8px 0 0;
+  line-height:1.3;
+}
+.col-sort-zone{
+  border:2px dashed var(--accent);border-top:none;
+  border-radius:0 0 8px 8px;
+  min-height:56px;padding:6px;
+  display:flex;flex-direction:column;gap:5px;
+  transition:background .15s,border-color .15s;
+}
+.col-sort-zone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.col-sort-zone.correct-zone{
+  border-style:solid;border-color:var(--green-border);background:var(--green-bg);
+}
+.col-sort-zone .ix-card{
+  font-size:.82rem;cursor:default;
+  pointer-events:none;margin:0;
+  line-height:1.3;
+}
+.col-sort-bank{
+  display:flex;flex-wrap:wrap;gap:8px;
+  margin-bottom:10px;
+}
+.col-sort-bank .ix-card{font-size:.85rem;cursor:grab;}
+
+/* ── Blue gradient drag cards ───────────────────────────── */
+.blue-card {
+  background: linear-gradient(135deg, #1a3a6b 0%, #2563eb 100%) !important;
+  color: white !important;
+  border: none !important;
+}
+.blue-card:focus { outline: 3px solid #93c5fd !important; }
+
+/* ── Placed card in drop zone ────────────────────────────── */
+.placed-card-in-zone {
+  background: linear-gradient(135deg, #1a3a6b 0%, #2563eb 100%);
+  color: white;
+  font-weight: 600;
+  font-size: .85rem;
+  line-height: 1.35;
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* ── Stacked card bank — true overlapping deck ───────────── */
+.stacked-card-bank {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin: 0 auto 18px;
+  /* height set by JS */
+}
+.stacked-card-bank .ix-card {
+  position: absolute;
+  width: 270px;
+  max-width: 90%;
+  text-align: center;
+  margin: 0;
+  /* top / left / transform / z-index / pointer-events all set by JS */
+  transition: box-shadow .15s, transform .12s;
+}
+/* Top card lifts slightly on hover — JS sets rotation, we add a translateY nudge */
+.stacked-card-bank .ix-card[draggable="true"]:hover {
+  box-shadow: 0 12px 28px rgba(0,0,0,.38) !important;
+  filter: brightness(1.08);
+}
+
+/* ── Drop zones that accept stacked placed cards ─────────── */
+.stack-drop-zone {
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+}
+
+/* ── Review screen ──────────────────────────────────────── */
+.review-screen {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 30px 30px 50px;
+}
+.review-screen h2 { color: var(--navy); font-size: 1.25rem; margin-bottom: 6px; }
+.review-badge {
+  display: inline-block;
+  background: #dcfce7;
+  color: #14532d;
+  font-weight: 700;
+  font-size: .8rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 18px;
+  letter-spacing: .4px;
+}
+.review-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.review-list li {
+  background: #f0f5ff;
+  border-left: 4px solid var(--sky);
+  border-radius: 0 8px 8px 0;
+  padding: 11px 16px;
+  font-size: .93rem;
+  line-height: 1.55;
+  color: var(--navy);
+}
+.review-list li strong { color: var(--blue); }
+.review-summary-card{
+  background:white;
+  border:var(--border);
+  border-radius:12px;
+  padding:18px 20px;
+  margin-bottom:18px;
+  box-shadow:var(--shadow);
+}
+.review-summary-card h3{
+  font-size:1rem;
+  color:var(--navy);
+  margin:0 0 12px;
+  padding-bottom:8px;
+  border-bottom:2px solid var(--accent);
+}
+.review-summary-card .review-list{margin-bottom:0;}
+.review-continue-btn {
+  display: block;
+  margin-top: 26px;
+  padding: 14px 32px;
+  font-size: 1rem;
+  font-weight: 700;
+  background: var(--navy);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background .15s;
+}
+.review-continue-btn:hover { background: var(--blue); }
+.review-continue-btn:focus { outline: 3px solid var(--sky); }
+
+/* ── Rush guard ─────────────────────────────────────────── */
+#rushModal .modal-box{max-width:480px;}
+
+/* ── Nav sub-items (Part A / Part B / Part C) ───────────── */
+.nav-sublist{display:flex;flex-direction:column;gap:1px;padding:2px 0 6px 0;}
+.nav-subitem{
+  padding:7px 18px 7px 36px;font-size:.8rem;color:var(--navy);cursor:pointer;
+  display:flex;align-items:center;gap:8px;transition:background .1s;
+  border-left:2px solid transparent;
+}
+.nav-subitem:hover:not(.sub-locked){background:#eef4ff;border-left-color:var(--sky);}
+.nav-subitem.sub-active{background:var(--accent);border-left-color:var(--blue);font-weight:700;}
+.nav-subitem.sub-done{color:#16a34a;}
+.nav-subitem.sub-done::after{content:' ✓';font-weight:700;}
+.nav-subitem.sub-locked{opacity:.45;cursor:default;}
+.sub-dot{width:7px;height:7px;border-radius:50%;background:#d1d5db;flex-shrink:0;}
+.sub-dot.done{background:#16a34a;}
+.sub-dot.active{background:var(--sky);}
+.activity-locked-overlay{
+  position:absolute;inset:0;
+  background:rgba(255,255,255,.88);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:12px;z-index:100;border-radius:12px;
+  padding:30px;text-align:center;
+}
+.activity-locked-overlay h3{color:#dc2626;font-size:1.1rem;margin:0;}
+.activity-locked-overlay p{font-size:.9rem;color:#555;margin:0;line-height:1.5;}
+.lock-countdown{font-size:2rem;font-weight:800;color:#dc2626;}
+.content-area-wrap{position:relative;}
+/* ── Permanent failure overlay ───────────────────────────── */
+</style>
+</head>
+
+<body>
+
+<!-- ===== ARIA LIVE ===== -->
+<div id="aria-live" aria-live="polite" aria-atomic="true"></div>
+<!-- ===== APP SHELL ===== -->
+<div id="app-wrapper">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" aria-label="Activity navigation">
+    <div class="sidebar-header">
+      Chapter 3
+      <small>Drugs and the Nervous System</small>
+    </div>
+    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="8" id="overallProgressBar">
+      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
+    </div>
+    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
+    <div class="sidebar-footer" id="sidebar-footer">0 of 7 activities complete</div>
+    <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">↺ Reset Progress</button>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main-content">
+    <div class="top-bar">
+      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
+      <span class="top-bar-title" id="topBarTitle">Chapter 3 – Drugs and the Nervous System</span>
+      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="img"></div>
+      <span class="step-label" id="stepLabel"></span>
+      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
+    </div>
+    <div class="content-scroll" id="content-area" tabindex="-1"></div>
+  </main>
+
+
+
+<!-- ===== INSTRUCTIONS MODAL ===== -->
+<div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+  <div class="modal-box">
+    <h2 id="instrTitle">How to Use This Module</h2>
+    <br>
+    <div class="instr-row">
+      <span class="instr-icon">🖱️</span>
+      <div><strong>Mouse / Touch:</strong> Click or tap to select answers, drag and drop items, then press Continue to advance.</div>
+    </div>
+    <div class="instr-row">
+      <span class="instr-icon">⌨️</span>
+      <div><strong>Keyboard:</strong> Use <kbd>Tab</kbd> to move between elements, <kbd>Enter</kbd> or <kbd>Space</kbd> to select, and follow activity prompts where keyboard placement is supported.</div>
+    </div>
+    <div class="instr-row">
+      <span class="instr-icon">🔒</span>
+      <div><strong>Gated Progress:</strong> Each activity must be completed correctly before the next one unlocks.</div>
+    </div>
+    <div class="instr-row">
+      <span class="instr-icon">📋</span>
+      <div><strong>Gated Sequence:</strong> All 7 activities are included. Complete each activity correctly to unlock the next one. Your progress is saved automatically.</div>
+    </div>
+    <div class="instr-row">
+      <span class="instr-icon">📝</span>
+      <div><strong>Final Reflection:</strong> After the last activity you'll receive one reflection question. Copy it into the Canvas text box below this activity and answer it in your own words (no AI) — at least one five-sentence paragraph.</div>
+    </div>
+    <br>
+    <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
+  </div>
+</div>
+
+<!-- ===== RESET CONFIRM MODAL ===== -->
+<div class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <h2 id="resetTitle">Reset All Progress?</h2>
+    <p>This will <strong>erase all completed activities</strong> and re-lock everything except Activity 1. This cannot be undone.</p>
+    <div class="confirm-btn-row">
+      <button class="confirm-no" id="resetCancelBtn">Cancel</button>
+      <button class="confirm-yes" id="resetConfirmBtn">Yes, Reset Everything</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== COMPLETION MODAL ===== -->
+<div class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
+  <div class="modal-box" style="max-width:600px;text-align:left;">
+    <button class="modal-close" id="closeCompletion" aria-label="Close">✕</button>
+
+    <div class="completion-warning" role="alert">
+      <span class="completion-warning-icon">⚠️</span>
+      <div><strong>You're not done yet!</strong> Finishing the activities is only part of this assignment. To receive credit, you must still answer the reflection question below in the Canvas text box.</div>
+    </div>
+
+    <div class="modal-icon" style="text-align:center;">🧠</div>
+    <h2 id="complTitle" style="text-align:center;">Activities Complete — One Step Left</h2>
+    <p style="text-align:center;">You worked through how neurons communicate, how drugs alter synaptic transmission, and how these effects connect to brain reward pathways. Complete the reflection below to finish the assignment.</p>
+
+    <div class="reflection-block">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question" id="reflectionQuestion">&nbsp;</p>
+    </div>
+
+    <div class="reflection-instructions">
+      <strong>To complete this assignment:</strong>
+      <ol>
+        <li><strong>Copy and paste the question above</strong> into the Canvas text box below this activity.</li>
+        <li>Answer the question in your <strong>own words</strong> — a minimum of <strong>one paragraph of at least five sentences</strong>.</li>
+        <li><strong>Do not use AI</strong> to write or generate any part of your answer. The reflection must be entirely your own thinking.</li>
+      </ol>
+      <p class="reflection-note">⬇ Scroll down to the Canvas text box beneath this activity to submit your written response.</p>
+    </div>
+
+    <div class="completion-divider"></div>
+
+    <div style="text-align:center;margin-top:18px;">
+      <button class="download-btn" id="downloadGuideBtn">⬇ Download Study Guide</button>
+      <p style="font-size:.82rem;color:#666;margin-top:8px;">Optional: keep this study guide for review. You can also reopen it any time from the <strong>Review &amp; Study Guide</strong> menu item.</p>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ===== RUSH GUARD MODAL ===== -->
+<div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
+  <div class="modal-box" style="border-top:5px solid #f59e0b;">
+    <div class="modal-icon" id="rushIcon">⚠️</div>
+    <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
+    <p id="rushMsg">It looks like you're dragging cards without reading them carefully. Take a moment to study the content before placing cards.</p>
+    <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
+    <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
+    <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* ==========================================================
+   UTILITY
+========================================================== */
+
+/* ==========================================================
+   RUSH GUARD (escalating-timeout model)
+   A rush event = 2 wrong answers within a 5s window (or 4
+   rapid flips). Each step: dismissable warning -> rush again
+   -> timed lockout. Lockouts escalate 60s -> 3m -> 4m -> 5m
+   ... (+1 min each). No permanent lock and no password.
+========================================================== */
+const rushGuard = (() => {
+  const WINDOW_MS = 5000;        // wrong-answer rush window
+  const THRESHOLD = 2;           // wrong answers within window = 1 rush event
+  const FLIP_WINDOW_MS = 2000;   // rapid-flip window
+  const FLIP_THRESHOLD = 4;      // rapid flips within window = 1 rush event
+
+  let wrongTimestamps = [];
+  let strikes         = 0;   // strikes within the current step (1 = warned, 2 = lock)
+  let lockCount       = 0;   // lockouts triggered so far this session
+  let locked          = false;
+  let cooldownTimer   = null;
+  let currentWrapper  = null;
+  let flipTimestamps  = [];
+  let flipStrikes     = 0;
+
+  const $modal      = () => document.getElementById('rushModal');
+  const $icon       = () => document.getElementById('rushIcon');
+  const $title      = () => document.getElementById('rushTitle');
+  const $msg        = () => document.getElementById('rushMsg');
+  const $detail     = () => document.getElementById('rushDetail');
+  const $countdown  = () => document.getElementById('rushCountdown');
+  const $dismiss    = () => document.getElementById('rushDismissBtn');
+
+  /* Duration (seconds) of the k-th lockout: k=1 -> 60s, k=2 -> 180s, then +60s each. */
+  function durFor(k){ return k <= 1 ? 60 : 180 + (k - 2) * 60; }
+  function fmtLong(secs){
+    if(secs < 60) return secs + ' seconds';
+    const m = Math.round(secs / 60);
+    return m + ' minute' + (m !== 1 ? 's' : '');
+  }
+  function fmtAdj(secs){ return secs < 60 ? secs + '-Second' : Math.round(secs / 60) + '-Minute'; }
+  function fmtClock(secs){
+    if(secs < 60) return secs + 's';
+    const m = Math.floor(secs / 60), s = secs % 60;
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  function setModal(iconTxt, titleTxt, titleColor, borderColor, msgTxt, detailHTML, cdVisible, btnVisible, btnTxt){
+    const m = $modal();
+    m.querySelector('.modal-box').style.borderTopColor = borderColor;
+    $icon().textContent  = iconTxt;
+    $title().textContent = titleTxt;
+    $title().style.color = titleColor;
+    $msg().textContent   = msgTxt;
+    $detail().innerHTML  = detailHTML;
+    $countdown().style.display = cdVisible ? 'block' : 'none';
+    $dismiss().style.display   = btnVisible ? ''      : 'none';
+    if(btnVisible) $dismiss().textContent = btnTxt;
+    m.classList.add('visible');
+    if(btnVisible) setTimeout(()=>$dismiss().focus(), 50);
+  }
+
+  function showWarning(){
+    const nextLock = durFor(lockCount + 1);
+    if(lockCount === 0){
+      setModal('\u26A0\uFE0F','Slow Down!','#92400e','#f59e0b',
+        "You're moving through this activity very quickly without reading carefully. Take a moment to study each card before placing it.",
+        "Tip: Read the full card text, then read each option or column header before you act.<br><br>One more rush and this activity locks for <strong>60 seconds</strong>.",
+        false, true, "I'll Read More Carefully");
+    } else if(lockCount === 1){
+      setModal('\uD83D\uDEA8','Final Warning','#dc2626','#dc2626',
+        "You're rushing again after already receiving a timeout.",
+        "One more rush and this activity locks for <strong>3 minutes</strong>.",
+        false, true, "I Understand \u2014 I'll Think First");
+    } else {
+      setModal('\uD83D\uDEA8','Final Warning','#7f1d1d','#7f1d1d',
+        "You're rushing again after multiple timeouts.",
+        "One more rush and this activity locks for <strong>"+fmtLong(nextLock)+"</strong>.<br><br>\u26A0\uFE0F Each additional rush adds <strong>another minute</strong> to the next lockout.",
+        false, true, "I Understand \u2014 I'll Slow Down");
+    }
+    announce(lockCount===0?'Slow down warning. Read the content carefully.':'Final warning. Rushing again will lock the activity.');
+  }
+
+  function showTimeout(){
+    lockCount++;
+    const dur = durFor(lockCount);
+    setModal('\uD83D\uDD12','Activity Locked \u2013 '+fmtAdj(dur)+' Timeout','#dc2626','#dc2626',
+      "You rushed again immediately after a warning. This activity is locked for "+fmtLong(dur)+".",
+      "Use this time to carefully study the content before continuing.<br><br>\u26A0\uFE0F Each additional rush adds <strong>another minute</strong> to the next lockout.",
+      true, false, '');
+    announce('Activity locked for '+fmtLong(dur)+' due to rapid guessing.');
+    startCooldown(dur);
+  }
+
+  function startCooldown(durSecs){
+    locked = true;
+    let secs = durSecs;
+    $countdown().textContent = fmtClock(secs);
+    if(currentWrapper){
+      currentWrapper.style.position = 'relative';
+      let ov = document.getElementById('rush-lock-overlay');
+      if(!ov){
+        ov = document.createElement('div');
+        ov.className = 'activity-locked-overlay';
+        ov.id = 'rush-lock-overlay';
+        currentWrapper.appendChild(ov);
+      }
+      ov.innerHTML = '<h3>\uD83D\uDD12 Activity Locked</h3><p>Take '+fmtLong(durSecs)+' to study the content.</p><div class="lock-countdown" id="lock-secs">'+fmtClock(secs)+'</div><p style="font-size:.82rem;">This activity will reset when the timer ends.</p>';
+    }
+    if(cooldownTimer){ clearInterval(cooldownTimer); }
+    cooldownTimer = setInterval(()=>{
+      secs--;
+      const cd = $countdown(), ls = document.getElementById('lock-secs');
+      if(cd) cd.textContent = fmtClock(secs);
+      if(ls) ls.textContent = fmtClock(secs);
+      if(secs <= 0){
+        clearInterval(cooldownTimer); cooldownTimer = null;
+        locked = false; strikes = 0; wrongTimestamps = []; flipTimestamps = [];
+        $modal().classList.remove('visible');
+        const ov = document.getElementById('rush-lock-overlay');
+        if(ov) ov.remove();
+        if(typeof currentView === 'number') showActivity(currentView);
+      }
+    }, 1000);
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const d = document.getElementById('rushDismissBtn');
+    if(d) d.addEventListener('click', ()=>{
+      $modal().classList.remove('visible');
+      wrongTimestamps = [];
+      flipTimestamps = [];
+    });
+  });
+
+  return {
+    reset(){
+      wrongTimestamps = []; strikes = 0; locked = false;
+      flipTimestamps = []; flipStrikes = 0;
+      if(cooldownTimer){ clearInterval(cooldownTimer); cooldownTimer = null; }
+      const ov = document.getElementById('rush-lock-overlay');
+      if(ov) ov.remove();
+    },
+    hardReset(){            // full reset incl. escalation ladder (Reset Progress)
+      this.reset();
+      lockCount = 0;
+    },
+    clearTimestamps(){
+      wrongTimestamps = [];
+      flipTimestamps = [];
+    },
+    recordWrong(wrapper){
+      if(locked) return;
+      currentWrapper = wrapper;
+      const now = Date.now();
+      wrongTimestamps.push(now);
+      wrongTimestamps = wrongTimestamps.filter(t => now - t < WINDOW_MS);
+      if(wrongTimestamps.length < THRESHOLD) return;
+      wrongTimestamps = []; strikes++;
+      if(strikes === 1){ showWarning(); }
+      else { strikes = 0; showTimeout(); }
+    },
+    recordFlipRush(wrapper){
+      if(locked) return;
+      currentWrapper = wrapper;
+      const now = Date.now();
+      flipTimestamps.push(now);
+      flipTimestamps = flipTimestamps.filter(t => now - t < FLIP_WINDOW_MS);
+      if(flipTimestamps.length < FLIP_THRESHOLD) return;
+      flipTimestamps = []; flipStrikes++;
+      if(flipStrikes === 1){ showWarning(); }
+      else { flipStrikes = 0; showTimeout(); }
+    },
+    isLocked(){ return locked; }
+  };
+})();
+
+
+function announce(msg){
+  const el=document.getElementById('aria-live');
+  el.textContent='';
+  setTimeout(()=>el.textContent=msg,60);
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+function qs(sel,root=document){return root.querySelector(sel)}
+function qsa(sel,root=document){return [...root.querySelectorAll(sel)]}
+
+/* ── Blue gradient card factory ────────────────────────── */
+function makeBlueCard(text, id, bucket, extra=''){
+  const card=document.createElement('div');
+  card.className='ix-card blue-card'+(extra?' '+extra:'');
+  card.textContent=text;
+  card.setAttribute('draggable','true');
+  card.setAttribute('tabindex','0');
+  card.dataset.bucket=bucket;
+  card.id=id;
+  return card;
+}
+
+/* ── Simple placed card for drop zones ─────────────────── */
+function makePlacedCard(text){
+  const div=document.createElement('div');
+  div.className='placed-card-in-zone';
+  div.textContent=text;
+  return div;
+}
+
+/* ── Position cards as an overlapping physical deck ──────── */
+// Stable per-card random offsets seeded by card index so they don't jump on re-stack
+function stackCardBank(bankEl){
+  const cards=[...bankEl.querySelectorAll('.ix-card:not(.placed)')];
+  const CARD_H=54;
+  const OFFSET=8;
+  const total=cards.length;
+  if(total===0){ bankEl.style.height='12px'; return; }
+  // Extra height for tallest card (bottom) showing above stack
+  bankEl.style.height=(CARD_H+(total-1)*OFFSET+16)+'px';
+
+  cards.forEach((card,idx)=>{
+    const isTop = idx===total-1;
+    const fromBottom = total-1-idx;
+    // Haphazard: each non-top card gets a small seeded random rotation and x-nudge
+    // Use idx as seed so values are stable across re-stacks
+    const seed = idx * 137.508; // golden-angle-like spacing
+    const rot  = isTop ? 0 : ((seed % 7) - 3.5);          // –3.5° to +3.5°
+    const nudge= isTop ? 0 : ((seed % 11) - 5.5) * 0.8;   // –4.4px to +4.4px
+
+    card.style.top       = (fromBottom * OFFSET) + 'px';
+    card.style.left      = '50%';
+    card.style.transform = `translateX(calc(-50% + ${nudge}px)) rotate(${rot}deg)`;
+    card.style.zIndex    = String(idx + 1);
+    card.style.boxShadow = isTop
+      ? '0 6px 16px rgba(0,0,0,.35)'
+      : '0 2px 6px rgba(0,0,0,.18)';
+
+    // Only top card is interactive; others are visually present but inert
+    if(isTop){
+      card.style.cursor   = 'grab';
+      card.style.opacity  = '1';
+      card.setAttribute('draggable','true');
+      card.setAttribute('tabindex','0');
+      card.style.pointerEvents = 'auto';
+    } else {
+      card.style.cursor   = 'default';
+      card.style.opacity  = '0.85';
+      card.setAttribute('draggable','false');
+      card.setAttribute('tabindex','-1');
+      card.style.pointerEvents = 'none';
+    }
+  });
+}
+
+/* ── Review screen shown after an activity completes ─────── */
+const REVIEW_DATA={
+  0:{
+    title:'Activity 1 — Anatomy of a Neuron',
+    points:[
+      '<strong>Dendrites</strong> receive incoming signals from other neurons.',
+      '<strong>Cell body</strong> (soma) integrates signals and contains the nucleus.',
+      'The <strong>nucleus</strong> holds the neuron\'s DNA and directs protein production.',
+      'The <strong>axon hillock</strong> is where inputs are summed and the action potential is initiated.',
+      'The <strong>axon</strong> carries action potentials away from the cell body.',
+      '<strong>Myelin</strong> insulates the axon and speeds transmission; <strong>nodes of Ranvier</strong> allow the signal to "jump" between gaps.',
+      '<strong>Axon terminals</strong> store neurotransmitters in vesicles and release them into the synapse.'
+    ]
+  },
+  1:{
+    title:'Activity 2 — Neurotransmitters and Their Functions',
+    points:[
+      '<strong>Acetylcholine</strong>: memory, learning, muscle activation.',
+      '<strong>Dopamine</strong>: movement, reward, motivation.',
+      '<strong>Serotonin</strong>: mood regulation and sleep.',
+      '<strong>Norepinephrine</strong>: alertness, arousal, and the stress response.',
+      '<strong>GABA</strong>: the primary inhibitory neurotransmitter.',
+      '<strong>Endorphins</strong>: pain modulation and relief.',
+      '<strong>Glutamate</strong>: the major excitatory neurotransmitter — important for some hallucinogens.'
+    ]
+  },
+  2:{
+    title:'Activity 3 — From Electrical to Chemical: How Neurons Communicate',
+    points:[
+      'Drugs can affect neural transmission at the synapse.',
+      'Neural transmission is <strong>electrical along the axon</strong> but <strong>chemical at the synapse</strong>.',
+      'Neurons do not physically touch — they communicate across the <strong>synaptic cleft</strong>.',
+      '<strong>Ionotropic receptors</strong> directly open ion channels — fast effects (milliseconds).',
+      '<strong>Metabotropic receptors</strong> use G proteins and second messengers — slower but longer-lasting effects.'
+    ]
+  },
+  3:{
+    title:'Activity 4 — How Drugs Alter Synaptic Communication',
+    points:[
+      'Drugs can interfere at multiple points: <strong>production/storage</strong>, <strong>deactivation</strong>, or <strong>receptor interaction</strong>.',
+      '<strong>Agonists</strong> increase a neurotransmitter\'s effect — by activating the receptor, blocking reuptake, promoting release, or blocking enzyme breakdown.',
+      '<strong>Antagonists</strong> decrease a neurotransmitter\'s effect — by blocking the receptor, blocking production, encouraging reuptake, or disrupting vesicle storage.',
+      'Drugs do not create new brain processes; they enhance or inhibit existing neurotransmitter systems.'
+    ]
+  },
+  4:{
+    title:'Activity 5 — The Brain: Structure, Function, and Reward',
+    points:[
+      '<strong>Hindbrain</strong>: Medulla (vital functions), Pons (sleep/arousal), Cerebellum (movement/balance).',
+      '<strong>Midbrain</strong>: Superior/Inferior Colliculi (sensory relay), Substantia Nigra (dopamine production).',
+      '<strong>Forebrain</strong>: Thalamus (sensory relay), Hypothalamus (drives), Hippocampus (memory).',
+      'The <strong>mesolimbic dopaminergic pathway</strong> is the brain\'s primary reward system.',
+      'Many drugs of abuse increase dopamine in this pathway, reinforcing drug-seeking behavior.'
+    ]
+  },
+  5:{
+    title:'Activity 6 — From Synapse to System: Explaining Drug Effects',
+    points:[
+      '<strong>Cocaine</strong>: blocks dopamine reuptake, increasing dopamine activity (a dopamine agonist); also sympathomimetic.',
+      '<strong>Heroin</strong>: activates opioid receptors — mimics endorphins.',
+      '<strong>Naloxone</strong>: opioid receptor antagonist — reverses opioid overdose by blocking the receptor.',
+      'To explain any drug effect: (1) where does it act? (2) does it enhance or block? (3) which pathway is affected?'
+    ]
+  },
+  6:{
+    title:'Activity 7 — Chapter 3 Mastery',
+    points:[
+      '<strong>Reuptake</strong>: neurotransmitter is taken back into the axon terminal, ending its effect.',
+      '<strong>Agonist</strong> = increases a neurotransmitter\'s effect; <strong>antagonist</strong> = decreases it.',
+      'The <strong>blood-brain barrier</strong> filters which substances can enter the brain.',
+      'CNS + PNS = the two main branches of the nervous system.',
+      'Dopamine in the <strong>mesolimbic pathway</strong> reinforces behavior — central to addiction.'
+    ]
+  }
+};
+
+function showReview(activityIndex, onContinue){
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  area.scrollTop=0;
+  const data=REVIEW_DATA[activityIndex];
+  const div=document.createElement('div');
+  div.className='review-screen';
+  div.innerHTML=`
+    <div class="review-badge">✅ Activity Complete</div>
+    <h2>${data.title}</h2>
+    <p style="font-size:.9rem;color:#555;margin-bottom:16px;line-height:1.6;">Before moving on, review the key concepts from this activity.</p>
+    <ul class="review-list">
+      ${data.points.map(p=>`<li>${p}</li>`).join('')}
+    </ul>
+    <button class="review-continue-btn" id="reviewContBtn">Continue to Next Activity ▶</button>
+  `;
+  area.appendChild(div);
+  const btn=div.querySelector('#reviewContBtn');
+  btn.addEventListener('click',()=>{ onContinue(); });
+  btn.focus();
+  announce('Activity complete. Review screen shown. Press Continue when ready.');
+}
+
+/* ==========================================================
+   ACTIVITIES DEFINITION
+========================================================== */
+const ACTIVITIES=[
+  { id:'act1', title:'Activity 1', subtitle:'Anatomy of a Neuron',                                              type:'NEURON',    locked:false, done:false },
+  { id:'act4', title:'Activity 2', subtitle:'Neurotransmitters and Their Functions',                            type:'NT',        locked:true,  done:false },
+  { id:'act2', title:'Activity 3', subtitle:'From Electrical to Chemical: How Neurons Communicate',              type:'SYNAPSE',   locked:true,  done:false },
+  { id:'act3', title:'Activity 4', subtitle:'How Drugs Alter Synaptic Communication',                            type:'DRUGS',     locked:true,  done:false },
+  { id:'act6', title:'Activity 5', subtitle:'The Brain: Structure, Function, and Reward',                        type:'BRAIN',     locked:true,  done:false },
+  { id:'act7', title:'Activity 6', subtitle:'From Synapse to System: Explaining Drug Effects',                   type:'SYNTHESIS', locked:true,  done:false },
+  { id:'act8', title:'Activity 7', subtitle:'Chapter 3 Mastery: From Neuron → Synapse → Brain & Behavior', type:'MASTERY',   locked:true,  done:false }
+];
+
+/* current view: 'cover' or index 0-7 */
+let currentView='cover';
+let savedReflectionQuestion='';
+
+/* ==========================================================
+   PROGRESS / PERSISTENCE
+========================================================== */
+const STORAGE_KEY='ch3-shell-vA-v3';
+// partADone[i] = true when Part A of activity i is complete (Part B is loading/loaded)
+const partADone = new Array(7).fill(false);
+
+function saveProgress(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({
+    currentView,
+    done:ACTIVITIES.map(a=>a.done),
+    locked:ACTIVITIES.map(a=>a.locked),
+    partADone:[...partADone],
+    reflectionQ:savedReflectionQuestion
+  }));
+}
+function loadProgress(){
+  // Clear stale data from old key versions
+  ['ch3-exact-shell-vA','ch3-shell-vA-v2'].forEach(k=>localStorage.removeItem(k));
+  try{
+    const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(!d||!Array.isArray(d.done)||d.done.length!==ACTIVITIES.length)return;
+    currentView=(d.currentView!==undefined)?d.currentView:'cover';
+    ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
+    ACTIVITIES[0].locked=false;
+    if(Array.isArray(d.partADone)) d.partADone.forEach((v,i)=>{ if(i<partADone.length) partADone[i]=!!v; });
+    savedReflectionQuestion=d.reflectionQ||'';
+    announce('Your previous progress has been restored.');
+  }catch(e){}
+}
+function doneCount(){return ACTIVITIES.filter(a=>a.done).length;}
+
+/* ==========================================================
+   SIDEBAR
+========================================================== */
+function renderSidebar(){
+  const nav=document.getElementById('nav-list');
+  nav.innerHTML='';
+  const done=doneCount();
+
+  const pct=Math.round((done/ACTIVITIES.length)*100);
+  document.getElementById('overallProgressFill').style.width=pct+'%';
+  document.getElementById('overallProgressBar').setAttribute('aria-valuenow',done);
+  document.getElementById('sidebar-footer').textContent=`${done} of ${ACTIVITIES.length} activities complete`;
+  renderStepDots();
+
+  const cover=document.createElement('div');
+  cover.className='nav-item'+(currentView==='cover'?' active':'');
+  cover.tabIndex=0;
+  cover.setAttribute('role','button');
+  cover.setAttribute('aria-label','Cover page');
+  cover.innerHTML=`<span class="nav-title">📋 Cover Page</span>`;
+  cover.onclick=()=>showCover();
+  cover.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cover.click();}};
+  nav.appendChild(cover);
+
+  const PARTS_MAP={
+    2:['Part A – Synapse Questions','Part B – Receptor Sorting'],
+    3:['Part A – Drug Mechanisms','Part B – Agonist vs. Antagonist'],
+    4:['Part A – Brain Structures','Part B – Reward Pathway'],
+    5:['Case A – Cocaine','Case B – Heroin & Naloxone'],
+    6:['Part A – Matching','Part B – Multiple Choice','Part C – Mini Scenario'],
+  };
+
+  // Map activity index → IDs needed to jump to Part B/Step 2 after load
+  const PARTB_IDS={
+    2:{ partAId:'a2-parta-wrap', partBId:'a2-partb' },
+    3:{ partAId:'a3-parta-wrap', partBId:'a3-partb' },
+    4:{ partAId:'a6-parta-wrap', partBId:'a6-partb' },
+    5:{ partAId:null,            partBId:'a7-caseb' },
+    6:{ partAId:'a8-parta-wrap', partBId:'a8-partb', partCId:'a8-partc' },
+  };
+
+  ACTIVITIES.forEach((a,i)=>{
+    const item=document.createElement('div');
+    const isActive=currentView===i;
+    item.className=`nav-item${isActive?' active':''}${a.locked?' locked':''}${a.done?' done':''}`;
+    item.tabIndex=a.locked?-1:0;
+    item.setAttribute('role','button');
+    item.setAttribute('aria-disabled',a.locked?'true':'false');
+    item.setAttribute('aria-label',`${a.title}: ${a.subtitle}${a.done?' – Completed':a.locked?' – Locked':''}`);
+    item.innerHTML=`<span class="nav-title">${a.title}<br><small style="font-weight:400;font-size:.78rem;color:#555">${a.subtitle}</small></span>${a.locked?'<span class="lock-icon" aria-hidden="true">🔒</span>':''}`;
+    item.onclick=()=>{if(!a.locked){showActivity(i);}else{announce('This activity is locked. Complete the previous activity first.');}};
+    item.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();item.click();}};
+    nav.appendChild(item);
+
+    // Show Part A / Part B / Part C sub-items when activity is unlocked
+    if(!a.locked && PARTS_MAP[i]){
+      const parts=PARTS_MAP[i];
+      const sublist=document.createElement('div');
+      sublist.className='nav-sublist';
+      const ids=PARTB_IDS[i]||{};
+
+      parts.forEach((label,pi)=>{
+        const isPartADone = partADone[i];
+        const isPartBDone = a.done || (i===6 && partADone[i]);
+        const partDone    = pi===0 ? isPartADone : pi===1 ? isPartBDone : a.done;
+        const unlocked    = pi===0 || (pi===1 && isPartADone) || (pi===2 && isPartBDone);
+
+        const sub=document.createElement('div');
+        sub.className='nav-subitem'+(partDone?' sub-done':'')+(unlocked?'':' sub-locked');
+        sub.innerHTML=`<span class="sub-dot${partDone?' done':(!unlocked?'':'')}"></span>${label}${!unlocked?' 🔒':''}`;
+        sub.setAttribute('tabindex', unlocked?'0':'-1');
+        sub.setAttribute('role','button');
+        sub.setAttribute('aria-label', label+(partDone?' – Done':!unlocked?' – Locked':''));
+
+        if(unlocked){
+          sub.onclick=e=>{
+            e.stopPropagation();
+            showActivity(i);
+            if(pi===1 && isPartADone && ids.partAId && ids.partBId){
+              setTimeout(()=>{
+                const partAEl=document.getElementById(ids.partAId);
+                const partBEl=document.getElementById(ids.partBId);
+                if(partAEl && partBEl && partBEl.style.display==='none'){
+                  partAEl.style.display='none';
+                  partBEl.style.display='block';
+                }
+              },120);
+            } else if(pi===2 && ids.partCId){
+              setTimeout(()=>{
+                const partCEl=document.getElementById(ids.partCId);
+                if(partCEl) partCEl.scrollIntoView({behavior:'smooth',block:'start'});
+              },120);
+            }
+          };
+          sub.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();sub.click();}};
+        }
+        sublist.appendChild(sub);
+      });
+
+      nav.appendChild(sublist);
+    }
+  });
+
+  // ── Review menu item — appears only once every activity is complete ──
+  if(done===ACTIVITIES.length){
+    const review=document.createElement('div');
+    review.className='nav-item'+(currentView==='review'?' active':'');
+    review.tabIndex=0;
+    review.setAttribute('role','button');
+    review.setAttribute('aria-label','Review and study guide');
+    review.innerHTML='<span class="nav-title">⭐ Review &amp; Study Guide</span>';
+    review.onclick=()=>showReviewSummary();
+    review.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();review.click();}};
+    nav.appendChild(review);
+  }
+}
+
+/* ==========================================================
+   STEP DOTS
+========================================================== */
+function renderStepDots(){
+  const dots=document.getElementById('stepDots');
+  dots.innerHTML='';
+  ACTIVITIES.forEach((a,i)=>{
+    const dot=document.createElement('div');
+    dot.className='step-dot';
+    if(a.done)           dot.classList.add('done');
+    else if(currentView===i) dot.classList.add('active');
+    else if(a.locked)    dot.classList.add('locked');
+    dot.title=`${a.title}: ${a.done?'Complete':a.locked?'Locked':'In Progress'}`;
+    dot.setAttribute('aria-label',dot.title);
+    dots.appendChild(dot);
+  });
+  document.getElementById('stepLabel').textContent=`${doneCount()}/${ACTIVITIES.length}`;
+}
+
+/* ==========================================================
+   SIDEBAR TOGGLE
+========================================================== */
+const sidebar=document.getElementById('sidebar');
+document.getElementById('toggleBtn').addEventListener('click',()=>{
+  const collapsed=sidebar.classList.toggle('collapsed');
+  document.getElementById('toggleBtn').setAttribute('aria-expanded',!collapsed);
+  announce(collapsed?'Navigation hidden':'Navigation shown');
+});
+
+/* ==========================================================
+   COVER PAGE
+========================================================== */
+const actDescriptions=[
+  {
+    num:1,
+    name:'Anatomy of a Neuron',
+    desc:'Match labeled markers to the major parts of a neuron: dendrite, cell body, nucleus, axon hillock, axon, myelin, node of Ranvier, and axon terminal.',
+    tag:'Labeled Diagram'
+  },
+  {
+    num:2,
+    name:'Neurotransmitters and Their Functions',
+    desc:'Match major neurotransmitter systems — including glutamate, the brain\'s major excitatory transmitter — to their primary functions.',
+    tag:'Drag-and-Drop Matching'
+  },
+  {
+    num:3,
+    name:'From Electrical to Chemical: How Neurons Communicate',
+    desc:'Explain how drugs can affect neural transmission across the synapse and sort fast vs. slow receptor statements.',
+    tag:'Guided Questions + Sorting'
+  },
+  {
+    num:4,
+    name:'How Drugs Alter Synaptic Communication',
+    desc:'Identify drug mechanisms and classify agonist vs. antagonist actions on neurotransmission.',
+    tag:'Sorting + Classification'
+  },
+  {
+    num:5,
+    name:'The Brain: Structure, Function, and Reward',
+    desc:'Sort brain structures by region and answer reward pathway questions.',
+    tag:'Sorting + Multiple Choice'
+  },
+  {
+    num:6,
+    name:'From Synapse to System: Explaining Drug Effects',
+    desc:'Analyze short cases about cocaine, heroin, and neural systems.',
+    tag:'Case-Based Multiple Choice'
+  },
+  {
+    num:7,
+    name:'Chapter 3 Mastery: From Neuron \u2192 Synapse \u2192 Brain & Behavior',
+    desc:'Demonstrate mastery across neuron structure, synapse, systems, and reward pathways.',
+    tag:'Matching + Multiple Choice + Scenario'
+  }
+];
+
+function showCover(){
+  currentView='cover';
+  document.getElementById('topBarTitle').textContent='Chapter 3 – Drugs and the Nervous System';
+  renderSidebar();
+  saveProgress();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  const page=document.createElement('div');
+  page.id='cover-page';
+  page.innerHTML=`
+    <div class="cover-badge">Chapter 3</div>
+    <h1 class="cover-title">Drugs and the Nervous System</h1>
+    <p class="cover-subtitle">
+      In this interactive sequence, you will learn how drugs affect the nervous system, starting with how neurons communicate and ending with how drugs influence brain systems involved in behavior and reward. The activities build step by step and are gated, meaning each must be completed correctly before the next unlocks. Take your time, focus on connections between concepts, and use feedback and hints to guide your learning.
+    </p>
+    <div class="cover-instructions">
+      <strong>📌 How Gated Learning Works</strong>
+      Plan about 60–75 minutes to complete the Chapter 3 learning sequence. The module is gated, so careful reading and correct reasoning are more important than speed.
+      <br><br>
+      <strong>🖱️ Mouse / Touch &nbsp;|&nbsp; ⌨️ Keyboard &nbsp;|&nbsp; 📱 Touch screen</strong>
+      — all interaction methods are fully supported where applicable.
+    </div>
+    <div class="cover-cards">
+      ${actDescriptions.map(a=>`
+        <div class="cover-card" role="article">
+          <div class="cover-card-num" aria-hidden="true">${a.num}</div>
+          <div class="cover-card-body">
+            <h3>${a.name}</h3>
+            <p>${a.desc}</p>
+            <span class="cover-tag">${a.tag}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <button class="get-started-btn" id="coverStartBtn">
+      ${doneCount()===0 ? '🚀 Get Started' : '▶ Continue Where You Left Off'}
+    </button>
+  `;
+  area.appendChild(page);
+
+  qs('#coverStartBtn').addEventListener('click',()=>{
+    const next=ACTIVITIES.findIndex(a=>!a.done&&!a.locked);
+    if(next>=0) showActivity(next);
+    else showActivity(0);
+  });
+  qs('#coverStartBtn').addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();qs('#coverStartBtn').click();}
+  });
+  area.scrollTop=0;
+  announce('Cover page. Use the Get Started button or the sidebar to navigate.');
+}
+
+/* ==========================================================
+   REVIEW & STUDY GUIDE SUMMARY PAGE
+   Accessible from the sidebar once all activities are complete.
+========================================================== */
+function showReviewSummary(){
+  currentView='review';
+  document.getElementById('topBarTitle').textContent='Chapter 3 – Review & Study Guide';
+  renderSidebar();
+  saveProgress();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  const page=document.createElement('div');
+  page.className='interaction-wrapper';
+
+  const sections=ACTIVITIES.map((a,i)=>{
+    const data=REVIEW_DATA[i];
+    if(!data) return '';
+    return `
+      <div class="review-summary-card">
+        <h3>${data.title}</h3>
+        <ul class="review-list">
+          ${data.points.map(p=>`<li>${p}</li>`).join('')}
+        </ul>
+      </div>`;
+  }).join('');
+
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
+
+  page.innerHTML=`
+    <div class="review-badge" style="display:inline-block;margin-bottom:10px;">✅ Chapter Complete</div>
+    <h1>Chapter 3 Review</h1>
+    <p class="ix-instructions">
+      You've completed all ${ACTIVITIES.length} activities. Use this page to review the key concepts from each activity,
+      and download the study guide for later reference.
+    </p>
+    ${reflectionBlock}
+    <div style="text-align:center;margin:18px 0 28px;">
+      <button class="download-btn" id="reviewPageDownloadBtn">⬇ Download Study Guide</button>
+    </div>
+    ${sections}
+  `;
+  area.appendChild(page);
+  qs('#reviewPageDownloadBtn').addEventListener('click',()=>downloadStudyGuide());
+  qs('#reviewPageDownloadBtn').addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();downloadStudyGuide();}
+  });
+  area.scrollTop=0;
+  announce('Review and study guide page. Key concepts from each activity are listed, with a study guide download button.');
+}
+
+/* ==========================================================
+   SHOW ACTIVITY ROUTER
+========================================================== */
+function setContinueLabel(btnSel, myIdx, w){
+  const btn = (typeof btnSel==='string') ? qs(btnSel, w) : btnSel;
+  if(!btn) return;
+  if(myIdx+1 < ACTIVITIES.length){
+    btn.textContent = 'Continue to ' + ACTIVITIES[myIdx+1].title;
+  } else {
+    btn.textContent = 'Complete Chapter 3';
+  }
+}
+
+function showActivity(index){
+  rushGuard.reset();
+  currentView=index;
+  const a=ACTIVITIES[index];
+  document.getElementById('topBarTitle').textContent=`${a.title} – ${a.subtitle}`;
+  renderSidebar();
+  saveProgress();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  area.scrollTop=0;
+
+  if(a.locked){
+    area.innerHTML=`<div class="locked-screen">
+      <div class="lock-big" aria-hidden="true">🔒</div>
+      <h2>Activity Locked</h2>
+      <p>Complete the previous activity correctly to unlock <strong>${a.title}: ${a.subtitle}</strong>.</p>
+    </div>`;
+    announce(`${a.title} is locked. Complete the previous activity first.`);
+    return;
+  }
+
+  switch(a.type){
+    case 'NEURON':    renderAct1(area); break;
+    case 'SYNAPSE':   renderAct2(area); break;
+    case 'DRUGS':     renderAct3(area); break;
+    case 'NT':        renderAct4(area); break;
+    case 'BRAIN':     renderAct6(area); break;
+    case 'SYNTHESIS': renderAct7(area); break;
+    case 'MASTERY':   renderAct8(area); break;
+    default:          renderLockedPlaceholder(area,index); break;
+  }
+  announce(`Now viewing ${a.title}: ${a.subtitle}`);
+}
+
+/* ==========================================================
+   LOCKED PLACEHOLDER
+========================================================== */
+function renderLockedPlaceholder(area,index){
+  const a=ACTIVITIES[index];
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>${a.subtitle}</h1>
+    <p class="ix-instructions">
+      This activity is reserved for the next Chapter 3 build phase while keeping the exact same shell, navigation, and cover-page structure as your existing interactions.
+    </p>
+    <div class="ix-explanation visible">
+      <strong>Version A Note:</strong> Activities 3–8 will be added into this exact shell in the next phase.
+    </div>
+  `;
+  area.appendChild(w);
+}
+
+/* ==========================================================
+   UNLOCK HELPER
+========================================================== */
+function completeActivity(index){
+  ACTIVITIES[index].done=true;
+  if(index+1<ACTIVITIES.length){
+    ACTIVITIES[index+1].locked=false;
+    announce(`${ACTIVITIES[index].title} complete. Review screen loading.`);
+  }
+  renderSidebar();
+  saveProgress();
+  if(index===ACTIVITIES.length-1){
+    // Last activity — pick & persist the reflection question BEFORE rendering
+    // the review page so showReviewSummary() can display it immediately.
+    savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+    saveProgress();
+    showReviewSummary();
+    setTimeout(()=>showCompletionModal(),400);
+  } else {
+    showReview(index, ()=>{ showActivity(index+1); });
+  }
+}
+
+/* ==========================================================
+   COMPLETION MODAL
+========================================================== */
+const REFLECTION_QUESTIONS=[
+  'What was the most important concept in this chapter? Describe the concept in your own words and why it matters.',
+  'How does this chapter connect to something you already know? Explain both the new idea and the old idea and how they connect.',
+  'What part of the chapter seemed most useful or relevant to real life? Explain the idea or concept in your own words. How is it relevant or useful?',
+  'How could the information in this chapter apply to your future coursework or your future career? Select at least 1 idea or concept and describe it in your own words. How does it apply to your future?',
+  'What is one takeaway from this chapter that you will remember later? Describe the takeaway in your own words. Why will you remember it later?'
+];
+function showCompletionModal(){
+  const q=savedReflectionQuestion;
+  const qEl=document.getElementById('reflectionQuestion');
+  if(qEl) qEl.textContent=q;
+  document.getElementById('completionModal').classList.add('visible');
+  document.getElementById('closeCompletion').focus();
+  announce('Congratulations! You have completed all 7 Chapter 3 activities. A reflection question is now shown. Copy it into the Canvas text box below and answer in your own words.');
+}
+document.getElementById('closeCompletion').addEventListener('click',()=>{
+  document.getElementById('completionModal').classList.remove('visible');
+});
+document.getElementById('closeCompletion').addEventListener('keydown',e=>{
+  if(e.key==='Escape') document.getElementById('completionModal').classList.remove('visible');
+});
+
+document.getElementById('downloadGuideBtn').addEventListener('click',()=>downloadStudyGuide());
+
+function downloadStudyGuide(){
+  const guide=`CHAPTER 3 STUDY NOTES
+Drugs and the Nervous System
+
+Activity 1 – Anatomy of a Neuron
+• Dendrite – receives incoming signals from other neurons
+• Cell body (soma) – integrates information; contains the nucleus
+• Nucleus – holds the neuron's DNA; directs protein production
+• Axon hillock – junction of soma and axon; where the action potential is initiated
+• Axon – carries electrical signals (action potentials) away from the cell body
+• Myelin – fatty insulation around the axon that speeds transmission
+• Node of Ranvier – gaps in the myelin that allow the signal to "jump" (saltatory conduction)
+• Axon terminal – releases neurotransmitters into the synapse
+
+Activity 2 – Neurotransmitters and Their Functions
+• Acetylcholine: memory, learning, muscle activation
+• Dopamine: movement, reward, motivation
+• Serotonin: mood regulation, sleep
+• Norepinephrine: alertness, arousal, stress
+• GABA: primary inhibitory neurotransmitter
+• Endorphins: pain modulation and relief
+• Glutamate: major excitatory neurotransmitter (important for some hallucinogens)
+
+Activity 3 – How Neurons Communicate
+• Drugs can affect neural transmission at the synapse
+• Neural transmission is electrical along the axon, chemical at the synapse
+• Ionotropic receptors: fast, directly open ion channels
+• Metabotropic receptors: slow, use G proteins and second messengers
+
+Activity 4 – How Drugs Alter Synaptic Communication
+• Drugs can affect neurotransmitter production, storage, release, deactivation, or receptor interaction
+• Agonist: increases a neurotransmitter's effect (e.g., activates the receptor, blocks reuptake,
+  promotes release, or blocks enzyme breakdown)
+• Antagonist: decreases a neurotransmitter's effect (e.g., blocks the receptor, blocks production,
+  encourages reuptake, or disrupts vesicle storage)
+
+Activity 5 – The Brain
+• Hindbrain: Medulla, Pons, Cerebellum
+• Midbrain: Superior/Inferior Colliculi, Substantia Nigra (dopamine)
+• Forebrain: Thalamus, Hypothalamus, Hippocampus
+• Mesolimbic dopaminergic pathway = brain's reward system; central to drug addiction
+
+Activity 6 – Drug Effects (Synthesis)
+• Cocaine: blocks dopamine reuptake, increasing dopamine activity (a dopamine agonist); sympathomimetic
+• Heroin: activates opioid receptors (mimics endorphins)
+• Naloxone: antagonist at opioid receptors; reverses opioid overdose
+
+Activity 7 – Mastery Key Points
+• Reuptake = neurotransmitter taken back into the axon terminal
+• Agonist = increases a neurotransmitter's effect; Antagonist = decreases it
+• Blood-brain barrier = filter controlling which substances enter the brain
+• CNS + PNS = two main branches of the nervous system
+`;
+  const blob=new Blob([guide],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='Chapter_3_Study_Notes.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  announce('Study notes downloaded successfully.');
+}
+
+/* ==========================================================
+   RESET PROGRESS
+========================================================== */
+document.getElementById('resetProgressBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.add('visible');
+  document.getElementById('resetCancelBtn').focus();
+  announce('Reset confirmation dialog opened.');
+});
+document.getElementById('resetCancelBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.remove('visible');
+  announce('Reset cancelled.');
+});
+document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.remove('visible');
+  // Reset all activities to defaults
+  ACTIVITIES.forEach((a,i)=>{
+    a.done=false;
+    a.locked=(i>0);
+  });
+  currentView='cover';
+  savedReflectionQuestion='';
+  localStorage.removeItem(STORAGE_KEY);
+  rushGuard.hardReset();
+  renderSidebar();
+  showCover();
+  announce('Progress has been reset. Activity 1 is now unlocked.');
+});
+
+/* ==========================================================
+   TOUCH DRAG HELPER
+========================================================== */
+function showPartB(partAEl, partBEl, initFn){
+  // Fade out Part A, then swap in Part B
+  partAEl.classList.add('part-fade-out');
+  setTimeout(()=>{
+    partAEl.style.display='none';
+    partBEl.style.display='block';
+    partBEl.classList.add('part-fade-in');
+    if(initFn) initFn();
+  }, 360);
+}
+
+function makeDraggable(cardEl, onDropFn){
+  cardEl.addEventListener('dragstart',e=>{
+    e.dataTransfer.setData('text/plain',cardEl.id);
+    cardEl.classList.add('dragging');
+  });
+  cardEl.addEventListener('dragend',()=>cardEl.classList.remove('dragging'));
+
+  let clone=null, startX=0, startY=0;
+  let baseLeft=0, baseTop=0;
+
+  cardEl.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse') return;
+    if(cardEl.classList.contains('placed')) return;
+    e.preventDefault();
+    const rect=cardEl.getBoundingClientRect();
+    startX=e.clientX;
+    startY=e.clientY;
+    baseLeft=rect.left;
+    baseTop=rect.top;
+    clone=cardEl.cloneNode(true);
+    clone.style.cssText=`position:fixed;z-index:9999;opacity:.85;pointer-events:none;width:${rect.width}px;left:${rect.left}px;top:${rect.top}px;margin:0`;
+    document.body.appendChild(clone);
+    cardEl.classList.add('dragging');
+  },{passive:false});
+
+  document.addEventListener('pointermove',e=>{
+    if(!clone) return;
+    e.preventDefault();
+    clone.style.left=(e.clientX-startX+baseLeft)+'px';
+    clone.style.top=(e.clientY-startY+baseTop)+'px';
+  },{passive:false});
+
+  document.addEventListener('pointerup',e=>{
+    if(!clone) return;
+    clone.remove();
+    clone=null;
+    cardEl.classList.remove('dragging');
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    if(!el) return;
+    const zone=el.closest('[data-droptarget]');
+    if(zone) onDropFn(cardEl,zone);
+  });
+}
+
+/* ==========================================================
+   ACTIVITY 1 – NEURON
+========================================================== */
+function renderAct1(area){
+  const myIdx=ACTIVITIES.findIndex(a=>a.type==='NEURON');
+  const matchData=[
+    { letter:'A', term:'Dendrite',       explanation:'Dendrites receive incoming neurotransmitter signals from other neurons — they are the neuron\'s primary input zone.' },
+    { letter:'B', term:'Nucleus',        explanation:'The nucleus, housed within the cell body, holds the neuron\'s DNA and directs protein production essential for the cell\'s function.' },
+    { letter:'C', term:'Cell Body',      explanation:'The cell body (soma) contains the nucleus and integrates signals from the dendrites before deciding whether to fire an action potential.' },
+    { letter:'D', term:'Axon',           explanation:'The axon carries electrical impulses (action potentials) away from the cell body toward other neurons or muscles.' },
+    { letter:'E', term:'Myelin Sheath',  explanation:'The myelin sheath is the fatty insulating layer wrapping the axon; it increases the speed of signal transmission — like insulation on a wire.' },
+    { letter:'F', term:'Node of Ranvier',explanation:'These gaps in the myelin sheath allow the signal to "jump" between nodes (saltatory conduction), dramatically speeding transmission.' },
+    { letter:'G', term:'Schwann Cell',   explanation:'Schwann cells produce the myelin sheath in the peripheral nervous system, wrapping around the axon to insulate it.' },
+    { letter:'H', term:'Axon Terminal',  explanation:'The axon terminal is where neurotransmitters are stored in vesicles and released into the synapse to communicate with the next cell.' }
+  ];
+
+  const shuffledTerms=[...matchData]; shuffle(shuffledTerms);
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Anatomy of a Neuron &amp; the Action Potential</h1>
+
+    <div id="a1-parta-wrap">
+    <div class="ix-explanation visible" style="display:block">
+      <strong>Match Letters to Structures</strong><br>
+      Study the labeled diagram. Drag each letter card <em>down</em> onto the matching structure name. All 8 must be correct to unlock the next activity.
+    </div>
+
+    <div id="a1-diagram" style="position:relative;margin:14px auto 10px;max-width:760px;">
+      <!-- IMAGE SOURCE: Canvas file 109782099. If this does not display once embedded in Canvas,
+           replace the src with the file's download URL or a publicly accessible link. -->
+      <img src="https://uwsto.instructure.com/courses/851919/files/109782099/preview"
+           alt="Labeled neuron diagram with letters A through H marking the dendrite, nucleus, cell body, axon, myelin sheath, node of Ranvier, Schwann cell, and axon terminal."
+           style="width:100%;display:block;border-radius:10px;border:var(--border);background:white;">
+    </div>
+
+    <div class="ix-counter" id="a1-progress">Progress: 0/8</div>
+
+    <div style="font-size:.85rem;font-weight:700;color:var(--navy);margin:10px 0 6px;">Letter Cards — drag down to the correct structure</div>
+    <div id="a1-letter-bank-h"></div>
+
+    <div style="font-size:.85rem;font-weight:700;color:var(--navy);margin:14px 0 6px;">Structures</div>
+    <div id="a1-def-grid" class="a1-def-grid"></div>
+
+    <div id="a1-feedback" class="ix-feedback"></div>
+    </div><!-- end a1-parta-wrap -->
+
+    <button id="act1-continue" class="ix-continue-btn" disabled>Continue to Activity 2</button>
+  `;
+  area.appendChild(w);
+  setContinueLabel('#act1-continue', myIdx, w);
+
+  const letterBank=qs('#a1-letter-bank-h',w);
+  const defGrid=qs('#a1-def-grid',w);
+  let correctCount=0;
+  let selectedLetter=null;
+  const a1WrongCounts={};
+
+  function updateProgress(){ qs('#a1-progress',w).textContent=`Progress: ${correctCount}/8`; }
+
+  function checkComplete(){
+    if(correctCount===8){
+      const fb=qs('#a1-feedback',w);
+      fb.textContent='Excellent! All 8 neuron structures matched correctly.';
+      fb.className='ix-feedback correct visible';
+      qs('#act1-continue',w).disabled=false;
+      announce('Activity complete. Continue button enabled.');
+    }
+  }
+
+  function dropLetterOnDef(letterEl, defCard){
+    if(letterEl.classList.contains('placed')) return;
+    if(defCard.querySelector('.a1-def-card-slot.filled')) return;
+    const letterVal=letterEl.dataset.letter;
+    const termLetter=defCard.dataset.letter;
+    if(letterVal===termLetter){
+      letterEl.classList.add('placed');
+      letterEl.setAttribute('draggable','false');
+      letterEl.setAttribute('tabindex','-1');
+      letterEl.remove();
+      const slot=defCard.querySelector('.a1-def-card-slot');
+      slot.textContent=letterVal;
+      slot.classList.add('filled');
+      defCard.classList.add('correct-zone');
+      // show feedback inline
+      const exp=defCard.querySelector('.a1-inline-exp');
+      if(exp) exp.style.display='block';
+      correctCount++;
+      updateProgress();
+      const fb=qs('#a1-feedback',w);
+      fb.className='ix-feedback correct visible';
+      fb.textContent=`✅ ${letterVal} = ${defCard.dataset.termName}: ${matchData.find(m=>m.letter===letterVal).explanation}`;
+      announce(`Correct! ${letterVal} is ${defCard.dataset.termName}.`);
+      checkComplete();
+    } else {
+      const fb=qs('#a1-feedback',w);
+      const a1Key=defCard.dataset.letter;
+      a1WrongCounts[a1Key]=(a1WrongCounts[a1Key]||0)+1;
+      const a1W=a1WrongCounts[a1Key];
+      const correctLetter=matchData.find(m=>m.letter===defCard.dataset.letter);
+      if(a1W===1) fb.textContent='Not quite — look at the diagram carefully. What does that letter point to?';
+      else if(a1W===2) fb.textContent=`Hint: ${defCard.dataset.termName} is ${correctLetter?correctLetter.explanation.split('.')[0]+'.':'a key neuron structure.'}`;
+      else fb.textContent=`Answer: Letter ${defCard.dataset.letter} = ${defCard.dataset.termName}. Drag the correct letter there.`;
+      fb.className='ix-feedback incorrect visible';
+      rushGuard.recordWrong(w); announce('Incorrect. Try again.');
+    }
+  }
+
+  function selectLetter(card){
+    if(card.classList.contains('placed')) return;
+    if(selectedLetter===card){ selectedLetter=null; card.style.outline=''; announce('Deselected.'); return; }
+    if(selectedLetter) selectedLetter.style.outline='';
+    selectedLetter=card;
+    card.style.outline='3px solid var(--sky)';
+    announce(`Letter ${card.dataset.letter} selected. Tab to a structure and press Enter.`);
+  }
+
+  // Build horizontal letter cards A–H
+  matchData.forEach((item,i)=>{
+    const card=document.createElement('div');
+    card.className='ix-card';
+    card.textContent=item.letter;
+    card.setAttribute('draggable','true');
+    card.setAttribute('tabindex','0');
+    card.dataset.letter=item.letter;
+    card.id='a1let-'+i;
+    letterBank.appendChild(card);
+    makeDraggable(card,(c,zone)=>dropLetterOnDef(c,zone));
+    card.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); selectLetter(card); }
+    });
+  });
+
+  // Build definition cards in shuffled order
+  shuffledTerms.forEach((item)=>{
+    const defCard=document.createElement('div');
+    defCard.className='a1-def-card';
+    defCard.dataset.letter=item.letter;
+    defCard.dataset.termName=item.term;
+    defCard.dataset.droptarget='1';
+    defCard.setAttribute('tabindex','0');
+    defCard.setAttribute('role','region');
+    defCard.setAttribute('aria-label',`Drop zone: ${item.term}`);
+    defCard.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="a1-def-card-slot"></div>
+        <span style="font-weight:600;font-size:.88rem;line-height:1.3;">${item.term}</span>
+      </div>
+      <div class="a1-inline-exp" style="display:none;font-size:.8rem;color:#1a3a6b;line-height:1.4;padding:4px 2px;"></div>
+    `;
+    defCard.addEventListener('dragover',e=>e.preventDefault());
+    defCard.addEventListener('dragenter',()=>{ if(!defCard.querySelector('.filled')) defCard.classList.add('drag-over'); });
+    defCard.addEventListener('dragleave',()=>defCard.classList.remove('drag-over'));
+    defCard.addEventListener('drop',e=>{
+      e.preventDefault(); defCard.classList.remove('drag-over');
+      const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+      if(card) dropLetterOnDef(card,defCard);
+    });
+    defCard.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&selectedLetter){
+        e.preventDefault();
+        dropLetterOnDef(selectedLetter,defCard);
+        if(selectedLetter) selectedLetter.style.outline='';
+        selectedLetter=null;
+      }
+    });
+    defGrid.appendChild(defCard);
+  });
+
+  updateProgress();
+
+  qs('#act1-continue',w).addEventListener('click',()=>{ completeActivity(myIdx); });
+}
+
+/* ==========================================================
+   ACTIVITY 2 – SYNAPSE
+========================================================== */
+function renderAct2(area){
+  const myIdx=ACTIVITIES.findIndex(a=>a.type==='SYNAPSE');
+  const questions=[
+    {
+      prompt:'When an action potential reaches the axon terminal, what happens next?',
+      options:[
+        'The neuron immediately fires again',
+        'The signal travels electrically to the next neuron',
+        'Neurotransmitters are released from vesicles into the synaptic cleft.',
+        'Enzymes break down the axon'
+      ],
+      answer:2,
+      explanation:'Exactly—electrical transmission triggers chemical release at the synapse.',
+      wrong:'Remember: transmission switches from electrical to chemical at the synapse.'
+    },
+    {
+      prompt:'Why don’t neurons physically touch each other at the synapse?',
+      options:[
+        'Communication occurs chemically across the synaptic cleft using neurotransmitters.',
+        'The axon dissolves after each signal',
+        'Neurons only communicate through direct physical contact',
+        'Electrical current jumps without neurotransmitters'
+      ],
+      answer:0,
+      explanation:'Neural transmission is electrical along the axon but chemical at the synapse—a core principle for understanding drug effects.',
+      wrong:'Think about the role of neurotransmitters in crossing the synaptic cleft.'
+    }
+  ];
+
+  const receptorCards=[
+    {text:'Directly opens an ion channel', bucket:'ionotropic'},
+    {text:'Effects occur within milliseconds', bucket:'ionotropic'},
+    {text:'Uses G proteins and second messengers', bucket:'metabotropic'},
+    {text:'Produces slower but longer-lasting effects', bucket:'metabotropic'},
+    {text:'Often involved in complex modulation of neural activity', bucket:'metabotropic'}
+  ];
+  shuffle(receptorCards);
+
+  let currentQuestion=0;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>From Electrical to Chemical: How Neurons Communicate</h1>
+    <div class="two-part-banner">
+      <div class="tpb-icon">⚡</div>
+      <div><span class="tpb-badge">2-Part Activity</span><strong>Part A</strong> — Answer questions about synaptic transmission. Then <strong>Part B</strong> loads: sort ionotropic vs. metabotropic receptors. Both parts required to continue.</div>
+    </div>
+    <div id="a2-parta-wrap">
+    <div class="ix-explanation visible" style="display:block">
+      <strong>What Happens at the Synapse?</strong><br>
+      Drugs can affect neural transmission at the synapse. Read each step of neural transmission and select the correct description of what is happening at the synapse.
+    </div>
+    <div id="act2-question-area"></div>
+    </div><!-- end a2-parta-wrap -->
+
+    <div id="a2-partb" style="display:none;margin-top:0;">
+      <div class="ix-explanation visible" style="display:block">
+        <strong>Part B – Fast vs. Slow Receptors</strong><br>
+        Drag each statement card <strong>down</strong> into the correct receptor category. Cards stack below the category header.
+      </div>
+      <div class="ix-counter" id="a2-sort-progress">Progress: 0/5</div>
+      <div class="col-sort-bank" id="act2-card-bank"></div>
+      <div class="col-sort-grid">
+        <div class="col-sort-col">
+          <div class="col-sort-head">Ionotropic Receptors (Fast)</div>
+          <div class="col-sort-zone" id="a2-ionotropic" data-bucket="ionotropic" data-droptarget="1" tabindex="0" role="region" aria-label="Ionotropic receptors fast drop zone"></div>
+        </div>
+        <div class="col-sort-col">
+          <div class="col-sort-head">Metabotropic Receptors (Slow)</div>
+          <div class="col-sort-zone" id="a2-metabotropic" data-bucket="metabotropic" data-droptarget="1" tabindex="0" role="region" aria-label="Metabotropic receptors slow drop zone"></div>
+        </div>
+      </div>
+      <div id="a2-sort-feedback" class="ix-feedback"></div>
+    </div>
+
+    <button id="act2-continue" class="ix-continue-btn" disabled>Continue to Activity 3</button>
+  `;
+  area.appendChild(w);
+  setContinueLabel('#act2-continue', myIdx, w);
+
+  function loadQuestion(index){
+    const q=questions[index];
+    const areaQ=qs('#act2-question-area',w);
+    areaQ.innerHTML='';
+
+    const counter=document.createElement('div');
+    counter.className='ix-counter';
+    counter.textContent=`Prompt ${index+1} of ${questions.length}`;
+
+    const prompt=document.createElement('div');
+    prompt.className='ix-prompt';
+    prompt.textContent=q.prompt;
+
+    areaQ.appendChild(counter);
+    areaQ.appendChild(prompt);
+
+    q.options.forEach((opt,i)=>{
+      const btn=document.createElement('div');
+      btn.className='ix-option';
+      btn.textContent=opt;
+      btn.setAttribute('tabindex','0');
+      btn.setAttribute('role','button');
+      btn.setAttribute('aria-label',opt);
+
+      function choose(){
+        if(btn.classList.contains('correct-opt') || btn.classList.contains('incorrect-opt')) return;
+        if(i===q.answer){
+          btn.classList.add('correct-opt');
+          disableOptions();
+          showFeedback(q.explanation, true);
+          announce('Correct answer.');
+        }else{
+          btn.classList.add('incorrect-opt');
+          showInlineWrong(q.wrong);
+          announce('Incorrect answer. Try again.');
+          rushGuard.recordWrong(w);
+        }
+      }
+
+      btn.addEventListener('click',choose);
+      btn.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){
+          e.preventDefault();
+          choose();
+        }
+      });
+
+      areaQ.appendChild(btn);
+    });
+  }
+
+  function disableOptions(){
+    qsa('.ix-option',w).forEach(o=>{
+      o.style.pointerEvents='none';
+      o.setAttribute('tabindex','-1');
+    });
+  }
+
+  function showInlineWrong(text){
+    const areaQ=qs('#act2-question-area',w);
+    let fb=qs('.ix-feedback', areaQ);
+    if(!fb){
+      fb=document.createElement('div');
+      areaQ.appendChild(fb);
+    }
+    fb.className='ix-feedback incorrect visible';
+    fb.textContent=text;
+  }
+
+  function showFeedback(text,isCorrect){
+    const areaQ=qs('#act2-question-area',w);
+    const exp=document.createElement('div');
+    exp.className='ix-explanation visible';
+    exp.innerHTML=`<strong>Feedback:</strong> ${text}<br><br>`;
+    const nextBtn=document.createElement('button');
+    nextBtn.className='ix-next-btn';
+    nextBtn.textContent=currentQuestion<questions.length-1 ? 'Next Prompt' : 'Continue to Part B';
+    nextBtn.addEventListener('click',()=>{
+      currentQuestion++;
+      if(currentQuestion===questions.length){
+        qs('#act2-question-area',w).innerHTML='<p style="font-weight:700;color:#166534;font-size:1rem;">✅ Both synapse questions answered correctly!</p>';
+        partADone[myIdx]=true; saveProgress(); renderSidebar();
+        const existingBtn=qs('.part-continue-btn',w);
+        if(!existingBtn){
+          const contBtn=document.createElement('button');
+          contBtn.className='ix-continue-btn part-continue-btn';
+          contBtn.style.marginTop='16px';
+          contBtn.textContent='▶ Continue to Part B – Receptor Sorting';
+          contBtn.addEventListener('click',()=>{
+            contBtn.remove();
+            showPartB(qs('#a2-parta-wrap',w), qs('#a2-partb',w), initSort);
+          });
+          qs('#act2-continue',w).insertAdjacentElement('beforebegin', contBtn);
+        }
+        announce('Part A complete. Continue button shown.');
+      }else{
+        loadQuestion(currentQuestion);
+        area.scrollTop=0;
+      }
+    });
+    exp.appendChild(nextBtn);
+    areaQ.appendChild(exp);
+    setTimeout(()=>nextBtn.focus(),50);
+  }
+
+  function initSort(){
+    const bank=qs('#act2-card-bank',w);
+    bank.classList.add('stacked-card-bank');
+    let correctCount=0;
+    let selectedCard=null;
+
+    function updateProgress(){
+      qs('#a2-sort-progress',w).textContent=`Progress: ${correctCount}/5`;
+    }
+
+    const whyMap={
+      ionotropic:'Ionotropic receptors directly open ion channels — effects happen within milliseconds.',
+      metabotropic:'Metabotropic receptors use G proteins and second messengers — slower but longer-lasting effects.'
+    };
+
+    function dropCard(card,zone){
+      if(card.classList.contains('placed')) return;
+      if(card.dataset.bucket===zone.dataset.bucket){
+        const why=whyMap[card.dataset.bucket]||'Correct!';
+        const placedEl=makePlacedCard(card.textContent);
+        zone.appendChild(placedEl);
+        zone.classList.add('correct-zone','stack-drop-zone');
+        card.classList.add('placed');
+        card.setAttribute('draggable','false');
+        card.setAttribute('tabindex','-1');
+        card.remove();
+        correctCount++;
+        updateProgress();
+        stackCardBank(bank);
+        const fb=qs('#a2-sort-feedback',w);
+        fb.textContent='✅ '+why;
+        fb.className='ix-feedback correct visible';
+        announce('Correct receptor sort.');
+        if(correctCount===receptorCards.length){
+          qs('#act2-continue',w).disabled=false;
+          announce('Activity 2 complete. Continue button enabled.');
+        }
+      }else{
+        const fb=qs('#a2-sort-feedback',w);
+        if(!dropCard.wc) dropCard.wc={};
+        const a2Key=card.id;
+        dropCard.wc[a2Key]=(dropCard.wc[a2Key]||0)+1;
+        const a2W=dropCard.wc[a2Key];
+        const correctBucket=card.dataset.bucket;
+        const correctLabel=correctBucket==='ionotropic'?'Ionotropic (Fast)':'Metabotropic (Slow)';
+        if(a2W===1) fb.textContent='Not quite — does this statement describe a fast ion-channel effect or a slower second-messenger effect?';
+        else if(a2W===2) fb.textContent='Hint: Ionotropic = opens ion channel directly (milliseconds). Metabotropic = G proteins and second messengers (slower, longer-lasting).';
+        else fb.textContent=`Answer: This card belongs in "${correctLabel}".`;
+        fb.className='ix-feedback incorrect visible';
+        rushGuard.recordWrong(w); announce('Incorrect receptor sort.');
+      }
+    }
+
+    function selectCard(card){
+      if(card.classList.contains('placed')) return;
+      if(selectedCard===card){ selectedCard=null; card.style.outline=''; announce('Card deselected.'); return; }
+      if(selectedCard) selectedCard.style.outline='';
+      selectedCard=card;
+      card.style.outline='3px solid #93c5fd';
+      announce('Card selected. Move to a bucket and press Enter.');
+    }
+
+    receptorCards.forEach((item,i)=>{
+      const card=makeBlueCard(item.text,'a2card-'+i,item.bucket);
+      bank.appendChild(card);
+      makeDraggable(card,(c,zone)=>dropCard(c,zone));
+      card.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){ e.preventDefault(); selectCard(card); }
+      });
+    });
+    stackCardBank(bank);
+
+    qsa('#a2-partb .col-sort-zone',w).forEach(zone=>{
+      zone.classList.add('stack-drop-zone');
+      zone.addEventListener('dragover',e=>e.preventDefault());
+      zone.addEventListener('dragenter',()=>zone.classList.add('drag-over'));
+      zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+      zone.addEventListener('drop',e=>{
+        e.preventDefault(); zone.classList.remove('drag-over');
+        const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+        if(card) dropCard(card,zone);
+      });
+      zone.addEventListener('keydown',e=>{
+        if((e.key==='Enter'||e.key===' ')&&selectedCard){
+          e.preventDefault(); dropCard(selectedCard,zone);
+          if(selectedCard) selectedCard.style.outline=''; selectedCard=null;
+        }
+      });
+    });
+    updateProgress();
+  }
+
+  loadQuestion(currentQuestion);
+
+  qs('#act2-continue',w).addEventListener('click',()=>{
+    completeActivity(myIdx);
+  });
+}
+
+
+/* ==========================================================
+   ACTIVITY 3 – DRUGS AND SYNAPTIC COMMUNICATION
+========================================================== */
+function renderAct3(area){
+  const myIdx=ACTIVITIES.findIndex(a=>a.type==='DRUGS');
+  const mechCards=[
+    {id:'a3m0', text:'Blocking the reuptake of dopamine from the synapse', bucket:'deactivation'},
+    {id:'a3m1', text:'Mimicking a neurotransmitter and activating a receptor', bucket:'receptor'},
+    {id:'a3m2', text:'Preventing neurotransmitters from being broken down by enzymes', bucket:'deactivation'},
+    {id:'a3m3', text:'Causing vesicles to leak so neurotransmitters are not released properly', bucket:'storage'}
+  ];
+  const mechExplanations={
+    'a3m0':'Blocking reuptake is a form of deactivation interference — dopamine stays in the synapse longer (e.g., cocaine).',
+    'a3m1':'Mimicking a neurotransmitter at the receptor is a direct receptor interaction — this is a direct agonist effect.',
+    'a3m2':'Preventing enzyme breakdown also prolongs neurotransmitter activity, a form of deactivation interference (e.g., MAO inhibitors).',
+    'a3m3':'Vesicle leakage disrupts proper storage and release of neurotransmitters before they can be used (e.g., reserpine).'
+  };
+
+  const agonistCards=[
+    {id:'a3a0', text:'The drug binds to and activates the receptor', bucket:'agonist'},
+    {id:'a3a1', text:'The drug blocks reuptake of the neurotransmitter', bucket:'agonist'},
+    {id:'a3a2', text:'The drug encourages release of neurotransmitter', bucket:'agonist'},
+    {id:'a3a3', text:'The drug blocks enzymes from breaking down the neurotransmitter', bucket:'agonist'},
+    {id:'a3a4', text:'The drug binds to and blocks the receptor', bucket:'antagonist'},
+    {id:'a3a5', text:'The drug blocks production of the neurotransmitter', bucket:'antagonist'},
+    {id:'a3a6', text:'The drug encourages reuptake of the neurotransmitter', bucket:'antagonist'},
+    {id:'a3a7', text:'The drug makes vesicles leaky, so neurotransmitter is not properly stored', bucket:'antagonist'}
+  ];
+
+  const mechCopy=[...mechCards]; shuffle(mechCopy);
+  const agonistCopy=[...agonistCards]; shuffle(agonistCopy);
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>How Drugs Alter Synaptic Communication</h1>
+    <div class="two-part-banner">
+      <div class="tpb-icon">💊</div>
+      <div><span class="tpb-badge">2-Part Activity</span><strong>Part A</strong> — Sort drug action cards into mechanisms. Then <strong>Part B</strong> loads: classify agonists vs. antagonists. Both parts required to continue.</div>
+    </div>
+    <div id="a3-parta-wrap">
+    <div class="ix-explanation visible" style="display:block">
+      <strong>Part A – Mechanisms of Drug Action</strong><br>
+      Drugs can interfere with neural transmission at multiple points. Drag each card into the correct mechanism of drug action.
+    </div>
+    <div class="ix-counter" id="a3m-progress">Progress: 0/4</div>
+    <div class="col-sort-bank" id="a3m-bank"></div>
+    <div class="col-sort-grid">
+      <div class="col-sort-col">
+        <div class="col-sort-head">Neurotransmitter Production / Storage</div>
+        <div class="col-sort-zone" id="a3-storage" data-bucket="storage" data-droptarget="1" tabindex="0" role="region" aria-label="Neurotransmitter Production / Storage"></div>
+      </div>
+      <div class="col-sort-col">
+        <div class="col-sort-head">Neurotransmitter Deactivation</div>
+        <div class="col-sort-zone" id="a3-deactivation" data-bucket="deactivation" data-droptarget="1" tabindex="0" role="region" aria-label="Neurotransmitter Deactivation"></div>
+      </div>
+      <div class="col-sort-col">
+        <div class="col-sort-head">Receptor Interaction</div>
+        <div class="col-sort-zone" id="a3-receptor" data-bucket="receptor" data-droptarget="1" tabindex="0" role="region" aria-label="Receptor Interaction"></div>
+      </div>
+    </div>
+    <div id="a3m-feedback" class="ix-feedback"></div>
+
+    </div><!-- end a3-parta-wrap -->
+    <div id="a3-partb" style="display:none;margin-top:0;">
+      <div class="ix-explanation visible" style="display:block">
+        <strong>Part B – Agonist vs. Antagonist</strong><br>
+        Sort each card into the correct category based on how the drug affects the receptor. You must correctly sort all 8 cards to continue.
+      </div>
+      <div class="ix-counter" id="a3a-progress">Progress: 0/8</div>
+      <div class="col-sort-bank" id="a3a-bank"></div>
+      <div class="col-sort-grid">
+        <div class="col-sort-col">
+          <div class="col-sort-head">Agonist</div>
+          <div class="col-sort-zone" id="a3-agonist" data-bucket="agonist" data-droptarget="1" tabindex="0" role="region" aria-label="Agonist"></div>
+        </div>
+        <div class="col-sort-col">
+          <div class="col-sort-head">Antagonist</div>
+          <div class="col-sort-zone" id="a3-antagonist" data-bucket="antagonist" data-droptarget="1" tabindex="0" role="region" aria-label="Antagonist"></div>
+        </div>
+      </div>
+      <div id="a3a-feedback" class="ix-feedback"></div>
+    </div>
+
+    <button id="act3-continue" class="ix-continue-btn" disabled>Continue to Activity 4</button>
+  `;
+  area.appendChild(w);
+  setContinueLabel('#act3-continue', myIdx, w);
+
+  // Part A
+  let mechCorrect=0, mechSelected=null;
+  const mechBank=qs('#a3m-bank',w);
+  mechBank.classList.add('stacked-card-bank');
+  function updateMechProgress(){ qs('#a3m-progress',w).textContent=`Progress: ${mechCorrect}/4`; }
+
+  function dropMech(card,zone){
+    if(card.classList.contains('placed'))return;
+    if(card.dataset.bucket===zone.dataset.bucket){
+      const why=mechExplanations[card.id]||'Correct! This is one of the primary ways drugs alter synaptic transmission.';
+      const placedEl=makePlacedCard(card.textContent);
+      zone.appendChild(placedEl);
+      zone.classList.add('correct-zone','stack-drop-zone');
+      card.classList.add('placed');
+      card.setAttribute('draggable','false');
+      card.setAttribute('tabindex','-1');
+      card.remove();
+      mechCorrect++;
+      updateMechProgress();
+      stackCardBank(mechBank);
+      const fb=qs('#a3m-feedback',w);
+      fb.className='ix-feedback correct visible';
+      fb.textContent='✅ '+why;
+      announce('Correct mechanism placement.');
+      if(mechCorrect===4){
+        partADone[myIdx]=true; saveProgress(); renderSidebar();
+        const existingBtn=qs('.part-continue-btn',w);
+        if(!existingBtn){
+          const contBtn=document.createElement('button');
+          contBtn.className='ix-continue-btn part-continue-btn';
+          contBtn.style.marginTop='16px';
+          contBtn.textContent='▶ Continue to Part B – Agonist vs. Antagonist';
+          contBtn.addEventListener('click',()=>{
+            contBtn.remove();
+            showPartB(qs('#a3-parta-wrap',w), qs('#a3-partb',w), initPartB);
+          });
+          qs('#act3-continue',w).insertAdjacentElement('beforebegin', contBtn);
+        }
+        announce('Part A complete. Continue button shown.');
+      }
+    }else{
+      const fb=qs('#a3m-feedback',w);
+      if(!dropMech.wc) dropMech.wc={};
+      const a3aKey=card.id;
+      dropMech.wc[a3aKey]=(dropMech.wc[a3aKey]||0)+1;
+      const a3aW=dropMech.wc[a3aKey];
+      const a3aCorrect=mechCards.find(m=>m.id===card.id);
+      const a3aLabels={storage:'Production/Storage',deactivation:'Deactivation',receptor:'Receptor Interaction'};
+      if(a3aW===1) fb.textContent='Not quite — think about which stage of synaptic transmission this drug affects.';
+      else if(a3aW===2) fb.textContent='Hint: Storage = vesicles/leakage; Deactivation = reuptake or enzyme breakdown; Receptor = binding/mimicking.';
+      else fb.textContent=`Answer: This card belongs in "${a3aLabels[a3aCorrect?a3aCorrect.bucket:'?']||'the correct mechanism'}".`;
+      fb.className='ix-feedback incorrect visible';
+      rushGuard.recordWrong(w); announce('Incorrect mechanism placement.');
+    }
+  }
+
+  mechCopy.forEach((item)=>{
+    const card=makeBlueCard(item.text,item.id,item.bucket);
+    mechBank.appendChild(card);
+    makeDraggable(card,(c,z)=>dropMech(c,z));
+    card.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();
+        if(mechSelected===card){mechSelected=null;card.style.outline='';return;}
+        if(mechSelected)mechSelected.style.outline='';
+        mechSelected=card;card.style.outline='3px solid #93c5fd';
+      }
+    });
+  });
+  stackCardBank(mechBank);
+
+  qsa('#a3-storage,#a3-deactivation,#a3-receptor',w).forEach(zone=>{
+    if(!zone.dataset.droptarget)return;
+    zone.classList.add('stack-drop-zone');
+    zone.addEventListener('dragover',e=>e.preventDefault());
+    zone.addEventListener('dragenter',()=>zone.classList.add('drag-over'));
+    zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+    zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');
+      const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+      if(card)dropMech(card,zone);
+    });
+    zone.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&mechSelected){e.preventDefault();
+        dropMech(mechSelected,zone);if(mechSelected)mechSelected.style.outline='';mechSelected=null;
+      }
+    });
+  });
+
+  // Part B
+  function initPartB(){
+    let agonistCorrect=0, agonistSelected=null;
+    const bank=qs('#a3a-bank',w);
+    bank.classList.add('stacked-card-bank');
+    function updateAP(){ qs('#a3a-progress',w).textContent=`Progress: ${agonistCorrect}/8`; }
+    const whyAg={
+      agonist:'Agonists bind to receptors and activate them — mimicking the natural neurotransmitter.',
+      antagonist:'Antagonists occupy receptors without activating them — blocking neurotransmitter action.'
+    };
+    function dropAg(card,zone){
+      if(card.classList.contains('placed'))return;
+      if(card.dataset.bucket===zone.dataset.bucket){
+        const why=whyAg[card.dataset.bucket]||'Correct sort!';
+        const placedEl=makePlacedCard(card.textContent);
+        zone.appendChild(placedEl);
+        zone.classList.add('correct-zone','stack-drop-zone');
+        card.classList.add('placed');
+        card.setAttribute('draggable','false');
+        card.setAttribute('tabindex','-1');
+        card.remove();
+        agonistCorrect++;updateAP();
+        stackCardBank(bank);
+        const fb=qs('#a3a-feedback',w);
+        fb.className='ix-feedback correct visible';
+        fb.textContent='✅ '+why;
+        announce('Correct agonist/antagonist sort.');
+        if(agonistCorrect===8){
+          fb.textContent='✅ Drugs do not create new brain processes. They enhance or inhibit naturally occurring neurotransmitter systems.';
+          qs('#act3-continue',w).disabled=false;
+          announce('Activity 3 complete. Continue button enabled.');
+        }
+      }else{
+        const fb=qs('#a3a-feedback',w);
+        if(!dropAg.wc) dropAg.wc={};
+        const a3bKey=card.id;
+        dropAg.wc[a3bKey]=(dropAg.wc[a3bKey]||0)+1;
+        const a3bW=dropAg.wc[a3bKey];
+        const a3bCorrect=card.dataset.bucket;
+        if(a3bW===1) fb.textContent='Not quite — does this drug activate the receptor, or does it block neurotransmitter action?';
+        else if(a3bW===2) fb.textContent='Hint: Agonist = activates/mimics; Antagonist = occupies and blocks. Look for key words like "activates", "mimics", "blocks", or "prevents".';
+        else fb.textContent=`Answer: This card is a "${a3bCorrect}" — drag it to that column.`;
+        fb.className='ix-feedback incorrect visible';
+        rushGuard.recordWrong(w); announce('Incorrect agonist/antagonist sort.');
+      }
+    }
+    agonistCopy.forEach((item)=>{
+      const card=makeBlueCard(item.text,item.id,item.bucket);
+      bank.appendChild(card);
+      makeDraggable(card,(c,z)=>dropAg(c,z));
+      card.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){e.preventDefault();
+          if(agonistSelected===card){agonistSelected=null;card.style.outline='';return;}
+          if(agonistSelected)agonistSelected.style.outline='';
+          agonistSelected=card;card.style.outline='3px solid #93c5fd';
+        }
+      });
+    });
+    stackCardBank(bank);
+    [qs('#a3-agonist',w),qs('#a3-antagonist',w)].forEach(zone=>{
+      zone.classList.add('stack-drop-zone');
+      zone.addEventListener('dragover',e=>e.preventDefault());
+      zone.addEventListener('dragenter',()=>zone.classList.add('drag-over'));
+      zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+      zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');
+        const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+        if(card)dropAg(card,zone);
+      });
+      zone.addEventListener('keydown',e=>{
+        if((e.key==='Enter'||e.key===' ')&&agonistSelected){e.preventDefault();
+          dropAg(agonistSelected,zone);if(agonistSelected)agonistSelected.style.outline='';agonistSelected=null;
+        }
+      });
+    });
+    updateAP();
+  }
+
+  updateMechProgress();
+  qs('#act3-continue',w).addEventListener('click',()=>{ completeActivity(myIdx); });
+}
+
+/* ==========================================================
+   ACTIVITY 4 – NEUROTRANSMITTER SYSTEMS
+========================================================== */
+function renderAct4(area){
+  const myIdx=ACTIVITIES.findIndex(a=>a.type==='NT');
+  const ntData=[
+    { id:'a4nt0', name:'Acetylcholine',  funcBucket:'func-ach',  disoBucket:'diso-ach',
+      func:'Memory, learning, muscle activation',
+      diso:'Alzheimer\'s; nicotine is an agonist' },
+    { id:'a4nt1', name:'Dopamine',       funcBucket:'func-da',   disoBucket:'diso-da',
+      func:'Movement, reward, motivation',
+      diso:'Parkinson\'s; schizophrenia; cocaine' },
+    { id:'a4nt2', name:'Serotonin',      funcBucket:'func-5ht',  disoBucket:'diso-5ht',
+      func:'Mood regulation, sleep',
+      diso:'Depression; antidepressants' },
+    { id:'a4nt3', name:'Norepinephrine', funcBucket:'func-ne',   disoBucket:'diso-ne',
+      func:'Alertness, arousal, stress',
+      diso:'Depression; sympathetic activation' },
+    { id:'a4nt4', name:'GABA',           funcBucket:'func-gaba', disoBucket:'diso-gaba',
+      func:'Primary inhibitory NT',
+      diso:'Anxiety; alcohol, benzos' },
+    { id:'a4nt5', name:'Endorphins',     funcBucket:'func-end',  disoBucket:'diso-end',
+      func:'Pain modulation, relief',
+      diso:'Opiates mimic endorphins' },
+    { id:'a4nt6', name:'Glutamate',      funcBucket:'func-glu',  disoBucket:'diso-glu',
+      func:'Major excitatory neurotransmitter',
+      diso:'Excitotoxicity; some hallucinogens act here' }
+  ];
+
+  const funcItems=[...ntData]; shuffle(funcItems);
+  const disoItems=[...ntData]; shuffle(disoItems);
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Neurotransmitters: Functions, Disorders &amp; Drugs</h1>
+    <div class="two-part-banner">
+      <div class="tpb-icon">🔬</div>
+      <div><span class="tpb-badge">Drag & Match</span>Drag each function card onto the correct neurotransmitter. Match all 7 to unlock the next activity.</div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div id="a4-step1-wrap">
+      <div class="ix-explanation visible" style="display:block">
+        <strong>Primary Functions</strong><br>
+        Drag each function card <strong>down</strong> onto the correct neurotransmitter column. Hover to see the drop zone highlight.
+      </div>
+      <div class="ix-counter" id="a4-func-progress">Progress: 0/7</div>
+      <div class="a4-card-bank" id="a4-func-bank"></div>
+      <div class="a4-grid" id="a4-func-grid"></div>
+      <div id="a4-func-feedback" class="ix-feedback"></div>
+    </div>
+
+    <button id="act4-continue" class="ix-continue-btn" disabled>Continue to Activity 5</button>
+  `;
+  area.appendChild(w);
+  setContinueLabel('#act4-continue', myIdx, w);
+
+  // ── Build Step 1 grid (NT name header + empty drop zone below) ────
+  const funcGrid = qs('#a4-func-grid', w);
+  ntData.forEach(nt => {
+    const col = document.createElement('div');
+    col.className = 'a4-col';
+    col.innerHTML = `<div class="a4-nt-head">${nt.name}</div>`;
+    const drop = document.createElement('div');
+    drop.className = 'a4-drop-col';
+    drop.dataset.bucket = nt.funcBucket;
+    drop.dataset.droptarget = '1';
+    drop.dataset.ntid = nt.id;
+    drop.id = 'a4-fz-' + nt.id;
+    drop.setAttribute('tabindex','0');
+    drop.setAttribute('role','region');
+    drop.setAttribute('aria-label','Function drop zone for '+nt.name);
+    drop.textContent = '↓ drop here';
+    col.appendChild(drop);
+    funcGrid.appendChild(col);
+  });
+
+  // ── Step 1 logic ──────────────────────────────────────────────────
+  let funcCorrect = 0, funcSelected = null;
+  const funcBankEl = qs('#a4-func-bank',w);
+  funcBankEl.classList.add('stacked-card-bank');
+  function updateFP(){ qs('#a4-func-progress',w).textContent = `Progress: ${funcCorrect}/7`; }
+
+  function dropFunc(card, zone){
+    if(card.classList.contains('placed')) return;
+    if(zone.querySelector('.placed-card-in-zone')) return;
+    if(card.dataset.bucket === zone.dataset.bucket){
+      zone.innerHTML = '';
+      const nt = ntData.find(n=>n.funcBucket===zone.dataset.bucket);
+      const placedEl=makePlacedCard(card.textContent);
+      zone.appendChild(placedEl);
+      zone.classList.add('correct-zone');
+      card.classList.add('placed');
+      card.setAttribute('draggable','false');
+      card.setAttribute('tabindex','-1');
+      card.remove();
+      funcCorrect++; updateFP();
+      stackCardBank(funcBankEl);
+      const fb = qs('#a4-func-feedback',w);
+      fb.className = 'ix-feedback correct visible';
+      fb.textContent = `✅ "${card.textContent}" is the primary function of ${nt?nt.name:'this neurotransmitter'} — remember it for Step 2.`;
+      announce('Correct function match.');
+      if(funcCorrect === 7){
+        fb.textContent = '✅ All neurotransmitter functions matched correctly!';
+        qs('#act4-continue',w).disabled = false;
+        announce('Activity complete. Continue button enabled.');
+      }
+    } else {
+      const fb = qs('#a4-func-feedback',w);
+      if(!dropFunc.wc) dropFunc.wc={};
+      const a4s1Key=card.id;
+      dropFunc.wc[a4s1Key]=(dropFunc.wc[a4s1Key]||0)+1;
+      const a4s1W=dropFunc.wc[a4s1Key];
+      const a4s1Card=ntData.find(n=>n.funcBucket===card.dataset.bucket);
+      if(a4s1W===1) fb.className='ix-feedback incorrect visible', fb.textContent='Not quite — think about what that neurotransmitter is known for.';
+      else if(a4s1W===2) fb.className='ix-feedback incorrect visible', fb.textContent=`Hint: "${card.textContent}" belongs to a neurotransmitter involved in ${a4s1Card?a4s1Card.name:'a different system'}.`;
+      else{ fb.className='ix-feedback incorrect visible'; fb.textContent=`Answer: "${card.textContent}" is the function of ${a4s1Card?a4s1Card.name:'the correct neurotransmitter'}.`; }
+      rushGuard.recordWrong(w); announce('Incorrect. Try again.');
+    }
+  }
+
+  funcItems.forEach((nt,i)=>{
+    const card = makeBlueCard(nt.func,'a4fc-'+i,nt.funcBucket);
+    funcBankEl.appendChild(card);
+    makeDraggable(card,(c,z)=>dropFunc(c,z));
+    card.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault();
+        if(funcSelected===card){ funcSelected=null; card.style.outline=''; return; }
+        if(funcSelected) funcSelected.style.outline='';
+        funcSelected=card; card.style.outline='3px solid #93c5fd';
+      }
+    });
+  });
+  stackCardBank(funcBankEl);
+
+  ntData.forEach(nt=>{
+    const fz = qs('#a4-fz-'+nt.id, w);
+    fz.addEventListener('dragover',e=>e.preventDefault());
+    fz.addEventListener('dragenter',()=>{ if(!fz.querySelector('.ix-card')) fz.classList.add('drag-over'); });
+    fz.addEventListener('dragleave',()=>fz.classList.remove('drag-over'));
+    fz.addEventListener('drop',e=>{ e.preventDefault(); fz.classList.remove('drag-over');
+      const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+      if(card) dropFunc(card,fz);
+    });
+    fz.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&funcSelected){ e.preventDefault();
+        dropFunc(funcSelected,fz); if(funcSelected) funcSelected.style.outline=''; funcSelected=null;
+      }
+    });
+  });
+
+  updateFP();
+  qs('#act4-continue',w).addEventListener('click',()=>{ completeActivity(myIdx); });
+}
+
+/* ==========================================================
+   ACTIVITY 6 – THE BRAIN
+========================================================== */
+function renderAct6(area){
+  const myIdx=ACTIVITIES.findIndex(a=>a.type==='BRAIN');
+  const brainCards=[
+    {id:'a6b0', text:'Medulla',                   bucket:'hind', func:'Controls breathing, heart rate, and other vital life functions'},
+    {id:'a6b1', text:'Pons',                       bucket:'hind', func:'Regulates sleep and arousal'},
+    {id:'a6b2', text:'Cerebellum',                 bucket:'hind', func:'Coordinates movement, balance, and motor control'},
+    {id:'a6b3', text:'Superior / Inferior Colliculi', bucket:'mid', func:'Visual and auditory localization'},
+    {id:'a6b4', text:'Substantia Nigra',           bucket:'mid',  func:'Produces dopamine; degeneration leads to Parkinson\'s disease'},
+    {id:'a6b5', text:'Thalamus',                   bucket:'fore', func:'Relays sensory information'},
+    {id:'a6b6', text:'Hypothalamus',               bucket:'fore', func:'Regulates hunger, thirst, body temperature, and basic drives'},
+    {id:'a6b7', text:'Hippocampus',                bucket:'fore', func:'Critical for memory formation'}
+  ];
+
+  const mcQuestions=[
+    {
+      q:'Which brain pathway is most strongly associated with reward and the reinforcing effects of drugs?',
+      opts:['The reticular activating system','The nigrostriatal motor pathway','The mesolimbic dopaminergic pathway','The parasympathetic nervous system'],
+      ans:2, hint:'Think "dopamine + nucleus accumbens + reward."'
+    },
+    {
+      q:'Which neurotransmitter plays the primary role in the brain\'s reward pathway?',
+      opts:['Serotonin','Dopamine','Acetylcholine','GABA'],
+      ans:1, hint:'Dopamine release in the mesolimbic pathway signals reward and motivation.'
+    },
+    {
+      q:'Why is the mesolimbic dopaminergic pathway important for understanding drug addiction?',
+      opts:['It regulates basic life functions such as breathing and heart rate','It controls sensory input from the environment','Many drugs increase dopamine activity in this pathway, reinforcing drug-seeking behavior','It blocks neurotransmitter release at the synapse'],
+      ans:2, hint:'Drugs of abuse increase dopamine signaling, which strengthens motivation to continue drug use.'
+    },
+    {
+      q:'Electrical stimulation of which structure led researchers to identify the brain\'s reward system?',
+      opts:['Cerebellum','Hippocampus','Nucleus accumbens','Medulla'],
+      ans:2, hint:'Self-stimulation studies pointed to a specific structure within the mesolimbic pathway.'
+    },
+    {
+      q:'Which statement best reflects the modern understanding of dopamine\'s role in reward?',
+      opts:['Dopamine only signals pleasure','Dopamine is released only in response to drugs','Dopamine signals motivational significance and reinforces behavior','Dopamine inhibits neural firing in reward pathways'],
+      ans:2, hint:'Dopamine is involved in motivation and reinforcement, not just pleasure.'
+    }
+  ];
+
+  const brainCopy=[...brainCards]; shuffle(brainCopy);
+  let currentMC=0;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>The Brain: Structure, Function, and Reward</h1>
+    <div class="two-part-banner">
+      <div class="tpb-icon">🧩</div>
+      <div><span class="tpb-badge">2-Part Activity</span><strong>Part A</strong> — Sort brain structures into Hindbrain, Midbrain, or Forebrain. Then <strong>Part B</strong> loads: answer reward pathway questions. Both parts required to continue.</div>
+    </div>
+    <div id="a6-parta-wrap">
+    <div class="ix-explanation visible" style="display:block">
+      <strong>Part A – Brain Divisions and Functions</strong><br>
+      Drag each brain structure into the correct brain division (Hindbrain, Midbrain, or Forebrain). When placed correctly, its function will be revealed.
+    </div>
+    <div class="ix-counter" id="a6b-progress">Progress: 0/8</div>
+    <div class="col-sort-bank" id="a6b-bank"></div>
+    <div class="col-sort-grid">
+      <div class="col-sort-col">
+        <div class="col-sort-head">Hindbrain</div>
+        <div class="col-sort-zone" id="a6-hind" data-bucket="hind" data-droptarget="1" tabindex="0" role="region" aria-label="Hindbrain drop zone"></div>
+      </div>
+      <div class="col-sort-col">
+        <div class="col-sort-head">Midbrain</div>
+        <div class="col-sort-zone" id="a6-mid" data-bucket="mid" data-droptarget="1" tabindex="0" role="region" aria-label="Midbrain drop zone"></div>
+      </div>
+      <div class="col-sort-col">
+        <div class="col-sort-head">Forebrain</div>
+        <div class="col-sort-zone" id="a6-fore" data-bucket="fore" data-droptarget="1" tabindex="0" role="region" aria-label="Forebrain drop zone"></div>
+      </div>
+    </div>
+    <div id="a6b-feedback" class="ix-feedback"></div>
+
+    </div><!-- end a6-parta-wrap -->
+    <div id="a6-partb" style="display:none;margin-top:0;">
+      <div class="ix-explanation visible" style="display:block">
+        <strong>Part B – The Neural Basis of Reward</strong><br>
+        Answer each multiple-choice question. You must answer all 5 correctly to complete this activity.
+      </div>
+      <div id="a6-mc-area"></div>
+    </div>
+
+    <button id="act6-continue" class="ix-continue-btn" disabled>Continue to Activity 7</button>
+  `;
+  area.appendChild(w);
+  setContinueLabel('#act6-continue', myIdx, w);
+
+  // Part A
+  let brainCorrect=0; let brainSelected=null;
+  const bBank=qs('#a6b-bank',w);
+  bBank.classList.add('stacked-card-bank');
+  function updateBP(){ qs('#a6b-progress',w).textContent=`Progress: ${brainCorrect}/8`; }
+
+  function dropBrain(card,zone){
+    if(card.classList.contains('placed'))return;
+    if(card.dataset.bucket===zone.dataset.bucket){
+      const funcText=brainCards.find(b=>b.id===card.id)?.func||'';
+      const placedEl=makePlacedCard(card.textContent);
+      zone.appendChild(placedEl);
+      zone.classList.add('correct-zone','stack-drop-zone');
+      card.classList.add('placed');
+      card.setAttribute('draggable','false');
+      card.setAttribute('tabindex','-1');
+      card.remove();
+      brainCorrect++;updateBP();
+      stackCardBank(bBank);
+      const fb=qs('#a6b-feedback',w);
+      fb.className='ix-feedback correct visible';
+      fb.textContent=funcText
+        ?`✅ ${card.textContent}: ${funcText}`
+        :'✅ Correct — this structure plays a key role in this brain region.';
+      announce('Correct brain structure placement.');
+      if(brainCorrect===8){
+        partADone[myIdx]=true; saveProgress(); renderSidebar();
+        const existingBtn=qs('.part-continue-btn',w);
+        if(!existingBtn){
+          const contBtn=document.createElement('button');
+          contBtn.className='ix-continue-btn part-continue-btn';
+          contBtn.style.marginTop='16px';
+          contBtn.textContent='▶ Continue to Part B – Reward Pathway Questions';
+          contBtn.addEventListener('click',()=>{
+            contBtn.remove();
+            showPartB(qs('#a6-parta-wrap',w), qs('#a6-partb',w), ()=>loadMCQ(0));
+          });
+          qs('#act6-continue',w).insertAdjacentElement('beforebegin', contBtn);
+        }
+        announce('Part A complete. Continue button shown.');
+      }
+    }else{
+      const fb=qs('#a6b-feedback',w);
+      if(!dropBrain.wc) dropBrain.wc={};
+      const a6aKey=card.id;
+      dropBrain.wc[a6aKey]=(dropBrain.wc[a6aKey]||0)+1;
+      const a6aW=dropBrain.wc[a6aKey];
+      const a6aCard=brainCards.find(b=>b.id===card.id);
+      const a6aLabels={hind:'Hindbrain',mid:'Midbrain',fore:'Forebrain'};
+      if(a6aW===1){ fb.className='ix-feedback incorrect visible'; fb.textContent='Not quite — think about which major brain division (Hindbrain, Midbrain, Forebrain) this structure belongs to.'; }
+      else if(a6aW===2){ fb.className='ix-feedback incorrect visible'; fb.textContent='Hint: Hindbrain = basic life functions (medulla, pons, cerebellum). Midbrain = sensory/motor relay + dopamine. Forebrain = thalamus, hypothalamus, hippocampus.'; }
+      else{ fb.className='ix-feedback incorrect visible'; fb.textContent=`Answer: "${card.textContent}" belongs in the "${a6aLabels[a6aCard?a6aCard.bucket:'?']}" — ${a6aCard?a6aCard.func:''}.`; }
+      rushGuard.recordWrong(w); announce('Incorrect brain placement.');
+    }
+  }
+
+  brainCopy.forEach(item=>{
+    const card=makeBlueCard(item.text,item.id,item.bucket);
+    bBank.appendChild(card);
+    makeDraggable(card,(c,z)=>dropBrain(c,z));
+    card.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();
+        if(brainSelected===card){brainSelected=null;card.style.outline='';return;}
+        if(brainSelected)brainSelected.style.outline='';
+        brainSelected=card;card.style.outline='3px solid #93c5fd';
+      }
+    });
+  });
+  stackCardBank(bBank);
+
+  ['#a6-hind','#a6-mid','#a6-fore'].forEach(sel=>{
+    const zone=qs(sel,w);
+    zone.classList.add('stack-drop-zone');
+    zone.addEventListener('dragover',e=>e.preventDefault());
+    zone.addEventListener('dragenter',()=>zone.classList.add('drag-over'));
+    zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+    zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');
+      const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+      if(card)dropBrain(card,zone);
+    });
+    zone.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&brainSelected){e.preventDefault();
+        dropBrain(brainSelected,zone);if(brainSelected)brainSelected.style.outline='';brainSelected=null;
+      }
+    });
+  });
+
+  // Part B – MCQ
+  let mcWrongCounts=new Array(mcQuestions.length).fill(0);
+
+  function loadMCQ(index){
+    if(index>=mcQuestions.length){
+      const mcArea=qs('#a6-mc-area',w);
+      mcArea.innerHTML='<p style="font-weight:700;color:#166534;font-size:1rem;">✅ All reward pathway questions answered correctly.</p>';
+      qs('#act6-continue',w).disabled=false;
+      announce('Activity 6 complete. Continue button enabled.');
+      return;
+    }
+    // shuffle options so answer isn't always in same position
+    const qRaw=mcQuestions[index];
+    const correctTextA6=qRaw.opts[qRaw.ans];
+    const shuffOpts=[...qRaw.opts]; shuffle(shuffOpts);
+    const q={...qRaw, opts:shuffOpts, ans:shuffOpts.indexOf(correctTextA6)};
+    const mcArea=qs('#a6-mc-area',w);
+    mcArea.innerHTML='';
+    const counter=document.createElement('div');
+    counter.className='ix-counter';
+    counter.textContent=`Question ${index+1} of ${mcQuestions.length}`;
+    const prompt=document.createElement('div');
+    prompt.className='ix-prompt';prompt.textContent=q.q;
+    mcArea.appendChild(counter);mcArea.appendChild(prompt);
+    q.opts.forEach((opt,i)=>{
+      const btn=document.createElement('div');
+      btn.className='ix-option';btn.textContent=opt;
+      btn.setAttribute('tabindex','0');btn.setAttribute('role','button');
+      function choose(){
+        if(btn.classList.contains('correct-opt')||btn.classList.contains('incorrect-opt'))return;
+        if(i===q.ans){
+          btn.classList.add('correct-opt');
+          qsa('.ix-option',mcArea).forEach(o=>{o.style.pointerEvents='none';o.setAttribute('tabindex','-1');});
+          const exp=document.createElement('div');
+          exp.className='ix-explanation visible';
+          const nextBtn=document.createElement('button');
+          nextBtn.className='ix-next-btn';
+          nextBtn.textContent=index<mcQuestions.length-1?'Next Question':'Complete Activity';
+          nextBtn.addEventListener('click',()=>loadMCQ(index+1));
+          exp.innerHTML=`<strong>✅ Correct!</strong> ${q.hint}<br><br>`;
+          exp.appendChild(nextBtn);
+          mcArea.appendChild(exp);
+          setTimeout(()=>nextBtn.focus(),50);
+          announce('Correct answer.');
+        }else{
+          btn.classList.add('incorrect-opt');
+          mcWrongCounts[index]++;
+          rushGuard.recordWrong(w);
+          const fb=document.createElement('div');
+          fb.className='ix-feedback incorrect visible';
+          fb.textContent=`Hint: ${q.hint}`;
+          const old=mcArea.querySelector('.ix-feedback');
+          if(old)old.remove();
+          mcArea.appendChild(fb);
+          announce('Incorrect. Try again.');
+        }
+      }
+      btn.addEventListener('click',choose);
+      btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});
+      mcArea.appendChild(btn);
+    });
+  }
+
+  updateBP();
+  qs('#act6-continue',w).addEventListener('click',()=>{ completeActivity(myIdx); });
+}
+
+/* ==========================================================
+   ACTIVITY 7 – SYNTHESIS: DRUG EFFECTS
+========================================================== */
+function renderAct7(area){
+  const myIdx=ACTIVITIES.findIndex(a=>a.type==='SYNTHESIS');
+  const caseAQuestions=[
+    {
+      q:'A1. Which synaptic mechanism best explains cocaine\'s effect described here?',
+      opts:['Enzyme breakdown of dopamine increases','Dopamine reuptake is blocked','Dopamine synthesis stops completely','Dopamine receptors are blocked directly'],
+      ans:1,
+      fb_correct:'Yes—blocking reuptake increases dopamine remaining in/around the synapse.',
+      fb_wrong:'Re-read: the case states cocaine enhances dopamine transmission by blocking reuptake.',
+      hint:'Look for the term "reuptake" in the case. Is dopamine being destroyed, blocked at the receptor, or prevented from being taken back in?'
+    },
+    {
+      q:'A2. Cocaine enhances dopamine transmission by blocking reuptake, so more dopamine stays in the synapse. Cocaine is best classified as a:',
+      opts:['Dopamine agonist','Dopamine antagonist'],
+      ans:0,
+      fb_correct:'Right—because cocaine increases dopamine activity at the synapse, it acts as a dopamine agonist.',
+      fb_wrong:'Cocaine increases dopamine activity (more dopamine left in the synapse). A drug that increases a neurotransmitter\'s effect is an agonist.',
+      hint:'Does cocaine increase or decrease dopamine activity at the synapse? A drug that increases a neurotransmitter\'s effect is an agonist.'
+    },
+    {
+      q:'A3. Which brain pathway is emphasized in the chapter as a crucial substrate for the acute rewarding effects of many drugs of abuse?',
+      opts:['Reticular activating system','Mesolimbic dopaminergic pathway','Parasympathetic branch','Nigrostriatal motor pathway'],
+      ans:1,
+      fb_correct:'Correct—this pathway is central to reward and drug reinforcement.',
+      fb_wrong:'Focus on dopamine and reward, not motor control or arousal.',
+      hint:'The chapter describes one pathway as the brain\'s "pleasure center." Focus on dopamine and reward.'
+    },
+    {
+      q:'A4. Cocaine can mimic the physiological effects of sympathetic arousal (fight-or-flight). Drugs that do this are called:',
+      opts:['Cholinergic','Sympathomimetic','Anticholinergic','Sedative-hypnotic'],
+      ans:1,
+      fb_correct:'Correct—sympathomimetic drugs mimic the fight-or-flight response.',
+      fb_wrong:'Cocaine increases heart rate and arousal. Drugs that mimic fight-or-flight have a specific name.',
+      hint:'Cocaine increases heart rate and arousal. Drugs that mimic fight-or-flight responses are given a specific name in the autonomic section.'
+    }
+  ];
+
+  const caseBQuestions=[
+    {
+      q:'B1. Heroin works most directly by:',
+      opts:['Blocking opioid receptors so endorphins cannot bind','Activating opioid receptors similarly to endorphins','Blocking dopamine reuptake','Increasing enzyme breakdown of neurotransmitters'],
+      ans:1,
+      fb_correct:'Correct—heroin mimics the body\'s natural opioids by activating opioid receptors.',
+      fb_wrong:'The case states heroin works similarly to a naturally occurring neurotransmitter. Which system does it mimic?',
+      hint:'The case states heroin works "similarly to a naturally occurring neurotransmitter." Which neurotransmitter system does heroin mimic?'
+    },
+    {
+      q:'B2. Based on Chapter 3 definitions, a substance that occupies a receptor and activates it is called a(n):',
+      opts:['Antagonist','Agonist','Enzyme','Second messenger'],
+      ans:1,
+      fb_correct:'Correct—an agonist activates the receptor.',
+      fb_wrong:'Review: does the substance activate the receptor, or just sit in it and block it?',
+      hint:'Review the lock-and-key analogy: does the substance activate the receptor, or just sit in the lock and block it?'
+    },
+    {
+      q:'B3. Naloxone reverses heroin effects because naloxone is best described as:',
+      opts:['An agonist that increases opioid receptor activation','An antagonist that occupies opioid receptors without activating them','A reuptake inhibitor that increases endorphins','A drug that increases neurotransmitter release from vesicles'],
+      ans:1,
+      fb_correct:'Correct—by blocking the receptor, naloxone prevents heroin from activating it.',
+      fb_wrong:'Naloxone is used to reverse heroin overdose. Would reversing heroin require activating the same receptor—or blocking it?',
+      hint:'Naloxone reverses heroin overdose. Ask yourself: would reversing heroin require activating the same receptor—or blocking it?'
+    },
+    {
+      q:'B4. Which neurotransmitters are described as being mimicked by opiate drugs and involved in pain modulation?',
+      opts:['Monoamines','Endorphins','GABA','Acetylcholine'],
+      ans:1,
+      fb_correct:'Correct—endorphins are the brain\'s natural opioids, and opiate drugs mimic them.',
+      fb_wrong:'The chapter explicitly names the neurotransmitters that opiate drugs mimic. Look for the term meaning "endogenous morphine."',
+      hint:'The chapter explicitly names the neurotransmitters opiate drugs mimic. Look for the term meaning "endogenous morphine."'
+    }
+  ];
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>From Synapse to System: Explaining Drug Effects</h1>
+    <p class="ix-instructions">Read each case carefully. Answer all checkpoint questions correctly to unlock Activity 8.</p>
+
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Case A: Cocaine and Synaptic Dopamine</strong><br><br>
+      A person uses cocaine and quickly experiences heightened arousal and strong motivation to take more. Cocaine does <strong>not</strong> bind to dopamine receptors, but it <strong>increases dopamine transmission</strong> by <strong>blocking reuptake</strong>, which changes neurotransmitter levels in the brain. Some psychoactive drugs can also <strong>mimic sympathetic arousal</strong> (fight-or-flight); cocaine is one example.
+    </div>
+    <div id="a7a-area"></div>
+
+    <div id="a7-caseb" style="display:none;margin-top:30px;">
+      <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+        <strong>Case B: Heroin, Endorphins, and Naloxone</strong><br><br>
+        A person takes heroin and becomes extremely drowsy. Heroin is an opiate drug that produces effects by <strong>activating opioid receptors</strong>, similar to naturally occurring opioids called <strong>endorphins</strong>. In an overdose, <strong>naloxone</strong> may be administered because it is an <strong>antagonist</strong> at the receptors on which opiates work; it occupies the receptor and prevents activation.
+      </div>
+      <div id="a7b-area"></div>
+    </div>
+
+    <button id="act7-continue" class="ix-continue-btn" disabled>Continue to Activity 8</button>
+  `;
+  area.appendChild(w);
+  setContinueLabel('#act7-continue', myIdx, w);
+
+  function runCase(questions, containerSel, onComplete){
+    let current=0;
+    let wrongCounts=new Array(questions.length).fill(0);
+    const container=qs(containerSel,w);
+
+    function loadQ(index){
+      if(index>=questions.length){
+        container.innerHTML='<p style="font-weight:700;color:#166534;font-size:1rem;">✅ Case answered correctly.</p>';
+        onComplete();
+        return;
+      }
+      const qRaw=questions[index];
+      const correctTextA7=qRaw.opts[qRaw.ans];
+      const sOpts=[...qRaw.opts]; shuffle(sOpts);
+      const q={...qRaw, opts:sOpts, ans:sOpts.indexOf(correctTextA7)};
+      container.innerHTML='';
+      const counter=document.createElement('div');
+      counter.className='ix-counter';
+      counter.textContent=`Question ${index+1} of ${questions.length}`;
+      const prompt=document.createElement('div');
+      prompt.className='ix-prompt';prompt.textContent=q.q;
+      container.appendChild(counter);container.appendChild(prompt);
+      q.opts.forEach((opt,i)=>{
+        const btn=document.createElement('div');
+        btn.className='ix-option';btn.textContent=opt;
+        btn.setAttribute('tabindex','0');btn.setAttribute('role','button');
+        function choose(){
+          if(btn.classList.contains('correct-opt')||btn.classList.contains('incorrect-opt'))return;
+          if(i===q.ans){
+            btn.classList.add('correct-opt');
+            qsa('.ix-option',container).forEach(o=>{o.style.pointerEvents='none';o.setAttribute('tabindex','-1');});
+            const exp=document.createElement('div');
+            exp.className='ix-explanation visible';
+            const nextBtn=document.createElement('button');
+            nextBtn.className='ix-next-btn';
+            nextBtn.textContent=index<questions.length-1?'Next Question':'Continue';
+            nextBtn.addEventListener('click',()=>loadQ(index+1));
+            exp.innerHTML=`<strong>✅ ${q.fb_correct}</strong><br><br>`;
+            exp.appendChild(nextBtn);
+            container.appendChild(exp);
+            setTimeout(()=>nextBtn.focus(),50);
+            announce('Correct answer.');
+          }else{
+            btn.classList.add('incorrect-opt');
+            wrongCounts[index]++;
+            rushGuard.recordWrong(w);
+            const old=container.querySelector('.ix-feedback');if(old)old.remove();
+            const fb=document.createElement('div');
+            fb.className='ix-feedback incorrect visible';
+            fb.textContent=wrongCounts[index]>=2?`Hint: ${q.hint}`:q.fb_wrong;
+            container.appendChild(fb);
+            announce('Incorrect. Try again.');
+          }
+        }
+        btn.addEventListener('click',choose);
+        btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});
+        container.appendChild(btn);
+      });
+    }
+    loadQ(0);
+  }
+
+  runCase(caseAQuestions,'#a7a-area',()=>{
+    partADone[myIdx]=true; saveProgress(); renderSidebar();
+    const a7ContBtn=document.createElement('button');
+    a7ContBtn.className='ix-continue-btn part-continue-btn';
+    a7ContBtn.style.marginTop='16px';
+    a7ContBtn.textContent='▶ Continue to Case B – Heroin & Naloxone';
+    a7ContBtn.addEventListener('click',()=>{
+      a7ContBtn.remove();
+      qs('#a7-caseb',w).style.display='block';
+      qs('#a7-caseb',w).classList.add('part-fade-in');
+      runCase(caseBQuestions,'#a7b-area',()=>{
+        const fb=document.createElement('div');
+        fb.className='ix-explanation visible';
+        fb.innerHTML='<strong>✅ Both cases complete!</strong> Many drug effects can be explained by identifying (1) where the drug acts at the synapse, (2) whether it enhances or blocks transmission, and (3) which systems/pathways are affected.';
+        qs('#a7b-area',w).appendChild(fb);
+        qs('#act7-continue',w).disabled=false;
+        announce('Activity 6 complete. Continue button enabled.');
+      });
+    });
+    qs('#act7-continue',w).insertAdjacentElement('beforebegin', a7ContBtn);
+  });
+
+  qs('#act7-continue',w).addEventListener('click',()=>{ completeActivity(myIdx); });
+}
+
+/* ==========================================================
+   ACTIVITY 8 – MASTERY CHECK
+========================================================== */
+function renderAct8(area){
+  const myIdx=ACTIVITIES.findIndex(a=>a.type==='MASTERY');
+  // Part A: matching
+  const matchTerms=[
+    {id:'a8t0', term:'Axon terminal (terminal button)', descKey:'D', desc:'The structure where neurotransmitters are stored and released when the neuron fires'},
+    {id:'a8t1', term:'Synapse (synaptic cleft)',        descKey:'A', desc:'The gap/junction between neurons where chemical communication occurs'},
+    {id:'a8t2', term:'Receptor site',                  descKey:'B', desc:'A "lock" on the postsynaptic neuron that neurotransmitters bind to'},
+    {id:'a8t3', term:'Neurotransmitter',               descKey:'C', desc:'The "key" chemical released to influence the next neuron'}
+  ];
+
+  // Part B: 8 MC questions
+  const partBQuestions=[
+    {q:'B1. Neural transmission is best described as:',
+     opts:['Chemical along the axon and electrical at the synapse','Electrical along the axon and chemical at the synapse','Chemical everywhere in the neuron','Electrical everywhere in the neuron'],
+     ans:1,hint:'Where does neurotransmitter release happen?'},
+    {q:'B2. Ionotropic receptors are sometimes called "fast" receptors because they:',
+     opts:['Use second messengers and G proteins','Directly open ion channels and act within milliseconds','Only exist in the hindbrain','Only respond to drugs, not neurotransmitters'],
+     ans:1,hint:'Fast = direct ion channel action.'},
+    {q:'B3. Which process removes neurotransmitter from the synapse by taking it back into the axon terminal?',
+     opts:['Depolarization','Reuptake','Action potential','Threshold'],
+     ans:1,hint:'It\'s the "re-" word: taken back up.'},
+    {q:'B4. A substance that occupies a receptor and activates it is called a(n):',
+     opts:['Antagonist','Agonist','Enzyme','Vesicle'],
+     ans:1,hint:'Agonist = activates.'},
+    {q:'B5. Naloxone reverses heroin overdose primarily because naloxone is a(n):',
+     opts:['Agonist at opioid receptors','Antagonist at opioid receptors','Reuptake blocker','Enzyme inhibitor'],
+     ans:1,hint:'Reversal requires blocking the same receptor heroin activates.'},
+    {q:'B6. The blood-brain barrier primarily functions as a:',
+     opts:['Messenger system','Filter','Motor pathway','Reward center'],
+     ans:1,hint:'It screens which substances can enter the brain.'},
+    {q:'B7. The two main branches of the nervous system are the:',
+     opts:['Peripheral nervous system and autonomic nervous system','Sympathetic and parasympathetic nervous systems','Central nervous system and peripheral nervous system','Somatic nervous system and endocrine system'],
+     ans:2,hint:'CNS = brain/spinal cord; everything else is PNS.'},
+    {q:'B8. Which pathway is highlighted in the chapter as strongly associated with reward and drug addiction?',
+     opts:['Reticular activating system','Mesolimbic dopaminergic pathway','Parasympathetic branch','Occipital cortex'],
+     ans:1,hint:'Think "dopamine + nucleus accumbens + reward."'}
+  ];
+
+  // Part C: 2 scenario questions
+  const partCQuestions=[
+    {q:'C1. Which synaptic mechanism best explains the increased dopamine signaling described in the scenario?',
+     opts:['Increased enzyme breakdown','Blocked reuptake','Blocked receptor sites','Reduced vesicle storage'],
+     ans:1,hint:'The scenario says dopamine isn\'t being taken back into the terminal.'},
+    {q:'C2. Because the drug enhances dopamine transmission without binding dopamine receptors, it is best classified as a(n):',
+     opts:['Direct dopamine antagonist','Direct dopamine agonist','Indirect dopamine agonist','Enzyme antagonist'],
+     ans:2,hint:'Direct = binds receptor; indirect = changes the system another way (like reuptake).'}
+  ];
+
+  const termsCopy=[...matchTerms]; shuffle(termsCopy);
+  const descsCopy=[...matchTerms]; shuffle(descsCopy);
+  let currentPartB=0;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Chapter 3 Mastery: From Neuron → Synapse → Brain &amp; Behavior</h1>
+    <div class="two-part-banner">
+      <div class="tpb-icon">🏆</div>
+      <div><span class="tpb-badge">3-Part Activity</span><strong>Part A</strong> — Match synapse terms to descriptions. Then <strong>Part B</strong>: 8 multiple-choice questions. Finally <strong>Part C</strong>: applied scenario. All three required.</div>
+    </div>
+    <div id="a8-parta-wrap">
+    <div class="ix-explanation visible" style="display:block">
+      <strong>Part A – Matching: Synapse Components</strong><br>
+      Drag each letter card from the left column to match the correct description on the right. All 4 must be correct.
+    </div>
+    <div class="ix-counter" id="a8a-progress">Progress: 0/4</div>
+    <div class="col-sort-bank" id="a8-term-bank"></div>
+    <div class="col-sort-grid" id="a8-desc-rows"></div>
+    <div id="a8a-feedback" class="ix-feedback"></div>
+
+    </div><!-- end a8-parta-wrap -->
+    <div id="a8-partb" style="display:none;margin-top:0;">
+      <div class="ix-explanation visible" style="display:block">
+        <strong>Part B – Multiple Choice (8 Questions)</strong><br>
+        Select the best answer for each question. You must answer all 8 correctly.
+      </div>
+      <div id="a8b-area"></div>
+    </div>
+
+    <div id="a8-partc" style="display:none;margin-top:30px;">
+      <div class="ix-explanation visible" style="display:block">
+        <strong>Part C – Mini Scenario</strong><br>
+        A stimulant drug causes abnormally high levels of dopamine activity in the synapse <strong>without binding to dopamine receptors</strong>. Dopamine signaling stays elevated because dopamine is not being taken back into the axon terminal.
+      </div>
+      <div id="a8c-area"></div>
+    </div>
+
+    <button id="act8-continue" class="ix-continue-btn" disabled>Complete Chapter 3</button>
+  `;
+  area.appendChild(w);
+
+  // ---- Part A ----
+  let aCorrect=0; let aSelected=null;
+  const termBank=qs('#a8-term-bank',w);
+  const descRows=qs('#a8-desc-rows',w);
+  function updateAP(){ qs('#a8a-progress',w).textContent=`Progress: ${aCorrect}/4`; }
+
+  // Build term cards (shuffled)
+  termsCopy.forEach((item,i)=>{
+    const card=document.createElement('div');
+    card.className='ix-card';card.textContent=item.term;
+    card.style.cssText='font-size:.82rem;white-space:normal;word-break:break-word;text-align:center;line-height:1.35;';
+    card.setAttribute('draggable','true');card.setAttribute('tabindex','0');
+    card.dataset.key=item.id;card.id='a8tc-'+i;
+    termBank.appendChild(card);
+    makeDraggable(card,(c,z)=>dropTerm(c,z));
+    card.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();
+        if(aSelected===card){aSelected=null;card.style.outline='';return;}
+        if(aSelected)aSelected.style.outline='';
+        aSelected=card;card.style.outline='3px solid var(--sky)';
+      }
+    });
+  });
+
+  // Build description columns (shuffled) — Act4 style
+  descsCopy.forEach((item)=>{
+    const col=document.createElement('div');
+    col.className='col-sort-col';
+    const head=document.createElement('div');
+    head.className='col-sort-head';
+    head.style.cssText='font-size:.8rem;font-weight:600;';
+    head.textContent=item.desc;
+    const zone=document.createElement('div');
+    zone.className='col-sort-zone';
+    zone.dataset.key=item.id;
+    zone.dataset.droptarget='1';
+    zone.setAttribute('tabindex','0');
+    zone.setAttribute('role','region');
+    zone.setAttribute('aria-label',`Drop zone: ${item.desc}`);
+    zone.addEventListener('dragover',e=>e.preventDefault());
+    zone.addEventListener('dragenter',()=>{ if(!zone.querySelector('.ix-card')) zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+    zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');
+      const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+      if(card)dropTerm(card,zone);
+    });
+    zone.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&aSelected){e.preventDefault();
+        dropTerm(aSelected,zone);if(aSelected)aSelected.style.outline='';aSelected=null;
+      }
+    });
+    col.appendChild(head);
+    col.appendChild(zone);
+    descRows.appendChild(col);
+  });
+
+  function dropTerm(card,zone){
+    if(card.classList.contains('placed'))return;
+    if(zone.querySelector('.ix-card'))return;
+    if(card.dataset.key===zone.dataset.key){
+      const placed=card.cloneNode(true);
+      placed.classList.add('placed');
+      placed.setAttribute('draggable','false');
+      placed.setAttribute('tabindex','-1');
+      placed.style.cssText='pointer-events:none;margin:0;font-size:.82rem;white-space:normal;word-break:break-word;text-align:center;';
+      zone.appendChild(placed);
+      zone.classList.add('correct-zone');
+      card.classList.add('placed');
+      card.setAttribute('draggable','false');
+      card.setAttribute('tabindex','-1');
+      card.remove();
+      aCorrect++;updateAP();
+      const fb=qs('#a8a-feedback',w);
+      fb.className='ix-feedback correct visible';
+      fb.textContent='✅ Correct! Terminals release, synapses are the gap, receptors are locks, neurotransmitters are keys.';
+      announce('Correct term match.');
+      if(aCorrect===4){
+        partADone[myIdx]=true; saveProgress(); renderSidebar();
+        const existingBtn=qs('.part-continue-btn',w);
+        if(!existingBtn){
+          const contBtn=document.createElement('button');
+          contBtn.className='ix-continue-btn part-continue-btn';
+          contBtn.style.marginTop='16px';
+          contBtn.textContent='▶ Continue to Part B – Multiple Choice';
+          contBtn.addEventListener('click',()=>{
+            contBtn.remove();
+            showPartB(qs('#a8-parta-wrap',w), qs('#a8-partb',w), ()=>loadB(0));
+          });
+          qs('#act8-continue',w).insertAdjacentElement('beforebegin', contBtn);
+        }
+        announce('Part A complete. Continue button shown.');
+      }
+    }else{
+      const fb=qs('#a8a-feedback',w);
+      if(!dropTerm.wc) dropTerm.wc={};
+      const a8Key=card.id;
+      dropTerm.wc[a8Key]=(dropTerm.wc[a8Key]||0)+1;
+      const a8W=dropTerm.wc[a8Key];
+      const a8Correct=matchTerms.find(t=>t.id===card.dataset.key);
+      if(a8W===1){ fb.className='ix-feedback incorrect visible'; fb.textContent='Not quite — read both the term and the description carefully before placing.'; }
+      else if(a8W===2){ fb.className='ix-feedback incorrect visible'; fb.textContent='Hint: Terminals release neurotransmitters; the synapse is the gap; receptor sites are "locks"; neurotransmitters are the "keys".'; }
+      else{ fb.className='ix-feedback incorrect visible'; fb.textContent=`Answer: "${card.textContent}" matches the description: "${a8Correct?a8Correct.desc:'see definitions'}".`; }
+      rushGuard.recordWrong(w); announce('Incorrect term match.');
+    }
+  }
+
+  // Shuffle answer options for any MC question
+  function shuffleQ(q){
+    const correctText=q.opts[q.ans];
+    const opts=[...q.opts]; shuffle(opts);
+    return {...q, opts, ans:opts.indexOf(correctText)};
+  }
+
+  // Part B
+  function loadB(index){
+    if(index>=partBQuestions.length){
+      qs('#a8b-area',w).innerHTML='<p style="font-weight:700;color:#166534;">✅ All 8 questions correct.</p>';
+      qs('#a8-partc',w).style.display='block';
+      loadC(0);
+      announce('Part B complete. Part C unlocked.');
+      return;
+    }
+    const q=shuffleQ(partBQuestions[index]);
+    const area=qs('#a8b-area',w);
+    area.innerHTML='';
+    const counter=document.createElement('div');counter.className='ix-counter';
+    counter.textContent=`Question ${index+1} of ${partBQuestions.length}`;
+    const prompt=document.createElement('div');prompt.className='ix-prompt';prompt.textContent=q.q;
+    area.appendChild(counter);area.appendChild(prompt);
+    q.opts.forEach((opt,i)=>{
+      const btn=document.createElement('div');btn.className='ix-option';btn.textContent=opt;
+      btn.setAttribute('tabindex','0');btn.setAttribute('role','button');
+      function choose(){
+        if(btn.classList.contains('correct-opt')||btn.classList.contains('incorrect-opt'))return;
+        if(i===q.ans){
+          btn.classList.add('correct-opt');
+          qsa('.ix-option',area).forEach(o=>{o.style.pointerEvents='none';o.setAttribute('tabindex','-1');});
+          const exp=document.createElement('div');exp.className='ix-explanation visible';
+          const nb=document.createElement('button');nb.className='ix-next-btn';
+          nb.textContent=index<partBQuestions.length-1?'Next Question':'Continue to Part C';
+          nb.addEventListener('click',()=>loadB(index+1));
+          exp.innerHTML=`<strong>✅ Correct!</strong> ${q.hint}<br><br>`;exp.appendChild(nb);
+          area.appendChild(exp);setTimeout(()=>nb.focus(),50);
+          announce('Correct.');
+        }else{
+          btn.classList.add('incorrect-opt');
+          rushGuard.recordWrong(w);
+          const old=area.querySelector('.ix-feedback');if(old)old.remove();
+          const fb=document.createElement('div');fb.className='ix-feedback incorrect visible';
+          fb.textContent='Hint: '+q.hint;area.appendChild(fb);
+          announce('Incorrect. Try again.');
+        }
+      }
+      btn.addEventListener('click',choose);
+      btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});
+      area.appendChild(btn);
+    });
+  }
+
+  // Part C
+  function loadC(index){
+    if(index>=partCQuestions.length){
+      qs('#a8c-area',w).innerHTML='<p style="font-weight:700;color:#166534;">✅ Chapter 3 Complete! You demonstrated mastery of how neurons communicate, how drugs alter synaptic transmission, and how these effects relate to nervous system organization and reward pathways.</p>';
+      qs('#act8-continue',w).disabled=false;
+      announce('Activity 8 complete. Complete Chapter 3 button enabled.');
+      return;
+    }
+    const q=shuffleQ(partCQuestions[index]);
+    const area=qs('#a8c-area',w);
+    area.innerHTML='';
+    const counter=document.createElement('div');counter.className='ix-counter';
+    counter.textContent=`Question ${index+1} of ${partCQuestions.length}`;
+    const prompt=document.createElement('div');prompt.className='ix-prompt';prompt.textContent=q.q;
+    area.appendChild(counter);area.appendChild(prompt);
+    q.opts.forEach((opt,i)=>{
+      const btn=document.createElement('div');btn.className='ix-option';btn.textContent=opt;
+      btn.setAttribute('tabindex','0');btn.setAttribute('role','button');
+      function choose(){
+        if(btn.classList.contains('correct-opt')||btn.classList.contains('incorrect-opt'))return;
+        if(i===q.ans){
+          btn.classList.add('correct-opt');
+          qsa('.ix-option',area).forEach(o=>{o.style.pointerEvents='none';o.setAttribute('tabindex','-1');});
+          const exp=document.createElement('div');exp.className='ix-explanation visible';
+          const nb=document.createElement('button');nb.className='ix-next-btn';
+          nb.textContent=index<partCQuestions.length-1?'Next Question':'Finish';
+          nb.addEventListener('click',()=>loadC(index+1));
+          exp.innerHTML=`<strong>✅ Correct!</strong> ${q.hint}<br><br>`;exp.appendChild(nb);
+          area.appendChild(exp);setTimeout(()=>nb.focus(),50);
+          announce('Correct.');
+        }else{
+          btn.classList.add('incorrect-opt');
+          rushGuard.recordWrong(w);
+          const old=area.querySelector('.ix-feedback');if(old)old.remove();
+          const fb=document.createElement('div');fb.className='ix-feedback incorrect visible';
+          fb.textContent='Hint: '+q.hint;area.appendChild(fb);
+          announce('Incorrect. Try again.');
+        }
+      }
+      btn.addEventListener('click',choose);
+      btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});
+      area.appendChild(btn);
+    });
+  }
+
+  updateAP();
+  qs('#act8-continue',w).addEventListener('click',()=>{ completeActivity(myIdx); });
+}
+
+/* ==========================================================
+   INIT
+========================================================== */
+document.addEventListener('DOMContentLoaded',()=>{
+  loadProgress();
+  // Render sidebar with restored state BEFORE any navigation
+  renderSidebar();
+
+  // Show the instructions modal on every load
+  document.getElementById('instructionsModal').classList.add('visible');
+
+  document.getElementById('instrStartBtn').addEventListener('click',()=>{
+    document.getElementById('instructionsModal').classList.remove('visible');
+    // Resume where the learner left off
+    const saved=currentView;
+    if(saved==='cover'){
+      showCover();
+    }else if(saved==='review'){
+      showReviewSummary();
+    }else{
+      showActivity(saved);
+    }
+    announce('Module started.');
+  });
+
+  document.getElementById('instrStartBtn').addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){
+      e.preventDefault();
+      document.getElementById('instrStartBtn').click();
+    }
+  });
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      if(document.getElementById('completionModal').classList.contains('visible')){
+        document.getElementById('completionModal').classList.remove('visible');
+      }
+      if(document.getElementById('instructionsModal').classList.contains('visible')){
+        document.getElementById('instructionsModal').classList.remove('visible');
+        if(currentView==='cover') showCover(); else if(currentView==='review') showReviewSummary(); else showActivity(currentView);
+      }
+    }
+  });
+
+  // Render the content area silently (no saveProgress call here so we don't
+  // overwrite the just-loaded state before the user even clicks anything)
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+});
+/* ==========================================================
+   FULLSCREEN TOGGLE
+   Strategy 1 — Real Fullscreen API (works when Canvas iframe
+                has allow="fullscreen").
+   Strategy 2 — Pseudo-fullscreen via CSS (position:fixed,
+                always works inside any iframe / Canvas embed).
+========================================================== */
+(function(){
+  const btn=document.getElementById('fsBtn');
+  let pseudoFS=false;
+
+  function enterIcon(){ btn.textContent='✕'; btn.title='Exit fullscreen'; btn.setAttribute('aria-label','Exit fullscreen'); }
+  function exitIcon() { btn.textContent='⛶'; btn.title='Enter fullscreen'; btn.setAttribute('aria-label','Enter fullscreen'); }
+
+  function enterPseudo(){ document.body.classList.add('pseudo-fs'); pseudoFS=true; enterIcon(); announce('Fullscreen on.'); }
+  function exitPseudo() { document.body.classList.remove('pseudo-fs'); pseudoFS=false; exitIcon(); announce('Fullscreen off.'); }
+
+  const fsTarget=document.getElementById('app-wrapper');
+
+  function tryRealFS(){
+    if(fsTarget.requestFullscreen){
+      fsTarget.requestFullscreen().catch(()=>enterPseudo());
+    } else if(fsTarget.webkitRequestFullscreen){
+      try{ fsTarget.webkitRequestFullscreen(); } catch(e){ enterPseudo(); }
+    } else { enterPseudo(); }
+  }
+
+  function isRealFS(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+
+  document.addEventListener('fullscreenchange',       ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+  document.addEventListener('webkitfullscreenchange', ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+
+  btn.addEventListener('click',()=>{
+    if(isRealFS())       (document.exitFullscreen||document.webkitExitFullscreen||(()=>{})).call(document);
+    else if(pseudoFS)    exitPseudo();
+    else                 tryRealFS();
+  });
+  btn.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); btn.click(); } });
+})();
+
+</script>
+</body>
+</html>

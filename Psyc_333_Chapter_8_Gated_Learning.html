@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 8 – Caffeine and the Xanthines</title>
+
+<style>
+/* ===================================================
+   GLOBAL / RESET
+=================================================== */
+:root{
+  --navy:#13294B;
+  --blue:#1D4F91;
+  --sky:#00A3E0;
+  --accent:#D3E3FF;
+  --bg:#F3F3F5;
+  --white:#FFFFFF;
+  --border:1px solid rgba(19,41,75,.15);
+  --shadow:0 10px 15px -3px rgba(0,0,0,.1);
+  --sidebar-w:300px;
+  --green-bg:#dcfce7;
+  --green-border:#14532d;
+  --red-bg:#fee2e2;
+  --red-border:#7f1d1d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',Tahoma,sans-serif;
+  background:var(--bg);
+  color:var(--navy);
+  display:flex;
+  justify-content:center;
+  overflow:hidden;
+  height:100vh;
+}
+#app-wrapper{
+  width:100%;
+  max-width:1200px;
+  height:100vh;
+  display:flex;
+  background:white;
+  box-shadow:0 25px 50px -12px rgba(0,0,0,.25);
+}
+/* SIDEBAR */
+#sidebar{
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  border-right:var(--border);
+  display:flex;
+  flex-direction:column;
+  transition:width .3s, min-width .3s;
+  overflow:hidden;
+}
+#sidebar.collapsed{width:0;min-width:0;border-right:none;}
+.sidebar-header{
+  background:var(--navy);
+  color:white;
+  padding:24px 20px;
+  font-weight:800;
+  font-size:1rem;
+  letter-spacing:.5px;
+  line-height:1.4;
+  flex-shrink:0;
+}
+.sidebar-header small{
+  display:block;
+  font-weight:400;
+  font-size:.75rem;
+  opacity:.75;
+  margin-top:4px;
+  letter-spacing:0;
+}
+.nav-list{overflow-y:auto;flex:1;}
+.nav-item{
+  padding:14px 18px;
+  border-bottom:1px solid rgba(0,0,0,.05);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+  font-size:.93rem;
+  transition:background .15s;
+  gap:8px;
+}
+.nav-item:hover:not(.locked){background:#f0f5ff}
+.nav-item:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.nav-item.active{background:var(--accent);font-weight:700}
+.nav-item.locked{opacity:.55;cursor:not-allowed}
+.nav-item.done .nav-title::after{content:' ✓';color:#16a34a;font-weight:700}
+.nav-title{flex:1}
+.lock-icon{font-size:.85rem;flex-shrink:0}
+.nav-progress{width:100%;height:4px;background:#e5e7eb;flex-shrink:0;}
+.nav-progress-fill{height:4px;background:var(--sky);transition:width .4s;}
+.sidebar-footer{padding:14px 18px;border-top:var(--border);font-size:.8rem;color:#666;}
+/* MAIN */
+#main-content{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.top-bar{
+  padding:12px 18px;
+  border-bottom:var(--border);
+  display:flex;align-items:center;gap:12px;
+  flex-shrink:0;background:white;
+}
+.menu-btn{
+  background:var(--blue);color:white;border:none;
+  padding:9px 16px;border-radius:6px;font-weight:bold;
+  cursor:pointer;font-size:.9rem;white-space:nowrap;touch-action:manipulation;
+}
+.menu-btn:focus{outline:3px solid var(--sky)}
+.top-bar-title{font-weight:700;color:var(--navy);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+/* ── Step indicator dots ─────────────────────────────────── */
+.step-dots{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.step-dot{width:12px;height:12px;border-radius:50%;background:#e5e7eb;border:2px solid #d1d5db;transition:background .3s,border-color .3s;flex-shrink:0;}
+.step-dot.done{background:#16a34a;border-color:#15803d;}
+.step-dot.active{background:var(--sky);border-color:#0284c7;}
+.step-dot.locked{background:#e5e7eb;border-color:#d1d5db;}
+.step-label{font-size:.75rem;color:#666;white-space:nowrap;margin-left:4px;}
+/* ── Fullscreen toggle ───────────────────────────────────── */
+.fs-btn{background:none;border:1px solid rgba(19,41,75,.25);border-radius:6px;padding:6px 10px;font-size:1rem;cursor:pointer;color:var(--navy);line-height:1;flex-shrink:0;transition:background .15s,border-color .15s;touch-action:manipulation;}
+.fs-btn:hover{background:var(--accent);border-color:var(--blue);}
+.fs-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+body.pseudo-fs{overflow:auto;}
+body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-index:9999;box-shadow:none;}
+.content-scroll{flex:1;overflow-y:auto;padding:0;-webkit-overflow-scrolling:touch;}
+
+/* COVER */
+#cover-page{max-width:820px;margin:40px auto;padding:20px 20px 40px;}
+.cover-badge{
+  display:inline-block;background:var(--accent);color:var(--blue);
+  font-weight:700;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;
+  padding:5px 12px;border-radius:20px;margin-bottom:16px;
+}
+.cover-title{font-size:2rem;font-weight:800;color:var(--navy);line-height:1.2;margin-bottom:12px;}
+.cover-subtitle{font-size:1.05rem;color:#444;margin-bottom:32px;line-height:1.6;}
+.cover-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:36px;}
+.cover-card{
+  border:var(--border);border-radius:12px;padding:20px;background:white;
+  box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start;
+}
+.cover-card-num{
+  background:var(--navy);color:white;font-weight:800;font-size:.95rem;
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;
+}
+.cover-card-body h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:5px;}
+.cover-card-body p{font-size:.85rem;color:#555;line-height:1.5;}
+.cover-tag{
+  display:inline-block;background:#f0f5ff;color:var(--blue);font-size:.73rem;
+  font-weight:600;padding:2px 8px;border-radius:10px;margin-top:8px;border:1px solid var(--accent);
+}
+.cover-instructions{
+  background:#f8faff;border:var(--border);border-left:4px solid var(--sky);
+  border-radius:8px;padding:16px 20px;margin-bottom:28px;font-size:.9rem;line-height:1.7;color:#333;
+}
+.cover-instructions strong{display:block;margin-bottom:6px;color:var(--navy)}
+.get-started-btn{
+  display:inline-block;background:var(--navy);color:white;border:none;
+  padding:16px 40px;font-size:1.1rem;font-weight:700;border-radius:10px;cursor:pointer;
+  letter-spacing:.5px;touch-action:manipulation;transition:background .2s,transform .1s;
+}
+.get-started-btn:hover{background:var(--blue)}
+.get-started-btn:active{transform:scale(.98)}
+.get-started-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+
+/* INTERACTION */
+.interaction-wrapper{padding:30px 30px 50px;max-width:960px;margin:0 auto;width:100%;}
+.interaction-wrapper h1{margin-top:0;color:var(--navy);}
+
+/* SHARED INTERACTION STYLES */
+.ix-card{
+  background:white;border:var(--border);border-radius:8px;
+  padding:12px 14px;margin:8px 0;cursor:grab;font-size:.95rem;
+  user-select:none;-webkit-user-select:none;touch-action:none;
+  transition:box-shadow .15s,opacity .15s;
+}
+.ix-card:focus{outline:3px solid var(--sky)}
+.ix-card.placed{opacity:.45;cursor:default;pointer-events:none}
+.ix-card.dragging{opacity:.35;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+
+.ix-dropzone{
+  border:2px dashed var(--accent);border-radius:10px;padding:12px;
+  min-height:90px;margin-bottom:16px;transition:background .15s,border-color .15s;
+}
+.ix-dropzone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.ix-dropzone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+
+.ix-option{
+  border:var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px;
+  cursor:pointer;font-size:.95rem;transition:background .15s;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+.ix-option:hover{background:var(--accent)}
+.ix-option:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.ix-option.correct-opt{background:var(--green-bg);border-color:var(--green-border)}
+.ix-option.incorrect-opt{background:var(--red-bg);border-color:var(--red-border)}
+
+.ix-explanation{
+  margin-top:16px;padding:14px 16px;border-radius:8px;background:#eef6ff;
+  font-size:.92rem;line-height:1.6;display:none;
+}
+.ix-explanation.visible{display:block}
+
+.ix-feedback{
+  margin-top:18px;padding:14px 16px;border-radius:8px;
+  font-weight:600;font-size:.95rem;display:none;
+}
+.ix-feedback.visible{display:block}
+.ix-feedback.correct{background:var(--green-bg);color:#166534}
+.ix-feedback.incorrect{background:var(--red-bg);color:#991b1b}
+
+.ix-counter{font-weight:700;margin-bottom:10px;color:var(--blue);font-size:.9rem;}
+.ix-prompt{font-weight:600;margin-bottom:18px;font-size:1rem;line-height:1.5;}
+
+.ix-continue-btn{
+  display:block;margin-top:28px;padding:13px 28px;font-size:1rem;font-weight:700;
+  background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;
+  touch-action:manipulation;transition:background .15s,opacity .15s;
+}
+.ix-continue-btn:disabled{opacity:.35;cursor:default}
+.ix-continue-btn:not(:disabled):hover{background:var(--navy)}
+.ix-continue-btn:focus{outline:3px solid var(--sky)}
+
+/* col-sort (card sort columns) */
+.col-sort-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;}
+.col-sort-col{flex:1 1 160px;display:flex;flex-direction:column;gap:0;min-width:140px;}
+.col-sort-head{
+  background:var(--navy);color:#fff;font-weight:700;font-size:.84rem;
+  text-align:center;padding:9px 8px;border-radius:8px 8px 0 0;line-height:1.3;
+}
+.col-sort-zone{
+  border:2px dashed var(--accent);border-top:none;border-radius:0 0 8px 8px;
+  min-height:56px;padding:6px;display:flex;flex-direction:column;gap:5px;
+  transition:background .15s,border-color .15s;
+}
+.col-sort-zone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.col-sort-zone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.col-sort-zone .ix-card{font-size:.82rem;cursor:default;pointer-events:none;margin:0;line-height:1.3;}
+.col-sort-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.col-sort-bank .ix-card{font-size:.85rem;cursor:grab;}
+
+/* Sequence ordering */
+.seq-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;}
+.seq-col-title{font-size:.95rem;font-weight:700;margin-bottom:8px;color:var(--navy);}
+.seq-pool{display:flex;flex-direction:column;}
+.seq-slots{display:flex;flex-direction:column;gap:10px;}
+.seq-slot-row{display:flex;gap:8px;align-items:center;}
+.seq-num{min-width:22px;color:var(--sky);font-weight:800;}
+.seq-drop{
+  flex:1;min-height:52px;border:2px dashed var(--accent);
+  border-radius:10px;padding:8px;
+}
+.seq-drop.drag-over{background:#eef6ff;border-color:var(--sky);}
+.seq-drop.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+
+/* Flip cards */
+.flip-deck{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.flip-card-wrap{width:100%;max-width:560px;perspective:1000px;cursor:pointer;}
+.flip-card-inner{
+  position:relative;width:100%;height:200px;transition:transform .55s ease;
+  transform-style:preserve-3d;border-radius:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+}
+.flip-card-wrap.flipped .flip-card-inner{transform:rotateY(180deg);}
+.flip-face{
+  position:absolute;inset:0;backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px 28px;text-align:center;
+}
+.flip-front{background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);color:#fff;}
+.flip-back{background:#fff;color:var(--navy);transform:rotateY(180deg);border:2px solid var(--accent);}
+.flip-label{font-size:.7rem;letter-spacing:1.2px;text-transform:uppercase;opacity:.65;font-weight:600;margin-bottom:8px;}
+.flip-term{font-size:1.35rem;font-weight:800;line-height:1.2;}
+.flip-def{font-size:.9rem;line-height:1.55;color:#333;}
+.flip-tap-hint{font-size:.75rem;opacity:.55;margin-top:10px;}
+.flip-nav{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.flip-nav-btn{
+  background:var(--navy);color:white;border:none;border-radius:999px;
+  padding:8px 20px;font-size:.88rem;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  transition:background .2s,transform .1s;
+}
+.flip-nav-btn:not(:disabled):hover{background:var(--blue);transform:translateY(-1px);}
+.flip-nav-btn:disabled{opacity:.35;cursor:default;}
+.flip-nav-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+.flip-counter{font-size:.85rem;color:#555;font-weight:600;}
+.flip-progress-row{display:flex;align-items:center;gap:10px;width:100%;max-width:560px;}
+.flip-progress-bar{flex:1;height:7px;background:#e5e7eb;border-radius:999px;overflow:hidden;}
+.flip-progress-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--blue));transition:width .3s;}
+.viewed-badge{
+  display:inline-flex;align-items:center;gap:5px;background:#f0f7ff;
+  border:1px solid var(--accent);border-radius:999px;padding:4px 12px;
+  font-size:.78rem;font-weight:600;color:var(--blue);
+}
+
+/* Branching scenario */
+.scenario-box{
+  background:#f8faff;border:var(--border);border-left:4px solid var(--sky);
+  border-radius:10px;padding:16px 20px;margin-bottom:20px;
+  font-size:.95rem;line-height:1.65;color:#333;
+}
+.scenario-box strong{color:var(--navy);}
+.branch-result{
+  margin-top:16px;padding:14px 16px;border-radius:10px;
+  font-size:.93rem;line-height:1.6;
+}
+.branch-result.optimal{background:#dcfce7;border:1px solid #14532d;color:#166534;}
+.branch-result.acceptable{background:#fef9c3;border:1px solid #92400e;color:#78350f;}
+.branch-result.poor{background:#fee2e2;border:1px solid #7f1d1d;color:#991b1b;}
+.branch-choices{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.branch-choice{
+  border:var(--border);border-radius:8px;padding:14px 16px;
+  cursor:pointer;font-size:.92rem;line-height:1.5;
+  transition:background .15s,border-color .15s;user-select:none;touch-action:manipulation;
+}
+.branch-choice:hover{background:var(--accent);}
+.branch-choice:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.branch-choice.selected-optimal{background:var(--green-bg);border-color:var(--green-border);}
+.branch-choice.selected-acceptable{background:#fef9c3;border-color:#92400e;}
+.branch-choice.selected-poor{background:var(--red-bg);border-color:var(--red-border);}
+
+/* Knowledge check */
+.kc-question{
+  background:#f9fafb;border-radius:10px;padding:16px 18px;border:1px solid #dde3f0;
+  margin-bottom:16px;
+}
+.kc-question.kc-correct{border-color:var(--green-border);background:var(--green-bg);}
+.kc-question.kc-incorrect{border-color:var(--red-border);background:var(--red-bg);}
+.kc-qtext{font-size:.95rem;font-weight:600;color:var(--navy);margin-bottom:10px;line-height:1.5;}
+.kc-options{display:flex;flex-direction:column;gap:8px;}
+.kc-opt{
+  border:var(--border);border-radius:8px;padding:11px 14px;
+  cursor:pointer;font-size:.9rem;transition:background .15s;
+  user-select:none;touch-action:manipulation;
+}
+.kc-opt:hover{background:var(--accent);}
+.kc-opt:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.kc-opt.kc-opt-correct{background:var(--green-bg);border-color:var(--green-border);pointer-events:none;}
+.kc-opt.kc-opt-wrong{background:var(--red-bg);border-color:var(--red-border);pointer-events:none;}
+.kc-exp{font-size:.85rem;line-height:1.55;color:#333;margin-top:10px;display:none;}
+.kc-exp.visible{display:block;}
+
+/* two-part banner */
+.two-part-banner{
+  display:flex;align-items:center;gap:14px;
+  background:linear-gradient(135deg,#1a3a6b 0%,#2563eb 100%);
+  color:#fff;border-radius:12px;padding:14px 18px;
+  margin-bottom:18px;font-size:.92rem;line-height:1.5;
+}
+.two-part-banner .tpb-icon{font-size:1.6rem;flex-shrink:0;}
+.tpb-badge{
+  display:inline-block;background:#fff;color:#1a3a6b;
+  font-weight:800;font-size:.75rem;padding:2px 8px;
+  border-radius:20px;margin-right:6px;
+}
+@keyframes fadeOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-12px)}}
+@keyframes fadeIn {from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.part-fade-out{animation:fadeOut .35s ease forwards;}
+.part-fade-in {animation:fadeIn .35s ease forwards;}
+
+/* Modals — live inside #app-wrapper so they render in both pseudo-fs
+   (wrapper: position:fixed + z-index:9999) and real Fullscreen API mode
+   (only descendants of the FS element are visible). position:fixed still
+   anchors to the viewport because #app-wrapper carries no transform /
+   filter / perspective. z-index:10000 clears every child layer inside. */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;justify-content:center;align-items:flex-start;z-index:10000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.modal-overlay.visible{display:flex}
+.modal-box{background:white;padding:40px 36px;max-width:520px;width:100%;border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.3);text-align:center;position:relative;max-height:calc(100vh - 40px);overflow-y:auto;margin:auto;}
+.modal-icon{font-size:3.5rem;margin-bottom:16px}
+.modal-box h2{color:var(--navy);font-size:1.6rem;font-weight:800;margin-bottom:12px;}
+.modal-box p{color:#444;line-height:1.7;margin-bottom:24px;font-size:.97rem;}
+.download-btn{display:inline-block;background:var(--navy);color:white;padding:14px 32px;font-size:1rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;text-decoration:none;touch-action:manipulation;}
+.download-btn:hover{background:var(--blue)}
+.download-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+.modal-close{position:sticky;float:right;top:0;margin:-24px -16px 0 0;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888;line-height:1;padding:4px 8px;z-index:1;}
+.modal-close:hover{color:var(--navy)}
+.modal-close:focus{outline:3px solid var(--sky)}
+/* ── Completion warning banner ── */
+.completion-warning{display:flex;gap:12px;align-items:flex-start;background:#fef2f2;border:1px solid #fecaca;border-left:5px solid #dc2626;border-radius:10px;padding:14px 16px;margin:6px 0 20px;font-size:.92rem;line-height:1.55;color:#7f1d1d;text-align:left;}
+.completion-warning-icon{font-size:1.4rem;flex-shrink:0;line-height:1.2;}
+/* ── Reflection question block ── */
+.reflection-block{background:#f0f5ff;border:1px solid var(--accent);border-left:5px solid var(--blue);border-radius:10px;padding:16px 18px;margin-bottom:18px;text-align:left;}
+.reflection-label{font-size:.78rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--blue);margin-bottom:8px;}
+.reflection-question{font-size:1rem;line-height:1.55;color:var(--navy);font-weight:600;margin:0;}
+.reflection-instructions{font-size:.9rem;color:#333;line-height:1.6;text-align:left;}
+.reflection-instructions ol{margin:10px 0 0;padding-left:22px;}
+.reflection-instructions li{margin-bottom:8px;}
+.reflection-note{margin-top:14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:.86rem;color:#92400e;font-weight:600;}
+.completion-divider{height:1px;background:rgba(19,41,75,.12);margin:24px 0 4px;}
+/* ── Review page ── */
+.review-screen{max-width:820px;margin:0 auto;padding:30px 28px 50px;}
+.review-badge{display:inline-block;background:#dcfce7;color:#166534;font-weight:700;font-size:.8rem;letter-spacing:.5px;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:14px;border:1px solid #bbf7d0;}
+.review-screen h2{color:var(--navy);font-size:1.4rem;font-weight:800;margin-bottom:16px;}
+.review-section{background:#f8faff;border:var(--border);border-left:4px solid var(--sky);border-radius:10px;padding:16px 20px;margin-bottom:16px;}
+.review-section h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:10px;}
+.review-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
+.review-list li{font-size:.88rem;color:#333;line-height:1.5;padding-left:18px;position:relative;}
+.review-list li::before{content:'•';position:absolute;left:0;color:var(--sky);font-weight:700;}
+#instructionsModal .modal-box{text-align:left}
+#instructionsModal h2{text-align:center}
+.instr-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;font-size:.93rem;line-height:1.5;}
+.instr-icon{font-size:1.4rem;flex-shrink:0;margin-top:1px;}
+.reset-btn{
+  display:block;width:calc(100% - 28px);margin:10px 14px 0;padding:10px 0;
+  background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5;border-radius:8px;
+  font-size:.85rem;font-weight:600;cursor:pointer;transition:background .15s;touch-action:manipulation;
+}
+.reset-btn:hover{background:#fecaca;}
+.reset-btn:focus{outline:3px solid var(--sky);}
+.confirm-btn-row{display:flex;gap:10px;justify-content:center;margin-top:18px;}
+.confirm-yes{background:#dc2626;color:white;border:none;padding:11px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.95rem;}
+.confirm-yes:hover{background:#b91c1c;}
+.confirm-no{background:#e5e7eb;color:#333;border:none;padding:11px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.95rem;}
+.confirm-no:hover{background:#d1d5db;}
+
+/* Rush guard */
+#rushModal .modal-box{max-width:480px;}
+
+#aria-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+
+/* Written response */
+.written-textarea{
+  width:100%;min-height:130px;border:2px solid var(--accent);border-radius:10px;
+  padding:14px 16px;font-size:.95rem;font-family:inherit;color:var(--navy);
+  resize:vertical;line-height:1.6;transition:border-color .15s;
+}
+.written-textarea:focus{outline:none;border-color:var(--sky);}
+.rubric-item{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;
+  font-size:.88rem;margin-bottom:6px;border:1px solid #e5e7eb;background:#f9fafb;
+  transition:background .2s,border-color .2s;
+}
+.rubric-item.met{background:var(--green-bg);border-color:var(--green-border);color:#166534;}
+.rubric-item.unmet{background:#f9fafb;color:#555;}
+.rubric-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;background:#d1d5db;}
+.rubric-item.met .rubric-dot{background:#16a34a;}
+
+@media(max-width:640px){
+  #sidebar{width:260px;min-width:260px}
+  .cover-title{font-size:1.5rem}
+  .seq-layout{grid-template-columns:1fr}
+  .interaction-wrapper{padding:20px 16px 40px}
+  #cover-page{padding:16px 16px 40px}
+  .flip-card-inner{height:240px;}
+}
+</style>
+</head>
+<body>
+
+<div id="aria-live" aria-live="polite" aria-atomic="true"></div>
+
+<!-- APP SHELL -->
+<div id="app-wrapper">
+  <aside id="sidebar" aria-label="Activity navigation">
+    <div class="sidebar-header">
+      Chapter 8
+      <small>Caffeine &amp; the Xanthines</small>
+    </div>
+    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="4" id="overallProgressBar">
+      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
+    </div>
+    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
+    <div class="sidebar-footer" id="sidebar-footer">0 of 4 activities complete</div>
+    <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">↺ Reset Progress</button>
+  </aside>
+
+  <main id="main-content">
+    <div class="top-bar">
+      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
+      <span class="top-bar-title" id="topBarTitle">Chapter 8 – Caffeine and the Xanthines</span>
+      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="img"></div>
+      <span class="step-label" id="stepLabel"></span>
+      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
+    </div>
+    <div class="content-scroll" id="content-area" tabindex="-1"></div>
+  </main>
+
+  <!-- ── MODALS (inside #app-wrapper so they overlay in both pseudo-fs and real-fs modes) ── -->
+
+  <!-- INSTRUCTIONS MODAL -->
+  <div class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+    <div class="modal-box">
+      <h2 id="instrTitle">How to Use This Module</h2><br>
+      <div class="instr-row"><span class="instr-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Click or tap to interact. Drag and drop cards where required. Press Continue to advance.</div></div>
+      <div class="instr-row"><span class="instr-icon">⌨️</span><div><strong>Keyboard:</strong> Use <kbd>Tab</kbd> to move, <kbd>Enter</kbd> or <kbd>Space</kbd> to select. Arrow keys navigate flip cards.</div></div>
+      <div class="instr-row"><span class="instr-icon">🔒</span><div><strong>Gated Progress:</strong> Each activity must be completed correctly before the next unlocks. Your progress saves automatically.</div></div>
+      <div class="instr-row"><span class="instr-icon">⚠️</span><div><strong>Rush Guard:</strong> Dragging cards rapidly without reading them may trigger warnings and temporary locks.</div></div><br>
+      <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
+    </div>
+  </div>
+
+  <!-- RESET MODAL -->
+  <div class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+    <div class="modal-box">
+      <div class="modal-icon">⚠️</div>
+      <h2 id="resetTitle">Reset All Progress?</h2>
+      <p>This will <strong>erase all completed activities</strong> and re-lock everything except Activity 1. This cannot be undone.</p>
+      <div class="confirm-btn-row">
+        <button class="confirm-no" id="resetCancelBtn">Cancel</button>
+        <button class="confirm-yes" id="resetConfirmBtn">Yes, Reset Everything</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLETION MODAL -->
+  <div class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
+    <div class="modal-box" style="max-width:600px;text-align:left;">
+      <button class="modal-close" id="closeCompletion" aria-label="Close">✕</button>
+      <div class="completion-warning" role="alert">
+        <span class="completion-warning-icon">⚠️</span>
+        <div><strong>You're not done yet!</strong> Finishing the activities is only part of this assignment. To receive credit, you must still answer the reflection question below in the Canvas text box.</div>
+      </div>
+      <div class="modal-icon" style="text-align:center;">☕</div>
+      <h2 id="complTitle" style="text-align:center;">Activities Complete — One Step Left</h2>
+      <p style="text-align:center;">You've completed all four Chapter 8 activities on caffeine and the xanthines. Answer the reflection below to finish the assignment.</p>
+      <div class="reflection-block">
+        <div class="reflection-label">📝 Your Reflection Question</div>
+        <p class="reflection-question" id="reflectionQuestion">&nbsp;</p>
+      </div>
+      <div class="reflection-instructions">
+        <strong>To complete this assignment:</strong>
+        <ol>
+          <li><strong>Copy and paste the question above</strong> into the Canvas text box below this activity.</li>
+          <li>Answer the question in your <strong>own words</strong> — a minimum of <strong>one full paragraph of at least five sentences</strong>.</li>
+          <li><strong>Do not use AI</strong> to write or generate any part of your answer. The reflection must be entirely your own thinking.</li>
+        </ol>
+        <p class="reflection-note">⬇ Scroll down to the Canvas text box beneath this activity to submit your written response.</p>
+      </div>
+      <div class="completion-divider"></div>
+      <div style="text-align:center;margin-top:18px;">
+        <button class="download-btn" id="downloadGuideBtn">⬇ Download Study Notes</button>
+        <p style="font-size:.82rem;color:#666;margin-top:8px;">You can also access the full <strong>Review &amp; Study Guide</strong> from the sidebar menu at any time.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RUSH GUARD MODAL -->
+  <div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle">
+    <div class="modal-box" style="border-top:5px solid #f59e0b;max-width:480px;">
+      <div class="modal-icon" id="rushIcon">⚠️</div>
+      <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
+      <p id="rushMsg"></p>
+      <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
+      <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
+      <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ==========================================================
+   RUSH GUARD  (escalating-timeout model)
+   A rush event = 2 wrong answers within a 5-second window.
+   Each step: dismissable warning -> rush again -> timed lockout.
+   Lockout durations escalate: 60s -> 3 min -> 4 min -> 5 min -> ...
+   (+1 minute per lockout). No permanent lock and no password.
+========================================================== */
+const rushGuard = (() => {
+  const WINDOW_MS = 5000;
+  const THRESHOLD = 2;
+
+  let wrongTimestamps = [];
+  let strikes         = 0;
+  let lockCount       = 0;
+  let locked          = false;
+  let cooldownTimer   = null;
+  let currentWrapper  = null;
+  let flipRushCount   = 0;
+  let flipStrikes     = 0;
+
+  const $modal     = () => document.getElementById('rushModal');
+  const $icon      = () => document.getElementById('rushIcon');
+  const $title     = () => document.getElementById('rushTitle');
+  const $msg       = () => document.getElementById('rushMsg');
+  const $detail    = () => document.getElementById('rushDetail');
+  const $countdown = () => document.getElementById('rushCountdown');
+  const $dismiss   = () => document.getElementById('rushDismissBtn');
+
+  function durFor(k){ return k <= 1 ? 60 : 180 + (k - 2) * 60; }
+  function fmtLong(secs){ if(secs<60) return secs+' seconds'; const m=Math.round(secs/60); return m+' minute'+(m!==1?'s':''); }
+  function fmtAdj(secs){ return secs<60?secs+'-Second':Math.round(secs/60)+'-Minute'; }
+  function fmtClock(secs){ if(secs<60) return secs+'s'; const m=Math.floor(secs/60),s=secs%60; return m+':'+String(s).padStart(2,'0'); }
+
+  function setModal(iconTxt,titleTxt,titleColor,borderColor,msgTxt,detailHTML,cdVisible,btnVisible,btnTxt){
+    const m=$modal();
+    m.querySelector('.modal-box').style.borderTopColor=borderColor;
+    $icon().textContent=iconTxt; $title().textContent=titleTxt; $title().style.color=titleColor;
+    $msg().textContent=msgTxt; $detail().innerHTML=detailHTML;
+    $countdown().style.display=cdVisible?'block':'none';
+    $dismiss().style.display=btnVisible?'':'none';
+    if(btnVisible) $dismiss().textContent=btnTxt;
+    m.classList.add('visible');
+    if(btnVisible) setTimeout(()=>$dismiss().focus(),50);
+  }
+
+  function showWarning(){
+    const nextLock=durFor(lockCount+1);
+    if(lockCount===0){
+      setModal('⚠️','Slow Down!','#92400e','#f59e0b',
+        "You're answering too quickly without reading carefully. Take a moment to think before selecting.",
+        `Tip: Read each item fully before answering. Think before you choose.<br><br>Rush again and this activity locks for <strong>${fmtLong(nextLock)}</strong>.`,
+        false,true,"I'll Read More Carefully");
+    } else {
+      setModal('🚨','Slow Down — Again!','#dc2626','#dc2626',
+        "You're still rushing. Read carefully before answering.",
+        `Rush again and this activity locks for <strong>${fmtLong(nextLock)}</strong>.<br><br>⚠️ Each additional rush <strong>adds another minute</strong> to the next lockout.`,
+        false,true,"I Understand — I'll Think First");
+    }
+  }
+
+  function showTimeout(){
+    lockCount++;
+    const dur=durFor(lockCount);
+    setModal('🔒',`Activity Locked — ${fmtAdj(dur)} Timeout`,'#dc2626','#dc2626',
+      `You rushed again immediately after a warning. This activity is locked for ${fmtLong(dur)}.`,
+      `Use this time to carefully study the content before continuing.<br><br>⚠️ Each additional rush adds <strong>another minute</strong> to the next lockout.`,
+      true,false,'');
+    startCooldown(dur);
+  }
+
+  function startCooldown(durSecs){
+    locked=true;
+    let secs=durSecs;
+    $countdown().textContent=fmtClock(secs);
+    if(currentWrapper){
+      currentWrapper.style.position='relative';
+      let ov=document.getElementById('rush-lock-overlay');
+      if(!ov){ ov=document.createElement('div'); ov.className='activity-locked-overlay'; ov.id='rush-lock-overlay'; currentWrapper.appendChild(ov); }
+      ov.innerHTML=`<h3>🔒 Activity Locked</h3><p>Take ${fmtLong(durSecs)} to study the content.</p><div class="lock-countdown" id="lock-secs">${fmtClock(secs)}</div><p style="font-size:.82rem;">Activity will resume when the timer ends.</p>`;
+    }
+    if(cooldownTimer) clearInterval(cooldownTimer);
+    cooldownTimer=setInterval(()=>{
+      secs--;
+      const cd=$countdown(),ls=document.getElementById('lock-secs');
+      if(cd) cd.textContent=fmtClock(secs);
+      if(ls) ls.textContent=fmtClock(secs);
+      if(secs<=0){
+        clearInterval(cooldownTimer); cooldownTimer=null;
+        locked=false; strikes=0; wrongTimestamps=[];
+        $modal().classList.remove('visible');
+        const ov=document.getElementById('rush-lock-overlay');
+        if(ov) ov.remove();
+        if(typeof currentView==='number') showActivity(currentView);
+      }
+    },1000);
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('rushDismissBtn').addEventListener('click',()=>{
+      $modal().classList.remove('visible');
+      wrongTimestamps=[]; flipRushCount=0;
+    });
+  });
+
+  return {
+    reset(){ wrongTimestamps=[]; strikes=0; locked=false; flipRushCount=0; flipStrikes=0; if(cooldownTimer){clearInterval(cooldownTimer);cooldownTimer=null;} const ov=document.getElementById('rush-lock-overlay'); if(ov) ov.remove(); },
+    hardReset(){ this.reset(); lockCount=0; },
+    clearTimestamps(){ wrongTimestamps=[]; },
+    recordWrong(wrapper){
+      if(locked) return;
+      currentWrapper=wrapper;
+      const now=Date.now();
+      wrongTimestamps.push(now);
+      wrongTimestamps=wrongTimestamps.filter(t=>now-t<WINDOW_MS);
+      if(wrongTimestamps.length<THRESHOLD) return;
+      wrongTimestamps=[]; strikes++;
+      if(strikes===1){ showWarning(); } else { strikes=0; showTimeout(); }
+    },
+    recordFlipRush(wrapper){
+      if(locked) return;
+      currentWrapper=wrapper;
+      flipRushCount++;
+      if(flipRushCount<3) return;
+      flipRushCount=0; flipStrikes++;
+      if(flipStrikes===1){ showWarning(); } else { flipStrikes=0; showTimeout(); }
+    },
+    isLocked(){ return locked; }
+  };
+})();
+
+/* CSS for lock overlay */
+(function(){
+  const s=document.createElement('style');
+  s.textContent=`.activity-locked-overlay{position:absolute;inset:0;background:rgba(255,255,255,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:100;border-radius:12px;padding:30px;text-align:center;}.activity-locked-overlay h3{color:#dc2626;font-size:1.1rem;margin:0;}.activity-locked-overlay p{font-size:.9rem;color:#555;margin:0;line-height:1.5;}.lock-countdown{font-size:2rem;font-weight:800;color:#dc2626;}`;
+  document.head.appendChild(s);
+})();
+
+/* ==========================================================
+   UTILITY
+========================================================== */
+function announce(msg){
+  const el=document.getElementById('aria-live');
+  el.textContent='';
+  setTimeout(()=>el.textContent=msg,60);
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+function qs(sel,root=document){return root.querySelector(sel)}
+function qsa(sel,root=document){return [...root.querySelectorAll(sel)]}
+
+function showPartB(partAEl,partBEl,initFn){
+  partAEl.classList.add('part-fade-out');
+  setTimeout(()=>{
+    partAEl.style.display='none';
+    partBEl.style.display='block';
+    partBEl.classList.add('part-fade-in');
+    if(initFn) initFn();
+  },360);
+}
+
+/* ==========================================================
+   ACTIVITIES DEFINITION
+========================================================== */
+const ACTIVITIES=[
+  {id:'act1',title:'Activity 1',subtitle:'Caffeine: True or False',type:'TRUEFALSE',locked:false,done:false},
+  {id:'act2',title:'Activity 2',subtitle:'Real-World Caffeine Scenarios',type:'SCENARIO',locked:true,done:false},
+  {id:'act3',title:'Activity 3',subtitle:'Performance Effects Check',type:'QUIZ',locked:true,done:false},
+  {id:'act4',title:'Activity 4',subtitle:'Evidence-Based Reflection',type:'WRITTEN',locked:true,done:false}
+];
+
+let currentView='cover';
+let savedReflectionQuestion='';
+
+/* ==========================================================
+   STORAGE
+========================================================== */
+const STORAGE_KEY='ch8-gated-v1';
+const partADone=new Array(5).fill(false);
+
+function saveProgress(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({
+    currentView,
+    done:ACTIVITIES.map(a=>a.done),
+    locked:ACTIVITIES.map(a=>a.locked),
+    partADone:[...partADone],
+    reflectionQ:savedReflectionQuestion
+  }));
+}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(!d||!Array.isArray(d.done)||d.done.length!==ACTIVITIES.length) return;
+    currentView=d.currentView!==undefined?d.currentView:'cover';
+    ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
+    ACTIVITIES[0].locked=false;
+    if(Array.isArray(d.partADone)) d.partADone.forEach((v,i)=>{if(i<partADone.length) partADone[i]=!!v;});
+    savedReflectionQuestion=d.reflectionQ||'';
+    announce('Your previous progress has been restored.');
+  }catch(e){}
+}
+function doneCount(){return ACTIVITIES.filter(a=>a.done).length;}
+
+/* ==========================================================
+   SIDEBAR
+========================================================== */
+function renderSidebar(){
+  const nav=document.getElementById('nav-list');
+  nav.innerHTML='';
+  const done=doneCount();
+  const pct=Math.round((done/ACTIVITIES.length)*100);
+  document.getElementById('overallProgressFill').style.width=pct+'%';
+  document.getElementById('overallProgressBar').setAttribute('aria-valuenow',done);
+  document.getElementById('sidebar-footer').textContent=`${done} of ${ACTIVITIES.length} activities complete`;
+  renderStepDots();
+
+  const cover=document.createElement('div');
+  cover.className='nav-item'+(currentView==='cover'?' active':'');
+  cover.tabIndex=0; cover.setAttribute('role','button'); cover.setAttribute('aria-label','Cover page');
+  cover.innerHTML=`<span class="nav-title">📋 Cover Page</span>`;
+  cover.onclick=()=>showCover();
+  cover.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cover.click();}};
+  nav.appendChild(cover);
+
+  ACTIVITIES.forEach((a,i)=>{
+    const item=document.createElement('div');
+    const isActive=currentView===i;
+    item.className=`nav-item${isActive?' active':''}${a.locked?' locked':''}${a.done?' done':''}`;
+    item.tabIndex=a.locked?-1:0;
+    item.setAttribute('role','button');
+    item.setAttribute('aria-disabled',a.locked?'true':'false');
+    item.setAttribute('aria-label',`${a.title}: ${a.subtitle}${a.done?' – Completed':a.locked?' – Locked':''}`);
+    item.innerHTML=`<span class="nav-title">${a.title}<br><small style="font-weight:400;font-size:.78rem;color:#555">${a.subtitle}</small></span>${a.locked?'<span class="lock-icon" aria-hidden="true">🔒</span>':''}`;
+    item.onclick=()=>{if(!a.locked){showActivity(i);}else{announce('This activity is locked. Complete the previous activity first.');}};
+    item.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();item.click();}};
+    nav.appendChild(item);
+  });
+
+  if(done===ACTIVITIES.length){
+    const review=document.createElement('div');
+    review.className='nav-item'+(currentView==='review'?' active':'');
+    review.tabIndex=0;
+    review.setAttribute('role','button');
+    review.setAttribute('aria-label','Review and study guide');
+    review.innerHTML='<span class="nav-title">⭐ Review &amp; Study Guide</span>';
+    review.onclick=()=>showReviewSummary();
+    review.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();review.click();}};
+    nav.appendChild(review);
+  }
+}
+
+/* ==========================================================
+   STEP DOTS
+========================================================== */
+function renderStepDots(){
+  const dots=document.getElementById('stepDots');
+  dots.innerHTML='';
+  ACTIVITIES.forEach((a,i)=>{
+    const dot=document.createElement('div');
+    dot.className='step-dot';
+    if(a.done)             dot.classList.add('done');
+    else if(currentView===i) dot.classList.add('active');
+    else if(a.locked)      dot.classList.add('locked');
+    dot.title=`${a.title}: ${a.done?'Complete':a.locked?'Locked':'In Progress'}`;
+    dot.setAttribute('aria-label',dot.title);
+    dots.appendChild(dot);
+  });
+  document.getElementById('stepLabel').textContent=`${doneCount()}/${ACTIVITIES.length}`;
+}
+
+/* ==========================================================
+   REVIEW & STUDY GUIDE
+========================================================== */
+function showReviewSummary(){
+  currentView='review';
+  document.getElementById('topBarTitle').textContent='Chapter 8 – Review & Study Guide';
+  renderSidebar();
+  saveProgress();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
+
+  const page=document.createElement('div');
+  page.className='review-screen';
+  page.innerHTML=`
+    <div class="review-badge">⭐ All Activities Complete</div>
+    <h2>Chapter 8 – Caffeine & the Xanthines: Study Guide</h2>
+    <p style="font-size:.9rem;color:#555;margin-bottom:20px;line-height:1.6;">Review the key concepts from each activity. Use this page to prepare for the Chapter 8 quiz.</p>
+    ${reflectionBlock}
+    <div class="review-section">
+      <h3>✓ Activity 1 – Caffeine: True or False</h3>
+      <ul class="review-list">
+        <li>Adenosine signals the body to <strong>slow down and become drowsy</strong> — not to wake up. Caffeine works by blocking adenosine receptors.</li>
+        <li>Caffeine's primary mechanism of action is <strong>adenosine receptor antagonism</strong>.</li>
+        <li>Caffeine is <strong>rapidly absorbed</strong> through the gastrointestinal tract after oral ingestion.</li>
+        <li>Caffeine peaks in the blood approximately <strong>15–45 minutes</strong> after consumption — not 5 hours (that is closer to caffeine's half-life).</li>
+        <li>Caffeine is <strong>metabolized in the liver</strong> by CYP1A2 enzymes. Smoking speeds this; pregnancy slows it.</li>
+      </ul>
+    </div>
+
+    <div class="review-section">
+      <h3>🧪 Activity 2 – Real-World Caffeine Scenarios</h3>
+      <ul class="review-list">
+        <li><strong>Caffeine + alcohol:</strong> Caffeine reduces <em>perceived</em> intoxication but does NOT restore actual motor function or reaction time. People feel more sober but remain impaired — increasing risk-taking behavior.</li>
+        <li><strong>Children:</strong> Receive a higher effective dose per kg of body weight than adults; long-term effects on developing nervous systems are poorly understood.</li>
+        <li><strong>Abrupt cessation:</strong> Classic withdrawal symptoms (throbbing headache, fatigue) appear within 12–24 hours and can last 2–9 days — confirming physical dependence.</li>
+      </ul>
+    </div>
+
+    <div class="review-section">
+      <h3>⚡ Activity 3 – Performance Effects</h3>
+      <ul class="review-list">
+        <li><strong>Choice reaction time:</strong> Caffeine <em>slows</em> the decision component but <em>speeds</em> the motor response — a counterintuitive split effect.</li>
+        <li><strong>Vigilance/alertness:</strong> Caffeine's primary benefit is sustaining baseline performance by reducing fatigue — it does not boost performance above a well-rested baseline.</li>
+        <li><strong>Athletic endurance:</strong> Delays <em>perceived</em> fatigue via adenosine blockade; minimal effect on muscle strength.</li>
+        <li><strong>Tolerance:</strong> Develops rapidly, especially to alerting and mood effects — explains escalating daily use.</li>
+      </ul>
+    </div>
+
+    <div class="review-section">
+      <h3>📝 Activity 4 – Evidence-Based Reflection</h3>
+      <ul class="review-list">
+        <li>The <strong>FDA regulates caffeine in OTC drugs</strong> (e.g., NoDoz — 200 mg/tablet) but <strong>does NOT regulate caffeine in energy drinks</strong>.</li>
+        <li>Energy drinks can contain 80–200+ mg per serving; dose and overdose risk are key regulatory arguments.</li>
+        <li>Vulnerable populations — children, adolescents, pregnant individuals — are disproportionately affected and represent a core public health concern.</li>
+        <li>Strong arguments cite specific chapter evidence: pharmacokinetics, caffeinism threshold (~600 mg/day), withdrawal risk after just 3 days of use.</li>
+      </ul>
+    </div>
+
+    <button class="download-btn" id="reviewDownloadBtn" style="margin-top:8px;">⬇ Download Study Notes</button>
+  `;
+  area.appendChild(page);
+  page.querySelector('#reviewDownloadBtn').addEventListener('click',()=>downloadStudyGuide());
+  area.scrollTop=0;
+  announce('Review and study guide loaded.');
+}
+
+document.getElementById('toggleBtn').addEventListener('click',()=>{
+  const collapsed=document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('toggleBtn').setAttribute('aria-expanded',!collapsed);
+  announce(collapsed?'Navigation hidden':'Navigation shown');
+});
+
+/* ==========================================================
+   COVER PAGE
+========================================================== */
+const actDescriptions=[
+  {num:1,name:'Caffeine: True or False',desc:'Answer 5 true-or-false statements about caffeine\'s mechanism of action, pharmacokinetics, and basic properties.',tag:'True or False · Remember → Understand'},
+  {num:2,name:'Real-World Caffeine Scenarios',desc:'Work through 3 real-world scenarios involving energy drinks & alcohol, child caffeine use, and abrupt cessation. Choose the most accurate explanation for each.',tag:'Scenario-Based MC · Apply → Analyze'},
+  {num:3,name:'Performance Effects Knowledge Check',desc:'Answer 4 multiple-choice questions on caffeine\'s effects on reaction time, vigilance, athletic performance, and habituation. Progressive hints guide you to the correct answer.',tag:'Knowledge Check · Analyze → Evaluate'},
+  {num:4,name:'Evidence-Based Reflection',desc:'Write a short evidence-based response on whether energy drinks should be regulated by the FDA. Your answer is auto-checked against three required elements from Chapter 8.',tag:'Written Reflection · Evaluate → Create'}
+];
+
+function showCover(){
+  currentView='cover';
+  document.getElementById('topBarTitle').textContent='Chapter 8 – Caffeine and the Xanthines';
+  renderSidebar();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  const pg=document.createElement('div');
+  pg.id='cover-page';
+  pg.innerHTML=`
+    <div class="cover-badge">PSYC 333 · Chapter 8</div>
+    <h1 class="cover-title">Caffeine and the Xanthines</h1>
+    <p class="cover-subtitle">Chapter 8 covers the world's most widely used psychoactive drug — caffeine. Explore its chemistry, pharmacokinetics, performance effects, dependence potential, and regulatory debate. Complete all 4 activities to master the concepts tested on the Chapter 8 quiz.</p>
+    <div class="cover-instructions">
+      <strong>How to use this module:</strong>
+      Complete each activity in order. Every activity must be finished correctly before the next one unlocks. Your progress is saved automatically so you can return where you left off.
+    </div>
+    <div class="cover-cards">${actDescriptions.map(a=>`
+      <div class="cover-card">
+        <div class="cover-card-num">${a.num}</div>
+        <div class="cover-card-body">
+          <h3>${a.name}</h3>
+          <p>${a.desc}</p>
+          <span class="cover-tag">${a.tag}</span>
+        </div>
+      </div>`).join('')}
+    </div>
+    <button class="get-started-btn" id="coverStartBtn">▶ Begin Activity 1</button>
+  `;
+  area.appendChild(pg);
+  qs('#coverStartBtn').addEventListener('click',()=>showActivity(0));
+  saveProgress();
+}
+
+/* ==========================================================
+   SHOW ACTIVITY
+========================================================== */
+function showActivity(index){
+  rushGuard.reset();
+  currentView=index;
+  const a=ACTIVITIES[index];
+  document.getElementById('topBarTitle').textContent=`${a.title} – ${a.subtitle}`;
+  renderSidebar();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  area.scrollTop=0;
+
+  if(a.locked){
+    area.innerHTML=`<div class="interaction-wrapper"><div style="text-align:center;padding:60px 20px;color:#666;"><div style="font-size:3rem;">🔒</div><p style="margin-top:16px;font-size:1rem;">This activity is locked. Complete the previous activity first.</p></div></div>`;
+    return;
+  }
+
+  const fns=[renderAct1,renderAct2,renderAct3,renderAct4];
+  fns[index](area);
+}
+
+/* ==========================================================
+   REFLECTION QUESTIONS & COMPLETION MODAL
+========================================================== */
+const REFLECTION_QUESTIONS=[
+  'What was the most important concept in this chapter? Describe the concept in your own words and why it matters.',
+  'How does this chapter connect to something you already know? Explain both the new idea and the old idea and how they connect.',
+  'What part of the chapter seemed most useful or relevant to real life? Explain the idea or concept in your own words. How is it relevant or useful?',
+  'How could the information in this chapter apply to your future coursework or your future career? Select at least 1 idea or concept and describe it in your own words. How does it apply to your future?',
+  'What is one takeaway from this chapter that you will remember later? Describe the takeaway in your own words. Why will you remember it later?'
+];
+
+function showCompletionModal(){
+  const q=savedReflectionQuestion;
+  const qEl=document.getElementById('reflectionQuestion');
+  if(qEl) qEl.textContent=q;
+  document.getElementById('completionModal').classList.add('visible');
+  document.getElementById('closeCompletion').focus();
+  announce('Congratulations! You have completed all 4 Chapter 8 activities. A reflection question is now shown. Copy it into the Canvas text box below and answer in your own words.');
+}
+
+function completeActivity(index){
+  ACTIVITIES[index].done=true;
+  if(index+1<ACTIVITIES.length) ACTIVITIES[index+1].locked=false;
+  saveProgress();
+  renderSidebar();
+  if(index===ACTIVITIES.length-1){
+    savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+    saveProgress();
+    setTimeout(()=>showCompletionModal(),800);
+  }
+}
+
+/* ==========================================================
+   ACTIVITY 1 – CAFFEINE: TRUE OR FALSE (Remember → Understand)
+========================================================== */
+function renderAct1(area){
+  const questions=[
+    {
+      id:'tf1',
+      text:'Adenosine typically signals the body to become awake and alert.',
+      correct:false,
+      explanation:'False. Adenosine signals the body to slow down and become drowsy — it promotes sleepiness. Caffeine works by blocking adenosine receptors, preventing this drowsy signal from getting through.'
+    },
+    {
+      id:'tf2',
+      text:"Caffeine's mechanism of action is to block adenosine receptors.",
+      correct:true,
+      explanation:"True. Caffeine is an adenosine receptor antagonist — it blocks adenosine receptors in the brain, preventing the sleepiness signal from binding and thereby increasing alertness and CNS activity."
+    },
+    {
+      id:'tf3',
+      text:'Caffeine is rapidly absorbed by the gastrointestinal tract when it is consumed orally.',
+      correct:true,
+      explanation:'True. After oral ingestion, caffeine is absorbed rapidly through the gastrointestinal tract, which explains its relatively quick onset of effects.'
+    },
+    {
+      id:'tf4',
+      text:'Caffeine levels peak in the blood about 5 hours after consumption.',
+      correct:false,
+      explanation:'False. Caffeine peaks in the blood approximately 15–45 minutes after consumption — not 5 hours. The 3–5 hour figure refers to caffeine\'s half-life (how long it takes for blood levels to fall by half), which may be the source of this confusion.'
+    },
+    {
+      id:'tf5',
+      text:'Caffeine is metabolized by the liver.',
+      correct:true,
+      explanation:'True. Caffeine is primarily metabolized in the liver by the CYP1A2 enzyme system. Factors like smoking can speed this process, while pregnancy slows it.'
+    }
+  ];
+
+  const wrongAttempts=new Array(questions.length).fill(0);
+  let correctCount=0;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Caffeine: True or False</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Activity 1 – True or False</strong> (Bloom's: Remember → Understand)<br>
+      Read each statement carefully and decide if it is <strong>True</strong> or <strong>False</strong>. You must answer all 5 correctly to advance.
+    </div>
+    <div id="tf-questions"></div>
+    <button id="act1-continue" class="ix-continue-btn" disabled>Continue to Activity 2 →</button>
+  `;
+  area.appendChild(w);
+
+  const qArea=qs('#tf-questions',w);
+
+  questions.forEach((q,qi)=>{
+    const block=document.createElement('div');
+    block.className='kc-question';
+    block.dataset.answered='false';
+    block.innerHTML=`
+      <div class="kc-qtext">${qi+1}. ${q.text}</div>
+      <div class="kc-options" style="flex-direction:row;gap:12px;">
+        <div class="kc-opt" tabindex="0" role="button" data-value="true" style="flex:1;text-align:center;font-weight:700;font-size:1rem;">✓ True</div>
+        <div class="kc-opt" tabindex="0" role="button" data-value="false" style="flex:1;text-align:center;font-weight:700;font-size:1rem;">✗ False</div>
+      </div>
+      <div class="kc-exp" id="tf-exp-${qi}"></div>
+    `;
+    qArea.appendChild(block);
+
+    qsa('.kc-opt',block).forEach(opt=>{
+      opt.addEventListener('click',()=>selectTF(opt,block,q,qi));
+      opt.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectTF(opt,block,q,qi);}});
+    });
+  });
+
+  function checkAllDone(){
+    if(qsa('.kc-question',w).every(b=>b.dataset.answered==='true'&&b.classList.contains('kc-correct'))){
+      qs('#act1-continue',w).disabled=false;
+      announce('All 5 questions correct. Continue button is now available.');
+    }
+  }
+
+  function selectTF(opt,block,q,qi){
+    if(block.dataset.answered==='true') return;
+    const chosen=(opt.dataset.value==='true');
+    const isCorrect=(chosen===q.correct);
+    const exp=qs(`#tf-exp-${qi}`,w);
+
+    if(isCorrect){
+      qsa('.kc-opt',block).forEach(o=>o.style.pointerEvents='none');
+      opt.classList.add('kc-opt-correct');
+      block.classList.remove('kc-incorrect');
+      block.classList.add('kc-correct');
+      block.dataset.answered='true';
+      exp.textContent='✅ '+q.explanation;
+      exp.classList.add('visible');
+      rushGuard.clearTimestamps();
+      announce('Correct! '+q.explanation);
+      correctCount++;
+      checkAllDone();
+    } else {
+      opt.classList.add('kc-opt-wrong');
+      block.classList.add('kc-incorrect');
+      wrongAttempts[qi]++;
+      rushGuard.recordWrong(w);
+      if(wrongAttempts[qi]===1){
+        exp.textContent='❌ Not quite — think again and try the other answer.';
+        exp.classList.add('visible');
+        announce('Incorrect. Try again.');
+        setTimeout(()=>{
+          qsa('.kc-opt',block).forEach(o=>{
+            if(!o.classList.contains('kc-opt-wrong')&&!o.classList.contains('kc-opt-correct'))
+              o.style.pointerEvents='';
+          });
+        },400);
+      } else {
+        qsa('.kc-opt',block).forEach(o=>o.style.pointerEvents='none');
+        const correctOpt=qsa('.kc-opt',block).find(o=>(o.dataset.value==='true')===(q.correct===true));
+        if(correctOpt) correctOpt.classList.add('kc-opt-correct');
+        block.classList.remove('kc-incorrect');
+        block.classList.add('kc-correct');
+        block.dataset.answered='true';
+        exp.innerHTML=`⚠️ The correct answer has been revealed.<br><br>✅ ${q.explanation}`;
+        exp.classList.add('visible');
+        announce('Answer revealed. '+q.explanation);
+        correctCount++;
+        checkAllDone();
+      }
+    }
+  }
+
+  qs('#act1-continue',w).addEventListener('click',()=>{completeActivity(0);showActivity(1);});
+}
+
+/* ==========================================================
+   ACTIVITY 2 – REAL-WORLD SCENARIOS (Apply → Analyze)
+   (was Activity 3)
+========================================================== */
+function renderAct2(area){
+  const scenarios=[
+
+    {
+      title:'Scenario 1: Energy Drinks + Alcohol',
+      context:'Alex drinks two energy drinks before going out and then mixes vodka with Red Bull at the bar. Alex feels more alert than usual and decides to drive home, believing the caffeine canceled out the alcohol.',
+      question:'What is the most accurate statement about this situation?',
+      choices:[
+        {text:'Caffeine fully reverses alcohol\'s effects on motor control.',type:'poor',
+         feedback:'❌ Incorrect. Caffeine does not restore motor control impaired by alcohol. Reaction time, coordination, and driving ability remain impaired even when a person feels more alert.'},
+        {text:'Caffeine reduces perceived intoxication but not actual motor impairment.',type:'optimal',
+         feedback:'✅ Correct! Caffeine is a stimulant that can mask the feeling of being drunk — but it does not reduce actual motor impairment caused by alcohol. Driving is still dangerous.'},
+        {text:'Combining caffeine and alcohol increases intoxication.',type:'poor',
+         feedback:'❌ Not quite. Caffeine does not increase alcohol intoxication — it reduces the perception of intoxication while leaving actual impairment unchanged. This is the dangerous part.'},
+        {text:'The combination is harmless as long as the doses are moderate.',type:'poor',
+         feedback:'❌ Incorrect. Even at moderate doses, the combination creates a dangerous situation because people overestimate their sobriety and ability to drive safely.'}
+      ]
+    },
+    {
+      title:'Scenario 2: Child Caffeine Use',
+      context:'A 12-year-old consumes energy drinks several times per week. A parent says this is fine because the caffeine dose on the label is the same as a small coffee.',
+      question:'Why is this situation concerning even if the dose is equal to a small coffee?',
+      choices:[
+        {text:'Children cannot taste caffeine the same way adults can.',type:'poor',
+         feedback:'❌ Incorrect. Caffeine taste perception is not the primary concern here. The issue is pharmacological — dose relative to body weight and long-term developmental effects.'},
+        {text:'Energy drinks contain alcohol that affects children differently.',type:'poor',
+         feedback:'❌ Incorrect. Most energy drinks do not contain alcohol. The concern relates to caffeine dose per kilogram of body weight and poorly understood long-term effects on developing nervous systems.'},
+        {text:'Children receive higher caffeine doses relative to body weight.',type:'optimal',
+         feedback:'✅ Correct! A child\'s smaller body weight means the same mg dose produces a proportionally higher dose per kg. Long-term effects on developing brains are also poorly understood, increasing the concern.'},
+        {text:'Energy drinks contain illegal stimulants not found in coffee.',type:'poor',
+         feedback:'❌ Incorrect. The primary stimulant in most energy drinks is legal caffeine. The concern is dose per body weight and developmental risk — not illegal additives.'}
+      ]
+    },
+    {
+      title:'Scenario 3: Abrupt Caffeine Cessation',
+      context:'Jamie drinks 4 cups of coffee daily and decides to quit cold turkey. By the next afternoon, Jamie has a throbbing headache and can barely stay awake during a meeting.',
+      question:'What is the most accurate explanation for Jamie\'s symptoms?',
+      choices:[
+        {text:'Caffeine withdrawal, with headache and fatigue as the most common symptoms.',type:'optimal',
+         feedback:'✅ Correct! Caffeine withdrawal symptoms — especially headache (often throbbing and bilateral) and fatigue — typically appear within 12–24 hours of stopping regular caffeine use. They can last 2–9 days.'},
+        {text:'Caffeine poisoning from prior heavy use now appearing.',type:'poor',
+         feedback:'❌ Incorrect. The symptoms are occurring after stopping caffeine, not during use. Caffeinism occurs from excessive intake, not cessation. These symptoms are classic withdrawal.'},
+        {text:'A placebo effect — Jamie expects to feel bad, so they do.',type:'poor',
+         feedback:'❌ Incorrect. Caffeine withdrawal is a physiological process documented in controlled studies. The headache and fatigue result from adenosine receptor upregulation during caffeine use, not expectation.'},
+        {text:'Jamie is getting sick from a virus unrelated to caffeine.',type:'poor',
+         feedback:'❌ This is possible in theory, but given the timing and classic symptom pattern, caffeine withdrawal is by far the most accurate explanation here.'}
+      ]
+    }
+  ];
+
+  let current=0;
+  const answers=[];
+  let scenarioDone=false;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  area.appendChild(w);
+
+  function renderScenario(idx){
+    const s=scenarios[idx];
+    w.innerHTML=`
+      <h1>Real-World Caffeine Scenarios</h1>
+      <div class="ix-explanation visible" style="display:block;margin-bottom:14px;">
+        <strong>Activity 3 – Scenario-Based Decisions</strong> (Bloom's: Apply → Analyze)<br>
+        Read each scenario and select the most accurate statement. You must answer all 3 scenarios correctly to advance.
+      </div>
+      <div style="font-size:.82rem;color:#555;margin-bottom:12px;">Scenario ${idx+1} of ${scenarios.length}</div>
+      <div class="scenario-box"><strong>${s.title}</strong><br><br>${s.context}</div>
+      <div class="ix-prompt">${s.question}</div>
+      <div class="branch-choices" id="a3-choices"></div>
+      <div id="a3-result" class="branch-result" style="display:none;"></div>
+      <button id="a3-next" class="ix-continue-btn" disabled>${idx<scenarios.length-1?'Next Scenario →':'See My Results →'}</button>
+    `;
+
+    const shuffledChoices=[...s.choices]; shuffle(shuffledChoices);
+    const choicesEl=qs('#a3-choices',w);
+    const resultEl=qs('#a3-result',w);
+
+    shuffledChoices.forEach(choice=>{
+      const btn=document.createElement('div');
+      btn.className='branch-choice';
+      btn.tabIndex=0;
+      btn.setAttribute('role','button');
+      btn.textContent=choice.text;
+      btn.addEventListener('click',()=>selectChoice(choice,btn,choicesEl,resultEl));
+      btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();btn.click();}});
+      choicesEl.appendChild(btn);
+    });
+
+    qs('#a3-next',w).addEventListener('click',()=>{
+      current++;
+      if(current<scenarios.length) renderScenario(current);
+      else showResults();
+    });
+  }
+
+  function selectChoice(choice,btn,choicesEl,resultEl){
+    if(qs('#a3-next',w)&&!qs('#a3-next',w).disabled) return;
+    qsa('.branch-choice',w).forEach(b=>b.style.pointerEvents='none');
+    if(choice.type==='optimal') btn.classList.add('selected-optimal');
+    else if(choice.type==='acceptable') btn.classList.add('selected-acceptable');
+    else btn.classList.add('selected-poor');
+    resultEl.style.display='block';
+    resultEl.className=`branch-result ${choice.type}`;
+    resultEl.textContent=choice.feedback;
+    answers.push({scenarioIdx:current,choice});
+    if(qs('#a3-next',w)) qs('#a3-next',w).disabled=false;
+    if(choice.type!=='optimal') rushGuard.recordWrong(w);
+    announce(choice.feedback);
+  }
+
+  function showResults(){
+    const optimal=answers.filter(a=>a.choice.type==='optimal').length;
+    w.innerHTML=`
+      <h1>Scenario Results</h1>
+      <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+        You answered <strong>${optimal} of ${scenarios.length}</strong> scenarios with the best response.
+        ${optimal===3?'Excellent clinical reasoning!':'Review the explanations below to strengthen your understanding.'}
+      </div>
+      ${answers.map((a,i)=>`
+        <div class="branch-result ${a.choice.type}" style="margin-bottom:12px;">
+          <strong>${scenarios[a.scenarioIdx].title}:</strong> ${a.choice.type==='optimal'?'✅ Best choice':'❌ Needs review'}<br>
+          <span style="font-size:.88rem;">${a.choice.feedback}</span>
+        </div>`).join('')}
+      <button id="act2-continue" class="ix-continue-btn"${optimal===3?'':' disabled'}>Continue to Activity 3</button>
+      ${optimal<3?`<p style="margin-top:10px;font-size:.85rem;color:#991b1b;">You must select the best answer for all 3 scenarios. <button id="a3-retry" style="background:none;border:none;color:var(--blue);font-weight:700;cursor:pointer;font-size:.85rem;text-decoration:underline;">Retry Scenarios</button></p>`:''}
+    `;
+    if(qs('#a3-retry',w)){
+      qs('#a3-retry',w).addEventListener('click',()=>{
+        current=0; answers.length=0;
+        renderScenario(0);
+      });
+    }
+    if(qs('#act2-continue',w)){
+      qs('#act2-continue',w).addEventListener('click',()=>{completeActivity(1);showActivity(2);});
+    }
+    if(optimal===3) announce('All scenarios answered correctly. Activity 3 complete.');
+  }
+
+  renderScenario(0);
+}
+
+/* ==========================================================
+   ACTIVITY 3 – PERFORMANCE EFFECTS KNOWLEDGE CHECK (Analyze → Evaluate)
+   (was Activity 4)
+========================================================== */
+function renderAct3(area){
+  const questions=[
+    {
+      text:'In choice reaction-time tasks, caffeine has been found to:',
+      hint:'The task has two separate components — decision-making and physical movement. Caffeine affects them differently.',
+      options:[
+        {text:'Speed up both decision time and motor response equally.',correct:false},
+        {text:'Slow decision time but speed motor response.',correct:true},
+        {text:'Improve decision-making but not physical coordination.',correct:false},
+        {text:'Have no measurable effect on reaction time.',correct:false}
+      ],
+      explanation:'Caffeine produces a counterintuitive result in complex reaction-time tasks: it slows decision time (the cognitive component) while speeding motor response (the physical component). The net effect depends on task type.'
+    },
+    {
+      text:'Which effect most strongly explains caffeine\'s popularity as a workplace or academic aid?',
+      hint:'Performance is maintained at baseline — not boosted above it. Think sustained attention over hours, not superhuman cognition.',
+      options:[
+        {text:'Enhanced memory formation above baseline.',correct:false},
+        {text:'Reduced fatigue and increased vigilance.',correct:true},
+        {text:'Dramatic improvement in complex reasoning.',correct:false},
+        {text:'Suppression of distracting emotions.',correct:false}
+      ],
+      explanation:'Caffeine\'s primary contribution in work and academic settings is sustaining alertness and attention — particularly reducing the fatigue that normally degrades performance over time. It does not boost performance above a well-rested baseline.'
+    },
+    {
+      text:'Which of the following best describes caffeine\'s effect on athletic performance?',
+      hint:'Think about what endurance and fatigue have in common with caffeine\'s mechanism. Adenosine normally says "stop" — what happens when you block it?',
+      options:[
+        {text:'Caffeine significantly increases muscle strength.',correct:false},
+        {text:'Caffeine has no meaningful effect on athletic performance.',correct:false},
+        {text:'Caffeine can improve endurance by delaying perceived fatigue.',correct:true},
+        {text:'Caffeine reduces cardiovascular efficiency during exercise.',correct:false}
+      ],
+      explanation:'Caffeine can improve endurance performance by blocking adenosine receptors — which normally promote fatigue during exercise — allowing athletes to sustain effort longer before perceiving exhaustion. Strength gains are minimal.'
+    },
+    {
+      text:'A student who drinks coffee every morning finds they need more coffee to feel alert. This best illustrates:',
+      hint:'The body adapts to caffeine\'s effects. What do we call it when a drug\'s effects diminish with repeated use, requiring more for the same result?',
+      options:[
+        {text:'Caffeinism',correct:false},
+        {text:'Withdrawal',correct:false},
+        {text:'Tolerance',correct:true},
+        {text:'Sensitization',correct:false}
+      ],
+      explanation:'This is a classic example of tolerance — a decrease in the drug\'s effect with repeated exposure, requiring higher doses to achieve the same result. Caffeine tolerance develops quickly, especially to its alerting effects.'
+    }
+  ];
+
+  shuffle(questions);
+  const wrongAttempts=new Array(questions.length).fill(0);
+  let correctCount=0;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Performance Effects Knowledge Check</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Activity 4 – Knowledge Check</strong> (Bloom's: Analyze → Evaluate)<br>
+      Answer all 4 questions correctly to complete this activity. Wrong answers reveal progressive hints.
+    </div>
+    <div id="kc-questions"></div>
+    <button id="act3-continue" class="ix-continue-btn" disabled>Continue to Activity 4</button>
+  `;
+  area.appendChild(w);
+
+  const qArea=qs('#kc-questions',w);
+
+  questions.forEach((q,qi)=>{
+    const block=document.createElement('div');
+    block.className='kc-question';
+    block.dataset.answered='false';
+    const shuffledOpts=[...q.options]; shuffle(shuffledOpts);
+    block._opts=shuffledOpts;
+    block._q=q;
+    renderKCBlock(block,qi,shuffledOpts,q);
+    qArea.appendChild(block);
+  });
+
+  function renderKCBlock(block,qi,opts,q){
+    block.innerHTML=`
+      <div class="kc-qtext">${qi+1}. ${q.text}</div>
+      <div class="kc-options">${opts.map((o,oi)=>`
+        <div class="kc-opt" tabindex="0" role="button" data-correct="${o.correct}" data-oi="${oi}">${o.text}</div>`).join('')}
+      </div>
+      <div class="kc-exp" id="kc-exp-${qi}"></div>
+    `;
+    qsa('.kc-opt',block).forEach(opt=>{
+      opt.addEventListener('click',()=>selectKCOpt(opt,block,q,qi));
+      opt.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectKCOpt(opt,block,q,qi);}});
+    });
+  }
+
+  function selectKCOpt(opt,block,q,qi){
+    if(block.dataset.answered==='true') return;
+    const isCorrect=opt.dataset.correct==='true';
+    const exp=qs(`#kc-exp-${qi}`,w);
+
+    if(isCorrect){
+      qsa('.kc-opt',block).forEach(o=>o.style.pointerEvents='none');
+      opt.classList.add('kc-opt-correct');
+      block.classList.remove('kc-incorrect');
+      block.classList.add('kc-correct');
+      block.dataset.answered='true';
+      exp.textContent='✅ '+q.explanation;
+      exp.classList.add('visible');
+      announce('Correct! '+q.explanation);
+      correctCount++;
+      if(qsa('.kc-question',w).every(b=>b.dataset.answered==='true'&&b.classList.contains('kc-correct'))){
+        qs('#act3-continue',w).disabled=false;
+        announce('All questions correct! Continue button is now available.');
+      }
+    } else {
+      opt.classList.add('kc-opt-wrong');
+      block.classList.add('kc-incorrect');
+      wrongAttempts[qi]++;
+      rushGuard.recordWrong(w);
+      const attempts=wrongAttempts[qi];
+      let hint='';
+      if(attempts===1){
+        hint='❌ Not quite — re-read the question and try again.';
+        exp.textContent=hint;
+        exp.classList.add('visible');
+        announce('Incorrect. '+hint);
+        setTimeout(()=>{
+          qsa('.kc-opt',block).forEach(o=>{
+            if(!o.classList.contains('kc-opt-wrong')&&!o.classList.contains('kc-opt-correct')){
+              o.style.pointerEvents='';
+            }
+          });
+        },400);
+      } else if(attempts===2){
+        hint=`❌ Still not right. Hint: ${q.hint||'Think about caffeine\'s mechanism and effects.'}`;
+        exp.textContent=hint;
+        exp.classList.add('visible');
+        announce('Incorrect. '+hint);
+        setTimeout(()=>{
+          qsa('.kc-opt',block).forEach(o=>{
+            if(!o.classList.contains('kc-opt-wrong')&&!o.classList.contains('kc-opt-correct')){
+              o.style.pointerEvents='';
+            }
+          });
+        },400);
+      } else {
+        // 3rd wrong attempt — lock all options, reveal and auto-select correct answer
+        qsa('.kc-opt',block).forEach(o=>o.style.pointerEvents='none');
+        const correctOpt=qsa('.kc-opt',block).find(o=>o.dataset.correct==='true');
+        if(correctOpt) correctOpt.classList.add('kc-opt-correct');
+        block.classList.remove('kc-incorrect');
+        block.classList.add('kc-correct');
+        block.dataset.answered='true';
+        exp.innerHTML=`⚠️ The correct answer has been revealed after 3 attempts.<br><br>✅ ${q.explanation}`;
+        exp.classList.add('visible');
+        announce('Answer revealed after 3 attempts. '+q.explanation);
+        correctCount++;
+        if(qsa('.kc-question',w).every(b=>b.dataset.answered==='true'&&b.classList.contains('kc-correct'))){
+          qs('#act3-continue',w).disabled=false;
+          announce('All questions answered. Continue button is now available.');
+        }
+      }
+    }
+  }
+
+  qs('#act3-continue',w).addEventListener('click',()=>{completeActivity(2);showActivity(3);});
+}
+
+/* ==========================================================
+   ACTIVITY 4 – EVIDENCE-BASED REFLECTION (Evaluate → Create)
+   Written response auto-checked against 3 required elements
+   (was Activity 5)
+========================================================== */
+function renderAct4(area){
+  const rubric=[
+    {id:'r1',label:'Mentions caffeine dose or overdose risk',keywords:['dose','mg','milligram','overdose','toxic','lethal','400','600','1000'],hint:'Hint 1: Compare NoDoz to energy drinks in terms of caffeine content.'},
+    {id:'r2',label:'References youth or vulnerable populations',keywords:['child','children','youth','teen','adolescent','kid','pregnant','sensitive','minor'],hint:'Hint 2: Consider children, adolescents, and pregnant individuals.'},
+    {id:'r4',label:'Uses chapter-based evidence',keywords:['chapter','fda','regul','noda','noz','energy drink','adenosine','withdrawal','tolerance','pharmacokinetic','caffeinism'],hint:'Hint 3: Reference specific chapter concepts — FDA, NoDoz, energy drink regulation, or pharmacokinetics.'}
+  ];
+
+  let hintLevel=0;
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Evidence-Based Reflection</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Activity 5 – Written Reflection</strong> (Bloom's: Evaluate → Create)<br>
+      The FDA regulates caffeine in over-the-counter drugs (like NoDoz) but not in energy drinks. Should energy drinks be regulated? Write a short response using evidence from Chapter 8. Your response is auto-checked for three required elements.
+    </div>
+    <div style="margin-bottom:10px;font-size:.9rem;color:#555;font-style:italic;">
+      "Given that the FDA regulates caffeine in OTC drugs but not in energy drinks, should energy drinks be regulated? Support your answer using evidence from Chapter 8."
+    </div>
+    <textarea class="written-textarea" id="a5-text" rows="5"
+      placeholder="Type your response here… Include evidence about dosing, vulnerable populations, and the alcohol–caffeine interaction."></textarea>
+    <div style="margin-top:14px;">
+      <div style="font-size:.85rem;font-weight:700;color:var(--navy);margin-bottom:8px;">Required Elements</div>
+      ${rubric.map(r=>`
+        <div class="rubric-item unmet" id="rubric-${r.id}">
+          <div class="rubric-dot" id="dot-${r.id}"></div>
+          <span>${r.label}</span>
+        </div>`).join('')}
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;">
+      <button id="a5-check" class="ix-continue-btn" style="margin-top:0;flex:1;">Check My Response</button>
+      <button id="a5-hint" style="flex:1;padding:12px 20px;font-size:.9rem;font-weight:700;background:#fff;color:var(--blue);border:2px solid var(--blue);border-radius:8px;cursor:pointer;">Get a Hint</button>
+    </div>
+    <div id="a5-hint-box" class="ix-explanation" style="display:none;margin-top:12px;"></div>
+    <div id="a5-feedback" class="ix-feedback" style="margin-top:12px;"></div>
+    <button id="act4-continue" class="ix-continue-btn" disabled>Complete Chapter 8 ✓</button>
+  `;
+  area.appendChild(w);
+
+  qs('#a5-check',w).addEventListener('click',()=>{
+    const text=qs('#a5-text',w).value.toLowerCase();
+    let metCount=0;
+    rubric.forEach(r=>{
+      const met=r.keywords.some(kw=>text.includes(kw));
+      const itemEl=qs(`#rubric-${r.id}`,w);
+      const dotEl=qs(`#dot-${r.id}`,w);
+      if(met){
+        itemEl.className='rubric-item met';
+        dotEl.style.background='#16a34a';
+        metCount++;
+      } else {
+        itemEl.className='rubric-item unmet';
+        dotEl.style.background='#d1d5db';
+      }
+    });
+    const fb=qs('#a5-feedback',w);
+    if(metCount===3){
+      fb.textContent=`✅ Excellent! All 3 required elements are present. Your response demonstrates strong evidence-based reasoning about caffeine regulation.`;
+      fb.className='ix-feedback correct visible';
+      qs('#act4-continue',w).disabled=false;
+      announce('All elements met. Activity 4 complete.');
+    } else {
+      fb.textContent=`You have ${metCount} of 3 required elements. Review the checklist above and revise your response. Use the hint button if you need direction.`;
+      fb.className='ix-feedback incorrect visible';
+      announce(`${metCount} of 3 elements detected. Please revise.`);
+    }
+  });
+
+  qs('#a5-hint',w).addEventListener('click',()=>{
+    const hintBox=qs('#a5-hint-box',w);
+    const hints=rubric.map(r=>r.hint);
+    if(hintLevel<hints.length){
+      hintBox.style.display='block';
+      hintBox.innerHTML=(hintBox.innerHTML?hintBox.innerHTML+'<br>':'')+'<strong>'+hints[hintLevel]+'</strong>';
+      hintLevel++;
+      announce(hints[hintLevel-1]);
+    } else {
+      hintBox.innerHTML+='<br><strong>You\'ve seen all hints — try revising your response now.</strong>';
+      announce('No more hints available.');
+    }
+  });
+
+  qs('#act4-continue',w).addEventListener('click',()=>{completeActivity(3);});
+}
+
+/* ==========================================================
+   MODALS & RESET
+========================================================== */
+document.getElementById('instrStartBtn').addEventListener('click',()=>{
+  document.getElementById('instructionsModal').classList.remove('visible');
+  if(currentView==='cover') showCover();
+  else if(typeof currentView==='number') showActivity(currentView);
+  else showCover();
+});
+
+document.getElementById('resetProgressBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.add('visible');
+});
+document.getElementById('resetCancelBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.remove('visible');
+});
+document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
+  document.getElementById('resetModal').classList.remove('visible');
+  ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i>0);});
+  partADone.fill(false);
+  currentView='cover';
+  savedReflectionQuestion='';
+  localStorage.removeItem(STORAGE_KEY);
+  rushGuard.hardReset();
+  renderSidebar();
+  showCover();
+  announce('Progress has been reset. Activity 1 is now unlocked.');
+});
+
+document.getElementById('closeCompletion')
+  .addEventListener('click',()=>{ document.getElementById('completionModal').classList.remove('visible'); });
+document.getElementById('closeCompletion')
+  .addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('completionModal').classList.remove('visible'); });
+
+function downloadStudyGuide(){
+  const guide=`Chapter 8 – Caffeine and the Xanthines: Study Notes
+
+KEY TERMS
+• Caffeine: most widely consumed psychoactive drug worldwide; a methylxanthine
+• Theophylline: xanthine in tea; used as bronchodilator; less potent CNS stimulant than caffeine
+• Theobromine: xanthine in chocolate; weakest stimulant of the three methylxanthines
+• Adenosine receptor antagonism: caffeine's primary mechanism — blocks adenosine (which promotes sleepiness)
+• Caffeinism: syndrome from excessive caffeine intake (~600+ mg/day); symptoms resemble anxiety disorder
+• Physical dependence: can develop in as few as 3 days of regular caffeine use; confirmed by withdrawal symptoms
+
+PHARMACOKINETICS
+• Absorbed rapidly via GI tract after oral ingestion
+• Peak blood levels: 15–45 minutes (varies by beverage: coffee > tea > cola)
+• Distributed evenly throughout body water
+• Metabolized in the liver (CYP1A2 enzymes)
+• Smoking speeds metabolism; pregnancy slows it
+• Less than 10% excreted unchanged in urine
+
+MECHANISM OF ACTION
+• Caffeine blocks adenosine receptors → prevents adenosine from causing drowsiness
+• This leads to CNS stimulation, increased alertness, and reduced fatigue perception
+• Secondary effects: increased dopamine/norepinephrine activity
+
+CAFFEINE DOSES (approximate)
+• Drip coffee: ~85–100 mg per cup
+• Espresso: ~75–100 mg per shot
+• Tea: ~30–50 mg per cup
+• Cola: ~35–45 mg per can
+• Energy drinks: 80–200+ mg per serving
+• NoDoz (OTC): 200 mg per tablet
+
+BEHAVIORAL EFFECTS
+• Acute: mood elevation, alertness, reduced fatigue, increased talkativeness
+• Performance: reduces fatigue-related performance decrements; improves vigilance
+• Choice reaction time: slows decision component but speeds motor response
+• Athletic performance: delays perceived fatigue during endurance tasks (via adenosine blockade)
+• Does NOT substantially enhance complex reasoning or memory above rested baseline
+
+TOLERANCE
+• Develops rapidly — especially to alerting and mood-elevating effects
+• Behavioral tolerance (needed dose increases over regular use)
+• Tolerance does not eliminate withdrawal risk
+
+WITHDRAWAL & DEPENDENCE
+• Withdrawal onset: 12–24 hours after last use
+• Primary symptoms: headache (throbbing, bilateral), fatigue
+• Secondary symptoms: irritability, depressed mood, difficulty concentrating
+• Duration: 2–9 days
+• Physical dependence can develop in as few as 3 consecutive days of regular use
+
+CAFFEINE + ALCOHOL (IMPORTANT!)
+• Caffeine reduces perceived intoxication but NOT actual motor impairment
+• People feel more sober but driving ability/reaction time remain impaired
+• This increases risk-taking behavior (driving, etc.)
+• FDA banned pre-mixed caffeinated alcohol (e.g., Four Loko original) in 2010
+
+CAFFEINE IN YOUTH & VULNERABLE POPULATIONS
+• Children receive higher effective dose per kg of body weight than adults
+• Long-term effects on developing nervous systems are poorly understood
+• Pregnant individuals metabolize caffeine more slowly — prolonged fetal exposure
+• FDA recommends <400 mg/day for healthy adults; no established safe level for children
+
+QUIZ MISCONCEPTIONS TO REMEMBER
+✗ Caffeine does NOT fully restore alcohol-impaired performance
+✗ Caffeine does NOT boost memory or complex cognition above rested baseline
+✗ Withdrawal does NOT require high doses — dependence can form in 3 days
+✗ Headache is the PRIMARY withdrawal symptom, not anxiety or tremor
+✗ The FDA regulates caffeine in OTC drugs (NoDoz) but NOT in energy drinks
+✗ Theobromine (chocolate) has WEAKER effects than caffeine, not stronger
+✗ Peak blood levels occur in 15–45 minutes — NOT immediately and NOT after 2 hours
+`;
+  const blob=new Blob([guide],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='Chapter8_Study_Notes.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('downloadGuideBtn').addEventListener('click',()=>downloadStudyGuide());
+
+/* ==========================================================
+   INIT
+========================================================== */
+loadProgress();
+renderSidebar();
+document.getElementById('instructionsModal').classList.add('visible');
+if(currentView==='review') showReviewSummary();
+else if(currentView==='cover') showCover();
+else if(typeof currentView==='number') showActivity(currentView);
+else showCover();
+
+/* ==========================================================
+   FULLSCREEN TOGGLE
+========================================================== */
+(function(){
+  const btn=document.getElementById('fsBtn');
+  let pseudoFS=false;
+  function enterIcon(){ btn.textContent='✕'; btn.title='Exit fullscreen'; btn.setAttribute('aria-label','Exit fullscreen'); }
+  function exitIcon() { btn.textContent='⛶'; btn.title='Enter fullscreen'; btn.setAttribute('aria-label','Enter fullscreen'); }
+  function enterPseudo(){ document.body.classList.add('pseudo-fs'); pseudoFS=true; enterIcon(); announce('Fullscreen on.'); }
+  function exitPseudo() { document.body.classList.remove('pseudo-fs'); pseudoFS=false; exitIcon(); announce('Fullscreen off.'); }
+  const fsTarget=document.getElementById('app-wrapper');
+  function tryRealFS(){
+    if(fsTarget.requestFullscreen){ fsTarget.requestFullscreen().catch(()=>enterPseudo()); }
+    else if(fsTarget.webkitRequestFullscreen){ try{ fsTarget.webkitRequestFullscreen(); }catch(e){ enterPseudo(); } }
+    else { enterPseudo(); }
+  }
+  function isRealFS(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+  document.addEventListener('fullscreenchange',       ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+  document.addEventListener('webkitfullscreenchange', ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+  btn.addEventListener('click',()=>{
+    if(isRealFS())     (document.exitFullscreen||document.webkitExitFullscreen||(()=>{})).call(document);
+    else if(pseudoFS)  exitPseudo();
+    else               tryRealFS();
+  });
+  btn.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); btn.click(); } });
+})();
+</script>
+</body>
+</html>

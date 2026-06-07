@@ -1,0 +1,2470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 6 – Cocaine, Amphetamines, and Related Stimulants</title>
+
+<style>
+/* ===================================================
+   GLOBAL / RESET
+=================================================== */
+:root{
+  --navy:#13294B;
+  --blue:#1D4F91;
+  --sky:#00A3E0;
+  --accent:#D3E3FF;
+  --bg:#F3F3F5;
+  --white:#FFFFFF;
+  --border:1px solid rgba(19,41,75,.15);
+  --shadow:0 10px 15px -3px rgba(0,0,0,.1);
+  --sidebar-w:300px;
+  --green-bg:#dcfce7;
+  --green-border:#14532d;
+  --red-bg:#fee2e2;
+  --red-border:#7f1d1d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',Tahoma,sans-serif;
+  background:var(--bg);
+  color:var(--navy);
+  display:flex;
+  justify-content:center;
+  overflow:hidden;
+  height:100vh;
+}
+#app-wrapper{
+  width:100%;
+  max-width:1200px;
+  height:100vh;
+  display:flex;
+  background:white;
+  box-shadow:0 25px 50px -12px rgba(0,0,0,.25);
+}
+/* SIDEBAR */
+#sidebar{
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  border-right:var(--border);
+  display:flex;
+  flex-direction:column;
+  transition:width .3s, min-width .3s;
+  overflow:hidden;
+}
+#sidebar.collapsed{width:0;min-width:0;border-right:none;}
+.sidebar-header{
+  background:var(--navy);
+  color:white;
+  padding:24px 20px;
+  font-weight:800;
+  font-size:1rem;
+  letter-spacing:.5px;
+  line-height:1.4;
+  flex-shrink:0;
+}
+.sidebar-header small{
+  display:block;
+  font-weight:400;
+  font-size:.75rem;
+  opacity:.75;
+  margin-top:4px;
+  letter-spacing:0;
+}
+.nav-list{overflow-y:auto;flex:1;}
+.nav-item{
+  padding:14px 18px;
+  border-bottom:1px solid rgba(0,0,0,.05);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+  font-size:.93rem;
+  transition:background .15s;
+  gap:8px;
+}
+.nav-item:hover:not(.locked){background:#f0f5ff}
+.nav-item:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.nav-item.active{background:var(--accent);font-weight:700}
+.nav-item.locked{opacity:.55;cursor:not-allowed}
+.nav-item.done .nav-title::after{content:' ✓';color:#16a34a;font-weight:700}
+.nav-title{flex:1}
+.lock-icon{font-size:.85rem;flex-shrink:0}
+.nav-progress{width:100%;height:4px;background:#e5e7eb;flex-shrink:0;}
+.nav-progress-fill{height:4px;background:var(--sky);transition:width .4s;}
+.sidebar-footer{padding:14px 18px;border-top:var(--border);font-size:.8rem;color:#666;}
+/* MAIN */
+#main-content{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.top-bar{
+  padding:12px 18px;
+  border-bottom:var(--border);
+  display:flex;align-items:center;gap:12px;
+  flex-shrink:0;background:white;
+}
+.menu-btn{
+  background:var(--blue);color:white;border:none;
+  padding:9px 16px;border-radius:6px;font-weight:bold;
+  cursor:pointer;font-size:.9rem;white-space:nowrap;touch-action:manipulation;
+}
+.menu-btn:focus{outline:3px solid var(--sky)}
+.top-bar-title{font-weight:700;color:var(--navy);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+/* ── Step indicator dots ─────────────────────────────────── */
+.step-dots{
+  display:flex;align-items:center;gap:5px;
+  flex-shrink:0;
+}
+.step-dot{
+  width:12px;height:12px;border-radius:50%;
+  background:#e5e7eb;border:2px solid #d1d5db;
+  transition:background .3s,border-color .3s;flex-shrink:0;
+}
+.step-dot.done{background:#16a34a;border-color:#15803d;}
+.step-dot.active{background:var(--sky);border-color:#0284c7;}
+.step-dot.locked{background:#e5e7eb;border-color:#d1d5db;}
+.step-label{font-size:.75rem;color:#666;white-space:nowrap;margin-left:4px;}
+/* ── Fullscreen toggle ───────────────────────────────────── */
+.fs-btn{
+  background:none;border:1px solid rgba(19,41,75,.25);border-radius:6px;
+  padding:6px 10px;font-size:1rem;cursor:pointer;color:var(--navy);
+  line-height:1;flex-shrink:0;transition:background .15s,border-color .15s;
+  touch-action:manipulation;
+}
+.fs-btn:hover{background:var(--accent);border-color:var(--blue);}
+.fs-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+/* Pseudo-fullscreen: pins app over entire viewport — works inside Canvas iframes */
+body.pseudo-fs{overflow:auto;}
+body.pseudo-fs #app-wrapper{
+  position:fixed;inset:0;max-width:none;height:100%;
+  z-index:9999;box-shadow:none;
+}
+.content-scroll{flex:1;overflow-y:auto;padding:0;-webkit-overflow-scrolling:touch;}
+
+/* COVER */
+#cover-page{max-width:820px;margin:40px auto;padding:20px 20px 40px;}
+.cover-badge{
+  display:inline-block;background:var(--accent);color:var(--blue);
+  font-weight:700;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;
+  padding:5px 12px;border-radius:20px;margin-bottom:16px;
+}
+.cover-title{font-size:2rem;font-weight:800;color:var(--navy);line-height:1.2;margin-bottom:12px;}
+.cover-subtitle{font-size:1.05rem;color:#444;margin-bottom:32px;line-height:1.6;}
+.cover-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:36px;}
+.cover-card{
+  border:var(--border);border-radius:12px;padding:20px;background:white;
+  box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start;
+}
+.cover-card-num{
+  background:var(--navy);color:white;font-weight:800;font-size:.95rem;
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;
+}
+.cover-card-body h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:5px;}
+.cover-card-body p{font-size:.85rem;color:#555;line-height:1.5;}
+.cover-tag{
+  display:inline-block;background:#f0f5ff;color:var(--blue);font-size:.73rem;
+  font-weight:600;padding:2px 8px;border-radius:10px;margin-top:8px;border:1px solid var(--accent);
+}
+.cover-instructions{
+  background:#f8faff;border:var(--border);border-left:4px solid var(--sky);
+  border-radius:8px;padding:16px 20px;margin-bottom:28px;font-size:.9rem;line-height:1.7;color:#333;
+}
+.cover-instructions strong{display:block;margin-bottom:6px;color:var(--navy)}
+.get-started-btn{
+  display:inline-block;background:var(--navy);color:white;border:none;
+  padding:16px 40px;font-size:1.1rem;font-weight:700;border-radius:10px;cursor:pointer;
+  letter-spacing:.5px;touch-action:manipulation;transition:background .2s,transform .1s;
+}
+.get-started-btn:hover{background:var(--blue)}
+.get-started-btn:active{transform:scale(.98)}
+.get-started-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+
+/* INTERACTION */
+.interaction-wrapper{padding:30px 30px 50px;max-width:960px;margin:0 auto;width:100%;}
+.interaction-wrapper h1{margin-top:0;color:var(--navy);}
+
+/* SHARED INTERACTION STYLES */
+.ix-card{
+  background:white;border:var(--border);border-radius:8px;
+  padding:12px 14px;margin:8px 0;cursor:grab;font-size:.95rem;
+  user-select:none;-webkit-user-select:none;touch-action:none;
+  transition:box-shadow .15s,opacity .15s;
+}
+.ix-card:focus{outline:3px solid var(--sky)}
+.ix-card.placed{opacity:.45;cursor:default;pointer-events:none}
+.ix-card.dragging{opacity:.35;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+
+.ix-dropzone{
+  border:2px dashed var(--accent);border-radius:10px;padding:12px;
+  min-height:90px;margin-bottom:16px;transition:background .15s,border-color .15s;
+}
+.ix-dropzone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.ix-dropzone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+
+.ix-option{
+  border:var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px;
+  cursor:pointer;font-size:.95rem;transition:background .15s;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+.ix-option:hover{background:var(--accent)}
+.ix-option:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.ix-option.correct-opt{background:var(--green-bg);border-color:var(--green-border)}
+.ix-option.incorrect-opt{background:var(--red-bg);border-color:var(--red-border)}
+
+.ix-explanation{
+  margin-top:16px;padding:14px 16px;border-radius:8px;background:#eef6ff;
+  font-size:.92rem;line-height:1.6;display:none;
+}
+.ix-explanation.visible{display:block}
+
+.ix-feedback{
+  margin-top:18px;padding:14px 16px;border-radius:8px;
+  font-weight:600;font-size:.95rem;display:none;
+}
+.ix-feedback.visible{display:block}
+.ix-feedback.correct{background:var(--green-bg);color:#166534}
+.ix-feedback.incorrect{background:var(--red-bg);color:#991b1b}
+
+.ix-counter{font-weight:700;margin-bottom:10px;color:var(--blue);font-size:.9rem;}
+.ix-prompt{font-weight:600;margin-bottom:18px;font-size:1rem;line-height:1.5;}
+
+.ix-continue-btn{
+  display:block;margin-top:28px;padding:13px 28px;font-size:1rem;font-weight:700;
+  background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;
+  touch-action:manipulation;transition:background .15s,opacity .15s;
+}
+.ix-continue-btn:disabled{opacity:.35;cursor:default}
+.ix-continue-btn:not(:disabled):hover{background:var(--navy)}
+.ix-continue-btn:focus{outline:3px solid var(--sky)}
+
+/* col-sort (card sort columns) */
+.col-sort-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;}
+.col-sort-col{flex:1 1 160px;display:flex;flex-direction:column;gap:0;min-width:140px;}
+.col-sort-head{
+  background:var(--navy);color:#fff;font-weight:700;font-size:.84rem;
+  text-align:center;padding:9px 8px;border-radius:8px 8px 0 0;line-height:1.3;
+}
+.col-sort-zone{
+  border:2px dashed var(--accent);border-top:none;border-radius:0 0 8px 8px;
+  min-height:56px;padding:6px;display:flex;flex-direction:column;gap:5px;
+  transition:background .15s,border-color .15s;
+}
+.col-sort-zone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.col-sort-zone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.col-sort-zone .ix-card{font-size:.82rem;cursor:default;pointer-events:none;margin:0;line-height:1.3;}
+.col-sort-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.col-sort-bank .ix-card{font-size:.85rem;cursor:grab;}
+
+/* Sequence ordering */
+.seq-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;}
+.seq-col-title{font-size:.95rem;font-weight:700;margin-bottom:8px;color:var(--navy);}
+.seq-pool{display:flex;flex-direction:column;}
+.seq-slots{display:flex;flex-direction:column;gap:10px;}
+.seq-slot-row{display:flex;gap:8px;align-items:center;}
+.seq-num{min-width:22px;color:var(--sky);font-weight:800;}
+.seq-drop{
+  flex:1;min-height:52px;border:2px dashed var(--accent);
+  border-radius:10px;padding:8px;
+}
+.seq-drop.drag-over{background:#eef6ff;border-color:var(--sky);}
+.seq-drop.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+
+/* Flip cards (Activity 1) */
+.flip-deck{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.flip-card-wrap{width:100%;max-width:560px;perspective:1000px;cursor:pointer;}
+.flip-card-inner{
+  position:relative;width:100%;height:200px;transition:transform .55s ease;
+  transform-style:preserve-3d;border-radius:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+}
+.flip-card-wrap.flipped .flip-card-inner{transform:rotateY(180deg);}
+.flip-face{
+  position:absolute;inset:0;backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px 28px;text-align:center;
+}
+.flip-front{background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);color:#fff;}
+.flip-back{background:#fff;color:var(--navy);transform:rotateY(180deg);border:2px solid var(--accent);}
+.flip-label{font-size:.7rem;letter-spacing:1.2px;text-transform:uppercase;opacity:.65;font-weight:600;margin-bottom:8px;}
+.flip-term{font-size:1.35rem;font-weight:800;line-height:1.2;}
+.flip-def{font-size:.92rem;line-height:1.6;color:#333;}
+.flip-tap-hint{font-size:.75rem;opacity:.55;margin-top:10px;}
+.flip-nav{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.flip-nav-btn{
+  background:var(--navy);color:white;border:none;border-radius:999px;
+  padding:8px 20px;font-size:.88rem;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  transition:background .2s,transform .1s;
+}
+.flip-nav-btn:not(:disabled):hover{background:var(--blue);transform:translateY(-1px);}
+.flip-nav-btn:disabled{opacity:.35;cursor:default;}
+.flip-nav-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+.flip-counter{font-size:.85rem;color:#555;font-weight:600;}
+.flip-progress-row{display:flex;align-items:center;gap:10px;width:100%;max-width:560px;}
+.flip-progress-bar{flex:1;height:7px;background:#e5e7eb;border-radius:999px;overflow:hidden;}
+.flip-progress-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--blue));transition:width .3s;}
+.viewed-badge{
+  display:inline-flex;align-items:center;gap:5px;background:#f0f7ff;
+  border:1px solid var(--accent);border-radius:999px;padding:4px 12px;
+  font-size:.78rem;font-weight:600;color:var(--blue);
+}
+
+/* Branching scenario (Activity 4 & 5) */
+.scenario-box{
+  background:#f8faff;border:var(--border);border-left:4px solid var(--sky);
+  border-radius:10px;padding:16px 20px;margin-bottom:20px;
+  font-size:.95rem;line-height:1.65;color:#333;
+}
+.scenario-box strong{color:var(--navy);}
+.branch-result{
+  margin-top:16px;padding:14px 16px;border-radius:10px;
+  font-size:.93rem;line-height:1.6;
+}
+.branch-result.optimal{background:#dcfce7;border:1px solid #14532d;color:#166534;}
+.branch-result.acceptable{background:#fef9c3;border:1px solid #92400e;color:#78350f;}
+.branch-result.poor{background:#fee2e2;border:1px solid #7f1d1d;color:#991b1b;}
+.branch-choices{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.branch-choice{
+  border:var(--border);border-radius:8px;padding:14px 16px;
+  cursor:pointer;font-size:.92rem;line-height:1.5;
+  transition:background .15s,border-color .15s;user-select:none;touch-action:manipulation;
+}
+.branch-choice:hover{background:var(--accent);}
+.branch-choice:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.scenario-progress{font-size:.82rem;color:#555;margin-bottom:14px;}
+
+/* T/F quiz (Activity 5) */
+.tf-block{
+  background:#f9fafb;border-radius:12px;padding:16px 18px;border:1px solid #dde3f0;
+  margin-bottom:14px;
+}
+.tf-block.tf-correct{border-color:var(--green-border);background:var(--green-bg);}
+.tf-block.tf-incorrect{border-color:var(--red-border);background:var(--red-bg);}
+.tf-stmt{font-size:.95rem;font-weight:600;color:var(--navy);margin-bottom:10px;line-height:1.5;}
+.tf-btns{display:inline-flex;gap:8px;}
+.tf-btn{
+  border-radius:999px;border:2px solid #d0d5dd;padding:6px 18px;
+  font-size:.88rem;font-weight:600;cursor:pointer;
+  background:#fff;color:var(--navy);font-family:inherit;
+  transition:border-color .15s,background .15s;
+}
+.tf-btn:hover{border-color:var(--sky);background:#f0f7ff;}
+.tf-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+.tf-btn.selected{border-color:var(--sky);background:var(--accent);}
+.tf-exp{font-size:.85rem;line-height:1.55;color:#333;margin-top:10px;display:none;}
+.tf-exp.visible{display:block;}
+
+/* Knowledge check (Activity 1 part B) */
+.kc-question{
+  background:#f9fafb;border-radius:10px;padding:16px 18px;border:1px solid #dde3f0;
+  margin-bottom:16px;
+}
+.kc-question.kc-correct{border-color:var(--green-border);background:var(--green-bg);}
+.kc-question.kc-incorrect{border-color:var(--red-border);background:var(--red-bg);}
+.kc-qtext{font-size:.95rem;font-weight:600;color:var(--navy);margin-bottom:10px;line-height:1.5;}
+.kc-options{display:flex;flex-direction:column;gap:8px;}
+.kc-opt{
+  border:var(--border);border-radius:8px;padding:11px 14px;
+  cursor:pointer;font-size:.9rem;transition:background .15s;
+  user-select:none;touch-action:manipulation;
+}
+.kc-opt:hover{background:var(--accent);}
+.kc-opt:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.kc-opt.kc-opt-correct{background:var(--green-bg);border-color:var(--green-border);pointer-events:none;}
+.kc-opt.kc-opt-wrong{background:var(--red-bg);border-color:var(--red-border);pointer-events:none;}
+.kc-exp{font-size:.85rem;line-height:1.55;color:#333;margin-top:10px;display:none;}
+.kc-exp.visible{display:block;}
+
+/* two-part banner */
+.two-part-banner{
+  display:flex;align-items:center;gap:14px;
+  background:linear-gradient(135deg,#1a3a6b 0%,#2563eb 100%);
+  color:#fff;border-radius:12px;padding:14px 18px;
+  margin-bottom:18px;font-size:.92rem;line-height:1.5;
+}
+.two-part-banner .tpb-icon{font-size:1.6rem;flex-shrink:0;}
+.tpb-badge{
+  display:inline-block;background:#fff;color:#1a3a6b;
+  font-weight:800;font-size:.75rem;padding:2px 8px;
+  border-radius:20px;margin-right:6px;
+}
+@keyframes fadeOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-12px)}}
+@keyframes fadeIn {from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.part-fade-out{animation:fadeOut .35s ease forwards;}
+.part-fade-in {animation:fadeIn .35s ease forwards;}
+
+/* nav sub-items */
+.nav-sublist{display:flex;flex-direction:column;gap:1px;margin:2px 0 4px 16px;}
+.nav-subitem{
+  font-size:.75rem;padding:4px 10px;border-radius:6px;color:var(--navy);cursor:pointer;
+  display:flex;align-items:center;gap:6px;transition:background .1s;
+  border-left:2px solid var(--accent);
+}
+.nav-subitem:hover{background:#e8f0fe;}
+.nav-subitem.sub-done::after{content:' ✓';color:#16a34a;font-weight:700;}
+.nav-subitem.sub-pending{color:#888;cursor:default;}
+
+/* ── MODAL OVERLAY ─────────────────────────────────────────────────
+   Scrollable overlay so tall modals are never clipped on short screens.
+───────────────────────────────────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;
+  justify-content:center;
+  align-items:flex-start;       /* top-align so tall modals don't get clipped */
+  z-index:2000;
+  padding:20px;
+  overflow-y:auto;              /* overlay itself scrolls on short viewports */
+  -webkit-overflow-scrolling:touch;
+}
+.modal-overlay.visible{display:flex}
+/* ── dialog: guaranteed full-screen overlay ──────────────────────────
+   !important beats UA and author rules; showModal() places dialog in
+   top layer above any fullscreen context. ── */
+dialog.modal-overlay{
+  position:fixed !important;inset:0 !important;
+  width:100% !important;height:100% !important;margin:0 !important;
+  border:0;padding:20px;box-sizing:border-box;
+  background:rgba(0,0,0,.65) !important;
+  z-index:2147483647 !important;
+  justify-content:center;align-items:flex-start;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  max-width:none !important;max-height:none !important;
+}
+dialog.modal-overlay[open]{display:flex !important;}
+dialog.modal-overlay::backdrop{display:none;}
+.modal-box{
+  background:white;
+  padding:40px 36px;
+  max-width:520px;
+  width:100%;
+  border-radius:16px;
+  box-shadow:0 30px 60px rgba(0,0,0,.3);
+  text-align:center;
+  position:relative;
+  max-height:calc(100vh - 40px); /* never taller than viewport */
+  overflow-y:auto;               /* box scrolls its own content */
+  margin:auto;                   /* centers when short, scrolls when tall */
+}
+.modal-icon{font-size:3.5rem;margin-bottom:16px}
+.modal-box h2{color:var(--navy);font-size:1.6rem;font-weight:800;margin-bottom:12px;}
+.modal-box p{color:#444;line-height:1.7;margin-bottom:24px;font-size:.97rem;}
+.download-btn{
+  display:inline-block;background:var(--navy);color:white;
+  padding:14px 32px;font-size:1rem;font-weight:700;border:none;
+  border-radius:10px;cursor:pointer;text-decoration:none;touch-action:manipulation;
+}
+.download-btn:hover{background:var(--blue)}
+.download-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+.modal-close{
+  position:sticky;               /* stays reachable while the modal scrolls */
+  float:right;
+  top:0;
+  margin:-24px -16px 0 0;
+  background:none;
+  border:none;
+  font-size:1.4rem;
+  cursor:pointer;
+  color:#888;
+  line-height:1;
+  padding:4px 8px;
+  z-index:1;
+}
+.modal-close:hover{color:var(--navy)}
+.modal-close:focus{outline:3px solid var(--sky)}
+
+/* ── COMPLETION WARNING BANNER ──────────────────────────────────── */
+.completion-warning{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  background:#fef2f2;
+  border:1px solid #fecaca;
+  border-left:5px solid #dc2626;
+  border-radius:10px;
+  padding:14px 16px;
+  margin:6px 0 20px;
+  font-size:.92rem;
+  line-height:1.55;
+  color:#7f1d1d;
+  text-align:left;
+}
+.completion-warning-icon{font-size:1.4rem;flex-shrink:0;line-height:1.2;}
+
+/* ── REFLECTION QUESTION BLOCK ──────────────────────────────────── */
+.reflection-block{
+  background:#f0f5ff;
+  border:1px solid var(--accent);
+  border-left:5px solid var(--blue);
+  border-radius:10px;
+  padding:16px 18px;
+  margin-bottom:18px;
+  text-align:left;
+}
+.reflection-label{
+  font-size:.78rem;
+  font-weight:800;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+  color:var(--blue);
+  margin-bottom:8px;
+}
+.reflection-question{
+  font-size:1rem;
+  line-height:1.55;
+  color:var(--navy);
+  font-weight:600;
+  margin:0;
+}
+.reflection-instructions{
+  font-size:.9rem;
+  color:#333;
+  line-height:1.6;
+  text-align:left;
+}
+.reflection-instructions ol{margin:10px 0 0 0;padding-left:22px;}
+.reflection-instructions li{margin-bottom:8px;}
+.reflection-note{
+  margin-top:14px;
+  background:#fffbeb;
+  border:1px solid #fcd34d;
+  border-radius:8px;
+  padding:10px 14px;
+  font-size:.86rem;
+  color:#92400e;
+  font-weight:600;
+}
+
+/* ── DIVIDER BETWEEN DIRECTIONS AND STUDY GUIDE ─────────────────── */
+.completion-divider{
+  height:1px;
+  background:rgba(19,41,75,.12);
+  margin:24px 0 4px;
+}
+#instructionsModal .modal-box{text-align:left}
+#instructionsModal h2{text-align:center}
+.instr-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;font-size:.93rem;line-height:1.5;}
+.instr-icon{font-size:1.4rem;flex-shrink:0;margin-top:1px;}
+.reset-btn{
+  display:block;width:calc(100% - 28px);margin:10px 14px 0;padding:10px 0;
+  background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5;border-radius:8px;
+  font-size:.85rem;font-weight:600;cursor:pointer;transition:background .15s;touch-action:manipulation;
+}
+.reset-btn:hover{background:#fecaca;}
+.reset-btn:focus{outline:3px solid var(--sky);}
+.confirm-btn-row{display:flex;gap:10px;justify-content:center;margin-top:18px;}
+.confirm-yes{background:#dc2626;color:white;border:none;padding:11px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.95rem;}
+.confirm-yes:hover{background:#b91c1c;}
+.confirm-no{background:#e5e7eb;color:#333;border:none;padding:11px 28px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.95rem;}
+.confirm-no:hover{background:#d1d5db;}
+
+/* Rush guard */
+#rushModal .modal-box{max-width:480px;border-top:5px solid #f59e0b;}
+.activity-locked-overlay{
+  position:absolute;inset:0;background:rgba(255,255,255,.88);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;z-index:100;border-radius:12px;padding:30px;text-align:center;
+}
+.activity-locked-overlay h3{color:#dc2626;font-size:1.1rem;margin:0;}
+.activity-locked-overlay p{font-size:.9rem;color:#555;margin:0;line-height:1.5;}
+.lock-countdown{font-size:2rem;font-weight:800;color:#dc2626;}
+
+#aria-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+
+@media(max-width:640px){
+  #sidebar{width:260px;min-width:260px}
+  .cover-title{font-size:1.5rem}
+  .seq-layout{grid-template-columns:1fr}
+  .interaction-wrapper{padding:20px 16px 40px}
+  #cover-page{padding:16px 16px 40px}
+  .flip-card-inner{height:240px;}
+}
+</style>
+</head>
+<body>
+
+<div id="aria-live" aria-live="polite" aria-atomic="true"></div>
+
+<!-- INSTRUCTIONS MODAL -->
+<dialog class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+  <div class="modal-box">
+    <h2 id="instrTitle">How to Use This Module</h2><br>
+    <div class="instr-row"><span class="instr-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Click or tap to interact. Drag and drop cards where required. Press Continue to advance.</div></div>
+    <div class="instr-row"><span class="instr-icon">⌨️</span><div><strong>Keyboard:</strong> Use <kbd>Tab</kbd> to move, <kbd>Enter</kbd> or <kbd>Space</kbd> to select. Arrow keys navigate flip cards.</div></div>
+    <div class="instr-row"><span class="instr-icon">🔒</span><div><strong>Gated Progress:</strong> Each activity must be completed correctly before the next unlocks. Your progress saves automatically.</div></div>
+    <div class="instr-row"><span class="instr-icon">⚠️</span><div><strong>Rush Guard:</strong> Dragging cards rapidly without reading them may trigger warnings and temporary locks.</div></div><br>
+    <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
+  </div>
+</dialog>
+
+<!-- RESET MODAL -->
+<dialog class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <h2 id="resetTitle">Reset All Progress?</h2>
+    <p>This will <strong>erase all completed activities</strong> and re-lock everything except Activity 1. This cannot be undone.</p>
+    <div class="confirm-btn-row">
+      <button class="confirm-no" id="resetCancelBtn">Cancel</button>
+      <button class="confirm-yes" id="resetConfirmBtn">Yes, Reset Everything</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- COMPLETION MODAL -->
+<dialog class="modal-overlay" id="completionModal"
+     role="dialog" aria-modal="true" aria-labelledby="complTitle">
+  <div class="modal-box" style="max-width:600px;text-align:left;">
+    <button class="modal-close" id="closeCompletion" aria-label="Close">✕</button>
+
+    <!-- Not-done-yet warning -->
+    <div class="completion-warning" role="alert">
+      <span class="completion-warning-icon">⚠️</span>
+      <div><strong>You're not done yet!</strong> Finishing the activities is only
+      part of this assignment. To receive credit, you must still answer the
+      reflection question below in the Canvas text box.</div>
+    </div>
+
+    <!-- Icon + title -->
+    <div class="modal-icon" style="text-align:center;">💊</div>
+    <h2 id="complTitle" style="text-align:center;">
+      Activities Complete — One Step Left
+    </h2>
+    <p style="text-align:center;">
+      You've explored cocaine, amphetamines, and related stimulants — from mechanisms of action and historical waves of use to tolerance, dependence, and clinical applications.
+      Complete the reflection below to finish the assignment.
+    </p>
+
+    <!-- Randomly populated reflection question (filled by JS) -->
+    <div class="reflection-block">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question" id="reflectionQuestion">&nbsp;</p>
+    </div>
+
+    <!-- Assignment directions -->
+    <div class="reflection-instructions">
+      <strong>To complete this assignment:</strong>
+      <ol>
+        <li><strong>Copy and paste the question above</strong> into the
+            Canvas text box below this activity.</li>
+        <li>Answer the question in your <strong>own words</strong> —
+            a minimum of <strong>one paragraph of at least five
+            sentences</strong>.</li>
+        <li><strong>Do not use AI</strong> to write or generate any part
+            of your answer. The reflection must be entirely your own
+            thinking.</li>
+      </ol>
+      <p class="reflection-note">
+        ⬇ Scroll down to the Canvas text box beneath this activity
+        to submit your written response.
+      </p>
+    </div>
+
+    <!-- Divider -->
+    <div class="completion-divider"></div>
+
+    <!-- Study guide download -->
+    <div style="text-align:center;margin-top:18px;">
+      <button class="download-btn" id="downloadGuideBtn">
+        ⬇ Download Study Notes
+      </button>
+      <p style="font-size:.82rem;color:#666;margin-top:8px;">
+        Optional: keep this study guide for exam review.
+      </p>
+    </div>
+  </div>
+</dialog>
+
+<!-- RUSH GUARD MODAL -->
+<dialog class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle">
+  <div class="modal-box" style="border-top:5px solid #f59e0b;">
+    <div class="modal-icon" id="rushIcon">⚠️</div>
+    <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
+    <p id="rushMsg"></p>
+    <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
+    <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
+    <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
+  </div>
+</dialog>
+
+<!-- APP SHELL -->
+<div id="app-wrapper">
+  <aside id="sidebar" aria-label="Activity navigation">
+    <div class="sidebar-header">
+      Chapter 6
+      <small>Cocaine, Amphetamines & Related Stimulants</small>
+    </div>
+    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="5" id="overallProgressBar">
+      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
+    </div>
+    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
+    <div class="sidebar-footer" id="sidebar-footer">0 of 5 activities complete</div>
+    <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">↺ Reset Progress</button>
+  </aside>
+
+  <main id="main-content">
+    <div class="top-bar">
+      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
+      <span class="top-bar-title" id="topBarTitle">Chapter 6 – Cocaine, Amphetamines, and Related Stimulants</span>
+      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="img"></div>
+      <span class="step-label" id="stepLabel"></span>
+      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
+    </div>
+    <div class="content-scroll" id="content-area" tabindex="-1"></div>
+  </main>
+</div>
+
+<script>
+/* ==========================================================
+   RUSH GUARD  (escalating-timeout model)
+   A rush event = 2 wrong answers within a 5-second window.
+   Each step: dismissable warning -> rush again -> timed lockout.
+   Lockout durations escalate: 60s -> 3 min -> 4 min -> 5 min -> ...
+   (+1 minute per lockout). A fresh dismissable warning precedes
+   every lockout. There is no permanent lock and no password.
+========================================================== */
+const rushGuard = (() => {
+  const WINDOW_MS = 5000;   // rush detection window
+  const THRESHOLD = 2;      // wrong answers within the window = 1 rush event
+
+  let wrongTimestamps = [];
+  let strikes         = 0;  // strikes within the current step (1 = warned, 2 = lock)
+  let lockCount       = 0;  // lockouts triggered so far this session
+  let locked          = false;
+  let cooldownTimer   = null;
+  let currentWrapper  = null;
+  let flipRushCount   = 0;
+  let flipStrikes     = 0;
+
+  const $modal     = () => document.getElementById('rushModal');
+  const $icon      = () => document.getElementById('rushIcon');
+  const $title     = () => document.getElementById('rushTitle');
+  const $msg       = () => document.getElementById('rushMsg');
+  const $detail    = () => document.getElementById('rushDetail');
+  const $countdown = () => document.getElementById('rushCountdown');
+  const $dismiss   = () => document.getElementById('rushDismissBtn');
+
+  /* Duration (seconds) of the k-th lockout, k = 1,2,3,...
+     k=1 -> 60s, k=2 -> 180s (3 min), then +60s each subsequent lock. */
+  function durFor(k){ return k <= 1 ? 60 : 180 + (k - 2) * 60; }
+  function fmtLong(secs){
+    if(secs < 60) return secs + ' seconds';
+    const m = Math.round(secs / 60);
+    return m + ' minute' + (m !== 1 ? 's' : '');
+  }
+  function fmtAdj(secs){
+    return secs < 60 ? secs + '-Second' : Math.round(secs / 60) + '-Minute';
+  }
+  function fmtClock(secs){
+    if(secs < 60) return secs + 's';
+    const m = Math.floor(secs / 60), s = secs % 60;
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  function setModal(iconTxt,titleTxt,titleColor,borderColor,msgTxt,detailHTML,cdVisible,btnVisible,btnTxt){
+    const m=$modal();
+    m.querySelector('.modal-box').style.borderTopColor=borderColor;
+    $icon().textContent=iconTxt; $title().textContent=titleTxt; $title().style.color=titleColor;
+    $msg().textContent=msgTxt; $detail().innerHTML=detailHTML;
+    $countdown().style.display=cdVisible?'block':'none';
+    $dismiss().style.display=btnVisible?'':'none';
+    if(btnVisible) $dismiss().textContent=btnTxt;
+    m.classList.add('visible');
+    if(typeof m.showModal==='function'&&!m.open){try{m.showModal();}catch(e){}}
+    if(btnVisible) setTimeout(()=>$dismiss().focus(),50);
+  }
+
+  function showWarning(){
+    const nextLock = durFor(lockCount + 1);
+    if(lockCount===0){
+      setModal('⚠️','Slow Down!','#92400e','#f59e0b',
+        "You're answering too quickly without reading carefully. Take a moment to think before selecting.",
+        `Tip: Read each item fully before responding. Think before you click.<br><br>One more rush and this activity locks for <strong>${fmtLong(nextLock)}</strong>.`,
+        false,true,"I'll Read More Carefully");
+    } else {
+      const nextNextLock = durFor(lockCount + 2);
+      setModal('🚨','Final Warning','#dc2626','#dc2626',
+        `You're rushing again after already receiving a ${fmtLong(durFor(lockCount))}-long lockout.`,
+        `One more rush and this activity locks for <strong>${fmtLong(nextLock)}</strong>.<br><br>⚠️ Each additional rush adds <strong>another minute</strong> to the next lockout.`,
+        false,true,"I Understand — I'll Think First");
+    }
+  }
+
+  function showTimeout(){
+    lockCount++;
+    const dur = durFor(lockCount);
+    setModal('🔒',`Activity Locked — ${fmtAdj(dur)} Timeout`,'#dc2626','#dc2626',
+      `You rushed again immediately after a warning. This activity is locked for ${fmtLong(dur)}.`,
+      `Use this time to carefully study the content before continuing.<br><br>⚠️ Each additional rush adds <strong>another minute</strong> to the next lockout.`,
+      true,false,'');
+    startCooldown(dur);
+  }
+
+  function startCooldown(durSecs){
+    locked=true;
+    let secs=durSecs;
+    $countdown().textContent=fmtClock(secs);
+    if(currentWrapper){
+      currentWrapper.style.position='relative';
+      let ov=document.getElementById('rush-lock-overlay');
+      if(!ov){ ov=document.createElement('div'); ov.className='activity-locked-overlay'; ov.id='rush-lock-overlay'; currentWrapper.appendChild(ov); }
+      ov.innerHTML='<h3>🔒 Activity Locked</h3><p>Take '+fmtLong(durSecs)+' to study the content.</p><div class="lock-countdown" id="lock-secs">'+fmtClock(secs)+'</div><p style="font-size:.82rem;">Content will reshuffle when the timer ends.</p>';
+    }
+    if(cooldownTimer){ clearInterval(cooldownTimer); }
+    cooldownTimer=setInterval(()=>{
+      secs--;
+      const cd=$countdown(), ls=document.getElementById('lock-secs');
+      if(cd) cd.textContent=fmtClock(secs);
+      if(ls) ls.textContent=fmtClock(secs);
+      if(secs<=0){
+        clearInterval(cooldownTimer); cooldownTimer=null;
+        locked=false; strikes=0; wrongTimestamps=[];
+        const _rm=document.getElementById('rushModal');
+        _rm.classList.remove('visible');
+        if(typeof _rm.close==='function'&&_rm.open)_rm.close();
+        const ov=document.getElementById('rush-lock-overlay');
+        if(ov) ov.remove();
+        if(typeof currentView==='number') showActivity(currentView);
+      }
+    },1000);
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    const _rushDlg=document.getElementById('rushModal');
+    if(_rushDlg) _rushDlg.addEventListener('cancel',e=>{
+      const btn=document.getElementById('rushDismissBtn');
+      if(btn&&btn.style.display==='none')e.preventDefault();
+    });
+    document.getElementById('rushDismissBtn').addEventListener('click',()=>{
+      _rushDlg.classList.remove('visible');
+      if(typeof _rushDlg.close==='function'&&_rushDlg.open)_rushDlg.close();
+      wrongTimestamps=[];
+      flipRushCount=0;
+    });
+  });
+
+  return {
+    reset(){
+      wrongTimestamps=[]; strikes=0; locked=false;
+      flipRushCount=0; flipStrikes=0;
+      if(cooldownTimer){clearInterval(cooldownTimer);cooldownTimer=null;}
+      const ov=document.getElementById('rush-lock-overlay');
+      if(ov) ov.remove();
+    },
+    hardReset(){            // full reset incl. escalation ladder (Reset Progress)
+      this.reset();
+      lockCount=0;
+    },
+    clearTimestamps(){
+      wrongTimestamps=[];
+    },
+    recordWrong(wrapper){
+      if(locked) return;
+      currentWrapper=wrapper;
+      const now=Date.now();
+      wrongTimestamps.push(now);
+      wrongTimestamps=wrongTimestamps.filter(t=>now-t<WINDOW_MS);
+      if(wrongTimestamps.length<THRESHOLD) return;
+      wrongTimestamps=[]; strikes++;
+      if(strikes===1){ showWarning(); }
+      else { strikes=0; showTimeout(); }
+    },
+    recordFlipRush(wrapper){
+      if(locked) return;
+      currentWrapper=wrapper;
+      flipRushCount++;
+      if(flipRushCount<3) return;
+      flipRushCount=0; flipStrikes++;
+      if(flipStrikes===1){ showWarning(); }
+      else { flipStrikes=0; showTimeout(); }
+    },
+    isLocked(){ return locked; }
+  };
+})();
+
+
+/* ==========================================================
+   UTILITY
+========================================================== */
+function announce(msg){
+  const el=document.getElementById('aria-live');
+  el.textContent='';
+  setTimeout(()=>el.textContent=msg,60);
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+function qs(sel,root=document){return root.querySelector(sel)}
+function qsa(sel,root=document){return [...root.querySelectorAll(sel)]}
+
+function makeDraggable(cardEl){
+  cardEl.addEventListener('dragstart',e=>{
+    e.dataTransfer.setData('text/plain',cardEl.id);
+    cardEl.classList.add('dragging');
+  });
+  cardEl.addEventListener('dragend',()=>cardEl.classList.remove('dragging'));
+}
+
+function showPartB(partAEl,partBEl,initFn){
+  partAEl.classList.add('part-fade-out');
+  setTimeout(()=>{
+    partAEl.style.display='none';
+    partBEl.style.display='block';
+    partBEl.classList.add('part-fade-in');
+    if(initFn) initFn();
+  },360);
+}
+
+/* ==========================================================
+   ACTIVITIES DEFINITION
+========================================================== */
+const ACTIVITIES=[
+  {id:'act1',title:'Activity 1',subtitle:'Stimulant Essentials',type:'FLIPCARD',locked:false,done:false},
+  {id:'act2',title:'Activity 2',subtitle:'Cocaine vs. Amphetamines vs. Both',type:'CARDSORT',locked:true,done:false},
+  {id:'act3',title:'Activity 3',subtitle:'Cocaine Form, Route & Experience',type:'MATRIX',locked:true,done:false},
+  {id:'act4',title:'Activity 4',subtitle:'Stimulant Waves & Policy Timeline',type:'SEQUENCE',locked:true,done:false},
+  {id:'act5',title:'Activity 5',subtitle:'Clinical Scenario: Stimulant Psychosis',type:'BRANCHING',locked:true,done:false}
+];
+
+let currentView='cover';
+let savedReflectionQuestion='';
+
+/* ==========================================================
+   STORAGE
+========================================================== */
+const STORAGE_KEY='ch6-shell-v1';
+const partADone=new Array(5).fill(false);
+
+function saveProgress(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({
+    currentView,
+    done:ACTIVITIES.map(a=>a.done),
+    locked:ACTIVITIES.map(a=>a.locked),
+    partADone:[...partADone],
+    reflectionQ:savedReflectionQuestion
+  }));
+}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(!d||!Array.isArray(d.done)||d.done.length!==ACTIVITIES.length) return;
+    currentView=d.currentView!==undefined?d.currentView:'cover';
+    ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
+    ACTIVITIES[0].locked=false;
+    if(Array.isArray(d.partADone)) d.partADone.forEach((v,i)=>{if(i<partADone.length) partADone[i]=!!v;});
+    savedReflectionQuestion=d.reflectionQ||'';
+    announce('Your previous progress has been restored.');
+  }catch(e){}
+}
+function doneCount(){return ACTIVITIES.filter(a=>a.done).length;}
+
+/* ==========================================================
+   SIDEBAR
+========================================================== */
+function renderSidebar(){
+  const nav=document.getElementById('nav-list');
+  nav.innerHTML='';
+  const done=doneCount();
+  const pct=Math.round((done/ACTIVITIES.length)*100);
+  document.getElementById('overallProgressFill').style.width=pct+'%';
+  document.getElementById('overallProgressBar').setAttribute('aria-valuenow',done);
+  document.getElementById('sidebar-footer').textContent=`${done} of ${ACTIVITIES.length} activities complete`;
+  renderStepDots();
+
+  const cover=document.createElement('div');
+  cover.className='nav-item'+(currentView==='cover'?' active':'');
+  cover.tabIndex=0; cover.setAttribute('role','button'); cover.setAttribute('aria-label','Cover page');
+  cover.innerHTML=`<span class="nav-title">📋 Cover Page</span>`;
+  cover.onclick=()=>showCover();
+  cover.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cover.click();}};
+  nav.appendChild(cover);
+
+  ACTIVITIES.forEach((a,i)=>{
+    const item=document.createElement('div');
+    const isActive=currentView===i;
+    item.className=`nav-item${isActive?' active':''}${a.locked?' locked':''}${a.done?' done':''}`;
+    item.tabIndex=a.locked?-1:0;
+    item.setAttribute('role','button');
+    item.setAttribute('aria-disabled',a.locked?'true':'false');
+    item.setAttribute('aria-label',`${a.title}: ${a.subtitle}${a.done?' – Completed':a.locked?' – Locked':''}`);
+    item.innerHTML=`<span class="nav-title">${a.title}<br><small style="font-weight:400;font-size:.78rem;color:#555">${a.subtitle}</small></span>${a.locked?'<span class="lock-icon" aria-hidden="true">🔒</span>':''}`;
+    item.onclick=()=>{if(!a.locked){showActivity(i);}else{announce('This activity is locked. Complete the previous activity first.');}};
+    item.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();item.click();}};
+    nav.appendChild(item);
+  });
+
+  // Review nav item — appears only after all activities complete
+  if(ACTIVITIES.every(a=>a.done)){
+    const reviewItem=document.createElement('div');
+    reviewItem.className='nav-item'+(currentView==='review'?' active':'');
+    reviewItem.tabIndex=0;
+    reviewItem.setAttribute('role','button');
+    reviewItem.setAttribute('aria-label','Review and Study Guide');
+    reviewItem.innerHTML='<span class="nav-title">📋 Review &amp; Study Guide</span>';
+    reviewItem.onclick=()=>showReview();
+    reviewItem.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();reviewItem.click();}};
+    nav.appendChild(reviewItem);
+  }
+}
+
+/* ==========================================================
+   STEP DOTS
+========================================================== */
+function renderStepDots(){
+  const dots=document.getElementById('stepDots');
+  dots.innerHTML='';
+  ACTIVITIES.forEach((a,i)=>{
+    const dot=document.createElement('div');
+    dot.className='step-dot';
+    if(a.done)             dot.classList.add('done');
+    else if(currentView===i) dot.classList.add('active');
+    else if(a.locked)      dot.classList.add('locked');
+    dot.title=`${a.title}: ${a.done?'Complete':a.locked?'Locked':'In Progress'}`;
+    dot.setAttribute('aria-label',dot.title);
+    dots.appendChild(dot);
+  });
+  document.getElementById('stepLabel').textContent=`${doneCount()}/${ACTIVITIES.length}`;
+}
+
+/* sidebar toggle */
+document.getElementById('toggleBtn').addEventListener('click',()=>{
+  const collapsed=document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('toggleBtn').setAttribute('aria-expanded',!collapsed);
+  announce(collapsed?'Navigation hidden':'Navigation shown');
+});
+
+/* ==========================================================
+   COVER PAGE
+========================================================== */
+const actDescriptions=[
+  {num:1,name:'Stimulant Essentials',desc:'Flip through 10 key terms: stimulant, cocaine, amphetamines, formication syndrome, stimulant psychosis, crack cocaine, bath salts, monoamines, withdrawal depression, and vasoconstriction. Then pass a 3-question knowledge check.',tag:'Flip Cards + Knowledge Check · Remember'},
+  {num:2,name:'Cocaine vs. Amphetamines vs. Both',desc:'Sort 9 statement cards into three columns — Cocaine, Amphetamines, or Both — based on origin, duration, medical use, and effects.',tag:'Card Sort (3 Buckets) · Understand'},
+  {num:3,name:'Cocaine Form, Route & Experience',desc:'Complete a 4-row matrix by matching each cocaine form (coca leaf, street cocaine, crack) to its route of administration and resulting drug experience.',tag:'Drag-and-Drop Matrix · Apply'},
+  {num:4,name:'Stimulant Waves & Policy Timeline',desc:'Drag 8 historical events into chronological order — from cocaine\'s isolation in the 1850s through the Fair Sentencing Act of 2010. Then answer two explanation checks.',tag:'Timeline Ordering · Analyze'},
+  {num:5,name:'Clinical Scenario: Stimulant Psychosis',desc:'Work through a 3-decision clinical branching scenario involving a patient presenting after prolonged stimulant use, applying chapter concepts to evaluate symptoms, route, and policy.',tag:'Branching Scenario · Evaluate'}
+];
+
+function showCover(){
+  currentView='cover';
+  document.getElementById('topBarTitle').textContent='Chapter 6 – Cocaine, Amphetamines, and Related Stimulants';
+  renderSidebar();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  const pg=document.createElement('div');
+  pg.id='cover-page';
+  pg.innerHTML=`
+    <div class="cover-badge">PSYC 333 · Chapter 6</div>
+    <h1 class="cover-title">Cocaine, Amphetamines, and Related Stimulants</h1>
+    <p class="cover-subtitle">This chapter covers the history, pharmacology, and social impact of cocaine, amphetamines, methamphetamine, and synthetic cathinones (bath salts). Complete all 5 activities to master the concepts tested on the Chapter 6 quiz.</p>
+    <div class="cover-instructions">
+      <strong>How to use this module:</strong>
+      Complete each activity in order. Every activity must be finished correctly before the next one unlocks. Your progress is saved automatically so you can return where you left off.
+    </div>
+    <div class="cover-cards">${actDescriptions.map(a=>`
+      <div class="cover-card">
+        <div class="cover-card-num">${a.num}</div>
+        <div class="cover-card-body">
+          <h3>${a.name}</h3>
+          <p>${a.desc}</p>
+          <span class="cover-tag">${a.tag}</span>
+        </div>
+      </div>`).join('')}
+    </div>
+    <button class="get-started-btn" id="coverStartBtn">▶ Begin Activity 1</button>
+  `;
+  area.appendChild(pg);
+  qs('#coverStartBtn').addEventListener('click',()=>showActivity(0));
+  saveProgress();
+}
+
+/* ==========================================================
+   SHOW ACTIVITY
+========================================================== */
+
+/* ==========================================================
+   REVIEW PAGE  (unlocked after all 5 activities complete)
+========================================================== */
+function showReview(){
+  currentView='review';
+  document.getElementById('topBarTitle').textContent='Chapter 6 – Review & Study Guide';
+  renderSidebar();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  area.scrollTop=0;
+
+  const TERMS=[
+    ['Stimulant','Drug that increases neural activity, heightens mood, increases alertness, and decreases fatigue.'],
+    ['Cocaine','Derived from Erythroxylum coca; blocks monoamine reuptake (dopamine, norepinephrine, serotonin).'],
+    ['Amphetamines','Synthetic stimulants; similar to cocaine but longer-lasting (4–12 hours vs 20–80 min).'],
+    ['Formication Syndrome','Sensation of insects crawling under skin (“speed bugs”); sign of stimulant overdose.'],
+    ['Stimulant Psychosis','Paranoid delusions + disorientation resembling paranoid schizophrenia; from high doses or prolonged use.'],
+    ['Crack Cocaine','Smokable freebase cocaine; rapid intense high; severe crash in 10–20 minutes.'],
+    ['Bath Salts','Synthetic cathinones (mephedrone, MDPV); amphetamine-like; can cause acute psychosis.'],
+    ['Monoamines','Dopamine, norepinephrine, serotonin — all affected by stimulant drugs.'],
+    ['Withdrawal Depression','Primary withdrawal symptom (“cocaine blues”); caused by monoamine depletion.'],
+    ['Vasoconstriction','Nasal blood vessel narrowing from intranasal cocaine; causes tissue damage over time.'],
+  ];
+
+  const TIMELINE=[
+    ['1850s','Cocaine isolated from coca leaves'],
+    ['1914','Harrison Narcotics Act — cocaine controlled'],
+    ['Post-WWII','Amphetamine misuse epidemic (Japan, Sweden, Europe)'],
+    ['1960s','Meth used as heroin treatment — backfired'],
+    ['1986','Crack epidemic; Anti-Drug Abuse Acts'],
+    ['1990s–2000s','Meth resurfaces; kitchen labs proliferate'],
+    ['2006','Combat Meth Epidemic Act — pseudoephedrine regulated'],
+    ['2010','Fair Sentencing Act — reduced crack penalties'],
+  ];
+
+  const MISCONCEPTIONS=[
+    'Cocaine is NOT synthetic — it comes from the coca plant',
+    'Stimulant withdrawal does NOT cause severe physical symptoms (no seizures, no fever)',
+    'Depression IS the primary withdrawal symptom — not seizures',
+    'Cocaine does NOT enhance intellectual performance',
+    'Crack is smokable COCAINE, not amphetamine',
+    'Amphetamines last LONGER than cocaine (4–12 hours vs 20–80 min)',
+    'Stimulants IMPAIR complex learning (state-dependent + may hurt complex reasoning)',
+    'Bath salts are synthetic cathinones, not methcathinone salts used in bathing',
+  ];
+
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
+
+  area.innerHTML=`
+    <div style="max-width:820px;margin:40px auto;padding:20px 20px 60px;">
+      <h1 style="color:var(--navy);font-size:1.5rem;margin-bottom:4px;">&#x1F4CB; Chapter 6 Review &amp; Study Guide</h1>
+      <p style="color:#666;margin-bottom:32px;font-size:.95rem;">Cocaine, Amphetamines, and Related Stimulants</p>
+      ${reflectionBlock}
+      <section style="margin-bottom:32px;">
+        <h2 style="color:var(--navy);font-size:1.05rem;border-bottom:2px solid var(--sky);padding-bottom:6px;margin-bottom:14px;">Key Terms</h2>
+        <div style="display:grid;gap:10px;">
+          ${TERMS.map(([t,d])=>`
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid var(--sky);border-radius:8px;padding:12px 16px;">
+              <strong style="color:var(--navy);">${t}</strong>
+              <p style="margin:4px 0 0;color:#444;font-size:.91rem;line-height:1.55;">${d}</p>
+            </div>`).join('')}
+        </div>
+      </section>
+
+      <section style="margin-bottom:32px;">
+        <h2 style="color:var(--navy);font-size:1.05rem;border-bottom:2px solid var(--sky);padding-bottom:6px;margin-bottom:14px;">Mechanism of Action</h2>
+        <div style="background:#f0f7ff;border-radius:10px;padding:16px 20px;font-size:.92rem;line-height:1.7;color:#333;">
+          <ul style="margin:0;padding-left:20px;">
+            <li>Both cocaine AND amphetamines <strong>block reuptake</strong> of dopamine, norepinephrine, and serotonin.</li>
+            <li>Amphetamines <strong>also increase release</strong> of dopamine and norepinephrine &mdash; cocaine does not.</li>
+            <li>Stimulants act on the <strong>mesolimbic dopaminergic pathway</strong> (the brain’s reward system).</li>
+            <li>Long-term use depletes monoamines &rarr; explains post-use depression.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section style="margin-bottom:32px;">
+        <h2 style="color:var(--navy);font-size:1.05rem;border-bottom:2px solid var(--sky);padding-bottom:6px;margin-bottom:14px;">Cocaine vs. Amphetamines &mdash; Key Differences</h2>
+        <div style="overflow-x:auto;border-radius:10px;border:1px solid #e2e8f0;">
+          <table style="width:100%;border-collapse:collapse;font-size:.9rem;">
+            <thead>
+              <tr style="background:var(--navy);color:white;">
+                <th style="padding:10px 16px;text-align:left;font-weight:600;">Property</th>
+                <th style="padding:10px 16px;text-align:left;font-weight:600;">Cocaine</th>
+                <th style="padding:10px 16px;text-align:left;font-weight:600;">Amphetamines</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background:#f8fafc;"><td style="padding:9px 16px;font-weight:600;color:var(--navy);">Origin</td><td style="padding:9px 16px;">Plant-derived (coca leaf)</td><td style="padding:9px 16px;">Synthetic</td></tr>
+              <tr><td style="padding:9px 16px;font-weight:600;color:var(--navy);">Duration</td><td style="padding:9px 16px;">20&ndash;80 minutes</td><td style="padding:9px 16px;">4&ndash;12 hours</td></tr>
+              <tr style="background:#f8fafc;"><td style="padding:9px 16px;font-weight:600;color:var(--navy);">Mechanism</td><td style="padding:9px 16px;">Blocks reuptake only</td><td style="padding:9px 16px;">Blocks reuptake + increases release</td></tr>
+              <tr><td style="padding:9px 16px;font-weight:600;color:var(--navy);">Shared effects</td><td colspan="2" style="padding:9px 16px;">&uarr; mood, &uarr; alertness, &uarr; heart rate, vasoconstriction, withdrawal depression</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section style="margin-bottom:32px;">
+        <h2 style="color:var(--navy);font-size:1.05rem;border-bottom:2px solid var(--sky);padding-bottom:6px;margin-bottom:14px;">Historical Timeline</h2>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${TIMELINE.map(([yr,ev])=>`
+            <div style="display:flex;gap:14px;align-items:flex-start;background:#f8fafc;border-radius:8px;padding:10px 14px;">
+              <span style="background:var(--navy);color:white;font-size:.77rem;font-weight:700;padding:3px 9px;border-radius:12px;white-space:nowrap;flex-shrink:0;">${yr}</span>
+              <span style="color:#333;font-size:.91rem;line-height:1.5;">${ev}</span>
+            </div>`).join('')}
+        </div>
+      </section>
+
+      <section>
+        <h2 style="color:var(--navy);font-size:1.05rem;border-bottom:2px solid #dc2626;padding-bottom:6px;margin-bottom:14px;">&#x26A0;&#xFE0F; Common Misconceptions</h2>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${MISCONCEPTIONS.map(txt=>`
+            <div style="display:flex;gap:12px;align-items:flex-start;background:#fff5f5;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;">
+              <span style="color:#dc2626;font-weight:700;flex-shrink:0;font-size:1rem;">&times;</span>
+              <span style="color:#333;font-size:.91rem;line-height:1.5;">${txt}</span>
+            </div>`).join('')}
+        </div>
+      </section>
+    </div>
+  `;
+  announce('Review and Study Guide loaded.');
+}
+
+function showActivity(index){
+  rushGuard.reset();
+  currentView=index;
+  const a=ACTIVITIES[index];
+  document.getElementById('topBarTitle').textContent=`${a.title} – ${a.subtitle}`;
+  renderSidebar();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  area.scrollTop=0;
+
+  if(a.locked){
+    area.innerHTML=`<div class="interaction-wrapper"><div style="text-align:center;padding:60px 20px;color:#666;"><div style="font-size:3rem;">🔒</div><p style="margin-top:16px;font-size:1rem;">This activity is locked. Complete the previous activity first.</p></div></div>`;
+    return;
+  }
+
+  const fns=[renderAct1,renderAct2,renderAct3,renderAct4,renderAct5];
+  fns[index](area);
+}
+
+function completeActivity(index){
+  ACTIVITIES[index].done=true;
+  if(index+1<ACTIVITIES.length) ACTIVITIES[index+1].locked=false;
+  saveProgress();
+  renderSidebar();
+  if(index===ACTIVITIES.length-1){
+    savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+    saveProgress();
+    setTimeout(()=>showCompletionModal(),800);
+  }
+}
+
+/* ==========================================================
+   REFLECTION QUESTIONS + COMPLETION MODAL
+========================================================== */
+const REFLECTION_QUESTIONS=[
+  'What was the most important concept in this chapter? Describe the concept in your own words and why it matters.',
+  'How does this chapter connect to something you already know? Explain both the new idea and the old idea and how they connect.',
+  'What part of the chapter seemed most useful or relevant to real life? Explain the idea or concept in your own words. How is it relevant or useful?',
+  'How could the information in this chapter apply to your future coursework or your future career? Select at least 1 idea or concept and describe it in your own words. How does it apply to your future?',
+  'What is one takeaway from this chapter that you will remember later? Describe the takeaway in your own words. Why will you remember it later?'
+];
+
+function showCompletionModal(){
+  const q=savedReflectionQuestion;
+  const qEl = document.getElementById('reflectionQuestion');
+  if(qEl) qEl.textContent = q;
+
+  const _cm=document.getElementById('completionModal');
+  _cm.classList.add('visible');
+  if(typeof _cm.showModal==='function'&&!_cm.open){try{_cm.showModal();}catch(e){}}
+  document.getElementById('closeCompletion').focus();
+
+  announce('Congratulations! You have completed all 5 Chapter 6 activities. ' +
+           'A reflection question is now shown. Copy it into the Canvas text ' +
+           'box below and answer in your own words.');
+}
+
+/* ==========================================================
+   ACTIVITY 1 – FLIP CARDS + KNOWLEDGE CHECK (Remember)
+   Part A: flip cards; Part B: 3-question multiple choice
+========================================================== */
+function renderAct1(area){
+  const cards=[
+    {term:'Stimulant',def:'A class of drugs that increases overall neural activity, heightens mood, increases alertness, and decreases fatigue. Examples: cocaine, amphetamines, bath salts.'},
+    {term:'Cocaine',def:'A controlled stimulant derived from the coca plant (Erythroxylum coca) that blocks reuptake of monoamine neurotransmitters (dopamine, norepinephrine, serotonin).'},
+    {term:'Amphetamines',def:'Synthetic stimulant drugs (amphetamine, dextroamphetamine, methamphetamine) with effects very similar to cocaine but with a much longer duration of action (4–12 hours).'},
+    {term:'Formication Syndrome',def:'A sensation of insects crawling under the skin — a symptom of cocaine or amphetamine overdose. Also called "speed bugs" or "crank bugs" with amphetamines.'},
+    {term:'Stimulant Psychosis',def:'Paranoid delusions and disorientation resembling paranoid schizophrenia, caused by prolonged use or overdose of cocaine and/or amphetamines. Can be treated with chlorpromazine.'},
+    {term:'Crack Cocaine',def:'A smokable freebase form of cocaine produced by mixing cocaine salt with baking soda and water, then heating. Produces a very rapid, intense high followed by a severe crash within 10–20 minutes.'},
+    {term:'Bath Salts',def:'Synthetic cathinone stimulants (e.g., mephedrone, MDPV, methylone) often sold as "plant food" or "bath salts." Can produce acute psychosis and paranoia at high doses.'},
+    {term:'Monoamines',def:'A family of neurotransmitters — dopamine, norepinephrine, and serotonin — all affected by stimulant drugs through blocked reuptake and/or increased release.'},
+    {term:'Withdrawal Depression',def:'The primary withdrawal symptom following heavy cocaine or amphetamine use, caused by depletion of monoamines. Cocaine withdrawal depression is called the "cocaine blues."'},
+    {term:'Vasoconstriction',def:'Narrowing of blood vessels. Intranasal cocaine causes vasoconstriction in the nose, which slows absorption but causes tissue damage and inflammation with chronic use.'}
+  ];
+  shuffle(cards);
+
+  const visited=new Array(cards.length).fill(false);
+  let visitedCount=0;
+  let currentIdx=0;
+  let isFlipped=false;
+
+  const MIN_CARD_MS = 6000;
+  let cardArrivalTime = Date.now();
+
+  function recordCardExit(){
+    if(rushGuard.isLocked()) return;
+    const elapsed = Date.now() - cardArrivalTime;
+    if(elapsed < MIN_CARD_MS) rushGuard.recordFlipRush(wA);
+  }
+  function resetCardTimer(){ cardArrivalTime = Date.now(); }
+
+  // Part A wrapper
+  const wA=document.createElement('div');
+  wA.className='interaction-wrapper';
+  wA.innerHTML=`
+    <h1>Stimulant Essentials</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:18px;">
+      <strong>Activity 1 – Part A: Flip Card Carousel</strong> (Bloom's: Remember)<br>
+      Study each term and definition carefully. Spend at least <strong>6 seconds per card</strong> reading the definition. Navigate through all ${cards.length} cards, then pass a short knowledge check to unlock Activity 2.
+    </div>
+    <div class="flip-deck">
+      <div class="flip-progress-row">
+        <span class="ix-counter" style="margin:0;">Viewed: <span id="a1-viewed">0</span>/${cards.length}</span>
+        <div class="flip-progress-bar"><div class="flip-progress-fill" id="a1-prog-fill" style="width:0%"></div></div>
+      </div>
+      <div class="flip-counter" id="a1-counter" aria-live="polite">Card 1 of ${cards.length}</div>
+      <div class="flip-card-wrap" id="a1-card" tabindex="0" role="button"
+           aria-label="Flip card. Press Enter to flip." aria-roledescription="flip card">
+        <div class="flip-card-inner">
+          <div class="flip-face flip-front">
+            <div class="flip-label">Term</div>
+            <div class="flip-term" id="a1-term"></div>
+            <div class="flip-tap-hint">Click, tap, or press Enter to flip</div>
+          </div>
+          <div class="flip-face flip-back">
+            <div class="flip-label" style="color:var(--sky);">Definition</div>
+            <div class="flip-def" id="a1-def"></div>
+            <div class="flip-tap-hint" style="color:#888;">Click or press Enter to flip back</div>
+          </div>
+        </div>
+      </div>
+      <div class="viewed-badge" id="a1-badge"><span style="width:7px;height:7px;border-radius:50%;background:var(--sky);display:inline-block;"></span><span id="a1-badge-text">Not yet viewed</span></div>
+      <div class="flip-nav">
+        <button class="flip-nav-btn" id="a1-prev" aria-label="Previous card">⟨ Previous</button>
+        <button class="flip-nav-btn" id="a1-next" aria-label="Next card">Next ⟩</button>
+      </div>
+    </div>
+    <button id="act1-to-check" class="ix-continue-btn" disabled>Continue to Knowledge Check →</button>
+  `;
+  area.appendChild(wA);
+
+  // Part B wrapper (knowledge check) — hidden initially
+  const kcQuestions=[
+    {
+      text:'Which symptom involves the sensation of insects crawling under the skin?',
+      hint:'This symptom has a specific medical name that comes from the Latin word for ant. It\'s associated with cocaine or amphetamine overdose.',
+      options:[
+        {text:'Stimulant psychosis',correct:false},
+        {text:'Formication syndrome',correct:true},
+        {text:'Withdrawal depression',correct:false},
+        {text:'Vasodilation',correct:false}
+      ],
+      explanation:'Formication syndrome is the specific term for the sensation of insects crawling under the skin, caused by cocaine or amphetamine overdose. With amphetamines it is called "speed bugs" or "crank bugs."'
+    },
+    {
+      text:'Crack cocaine differs from powdered street cocaine primarily because it is:',
+      hint:'Think about how crack is taken — and how that route affects the speed and intensity of the high compared to snorting.',
+      options:[
+        {text:'Taken orally for slower absorption',correct:false},
+        {text:'Smoked, producing rapid absorption and an intense crash',correct:true},
+        {text:'Less addictive due to milder effects',correct:false},
+        {text:'Derived from amphetamines rather than coca leaves',correct:false}
+      ],
+      explanation:'Crack is a smokable freebase form of cocaine. Smoking produces very rapid delivery to the brain, an intensely pleasurable rush, and a severe crash within 10–20 minutes — driving strong cravings and high dependence potential.'
+    },
+    {
+      text:'Stimulant withdrawal is most commonly associated with which symptom?',
+      hint:'Stimulants work by flooding monoamine systems — so when they wear off, what do you think happens to mood? Think about what monoamine depletion causes.',
+      options:[
+        {text:'Seizures and convulsions',correct:false},
+        {text:'Vomiting and diarrhea',correct:false},
+        {text:'Depression',correct:true},
+        {text:'Respiratory failure',correct:false}
+      ],
+      explanation:'Depression is the primary withdrawal symptom after heavy cocaine or amphetamine use, caused by monoamine (especially dopamine) depletion. Cocaine withdrawal depression is nicknamed the "cocaine blues." Physical symptoms like seizures are NOT typical of stimulant withdrawal.'
+    }
+  ];
+
+  const wB=document.createElement('div');
+  wB.className='interaction-wrapper';
+  wB.style.display='none';
+  wB.innerHTML=`
+    <h1>Stimulant Essentials – Knowledge Check</h1>
+    <div class="two-part-banner">
+      <div class="tpb-icon">📝</div>
+      <div><span class="tpb-badge">Part B</span>Answer all 3 questions correctly to unlock Activity 2. Answers are marked right or wrong immediately — wrong answers give hints and let you try again.</div>
+    </div>
+    <div id="kc-questions"></div>
+    <button id="act1-continue" class="ix-continue-btn" disabled style="margin-top:20px;">✅ Continue to Activity 2</button>
+  `;
+  area.appendChild(wB);
+
+  // ---------- FLIP CARD LOGIC ----------
+  function updateCard(){
+    const c=cards[currentIdx];
+    qs('#a1-term',wA).textContent=c.term;
+    qs('#a1-def',wA).textContent=c.def;
+    qs('#a1-counter',wA).textContent=`Card ${currentIdx+1} of ${cards.length}`;
+    qs('#a1-card',wA).classList.remove('flipped');
+    qs('#a1-prev',wA).disabled=currentIdx===0;
+    qs('#a1-next',wA).disabled=currentIdx===cards.length-1;
+    isFlipped=false;
+    resetCardTimer();
+    updateBadge();
+  }
+  function updateBadge(){
+    const done=visited[currentIdx];
+    const badge=qs('#a1-badge',wA);
+    const dot=badge.querySelector('span');
+    qs('#a1-badge-text',wA).textContent=done?'Viewed ✓':'Not yet viewed';
+    badge.style.background=done?'#e6f9ee':'#f0f7ff';
+    badge.style.borderColor=done?'#a3e4bc':'#D3E3FF';
+    dot.style.background=done?'#34c759':'#00A3E0';
+  }
+  function markViewed(){
+    if(!visited[currentIdx]){
+      visited[currentIdx]=true;
+      visitedCount++;
+      const pct=Math.round(visitedCount/cards.length*100);
+      qs('#a1-viewed',wA).textContent=visitedCount;
+      qs('#a1-prog-fill',wA).style.width=pct+'%';
+      updateBadge();
+      if(visitedCount===cards.length){
+        qs('#act1-to-check',wA).disabled=false;
+        announce('All cards viewed! Click Continue to reach the knowledge check.');
+      }
+    }
+  }
+  function toggleFlip(){
+    if(rushGuard.isLocked()) return;
+    const card=qs('#a1-card',wA);
+    isFlipped=!isFlipped;
+    card.classList.toggle('flipped',isFlipped);
+    if(isFlipped){
+      markViewed();
+      announce('Definition: '+cards[currentIdx].def);
+    } else {
+      resetCardTimer();
+      announce('Term: '+cards[currentIdx].term);
+    }
+  }
+  function navigateCard(dir){
+    if(rushGuard.isLocked()) return;
+    recordCardExit();
+    if(rushGuard.isLocked()) return;
+    const newIdx = currentIdx + dir;
+    if(newIdx < 0 || newIdx >= cards.length) return;
+    currentIdx = newIdx;
+    updateCard();
+    announce(`Card ${currentIdx+1} of ${cards.length}: ${cards[currentIdx].term}`);
+  }
+
+  qs('#a1-card',wA).addEventListener('click',toggleFlip);
+  qs('#a1-card',wA).addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleFlip();}
+    if(e.key==='ArrowRight'){e.preventDefault();navigateCard(1);}
+    if(e.key==='ArrowLeft'){e.preventDefault();navigateCard(-1);}
+  });
+  qs('#a1-prev',wA).addEventListener('click',()=>navigateCard(-1));
+  qs('#a1-next',wA).addEventListener('click',()=>navigateCard(1));
+
+  document.addEventListener('keydown',function arrowNav(e){
+    if(!document.contains(wA)){document.removeEventListener('keydown',arrowNav);return;}
+    if(document.activeElement===qs('#a1-card',wA)) return;
+    if(e.key==='ArrowRight') navigateCard(1);
+    else if(e.key==='ArrowLeft') navigateCard(-1);
+  });
+
+  qs('#act1-to-check',wA).addEventListener('click',()=>showPartB(wA,wB,buildKC));
+  resetCardTimer();
+  updateCard();
+
+  // ---------- KNOWLEDGE CHECK LOGIC ----------
+  // wrongAttempts[qi] tracks how many wrong tries on each question for progressive hints
+  const wrongAttempts=new Array(kcQuestions.length).fill(0);
+  let correctCount=0;
+
+  function buildKC(){
+    const qArea=qs('#kc-questions',wB);
+    qArea.innerHTML='';
+    const shuffledQ=[...kcQuestions]; shuffle(shuffledQ);
+    shuffledQ.forEach((q,qi)=>{
+      const block=document.createElement('div');
+      block.className='kc-question';
+      block.dataset.qi=qi;
+      // store shuffled options on block so we can re-render them
+      block.dataset.answered='false';
+      const shuffledOpts=[...q.options]; shuffle(shuffledOpts);
+      block._opts=shuffledOpts;
+      block._q=q;
+      renderKCBlock(block,qi,shuffledOpts,q);
+      qArea.appendChild(block);
+    });
+  }
+
+  function renderKCBlock(block,qi,opts,q){
+    rushGuard.clearTimestamps();
+    block.innerHTML=`
+      <div class="kc-qtext">${qi+1}. ${q.text}</div>
+      <div class="kc-options">${opts.map((o,oi)=>`
+        <div class="kc-opt" tabindex="0" role="button" data-correct="${o.correct}" data-oi="${oi}">${o.text}</div>`).join('')}
+      </div>
+      <div class="kc-exp" id="kc-exp-${qi}"></div>
+    `;
+    qsa('.kc-opt',block).forEach(opt=>{
+      opt.addEventListener('click',()=>selectKCOpt(opt,block,q,qi));
+      opt.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectKCOpt(opt,block,q,qi);}});
+    });
+  }
+
+  function selectKCOpt(opt,block,q,qi){
+    if(block.dataset.answered==='true') return;
+    const isCorrect=opt.dataset.correct==='true';
+    const exp=qs(`#kc-exp-${qi}`,wB);
+
+    if(isCorrect){
+      // Lock all options, highlight correct green, show full explanation
+      qsa('.kc-opt',block).forEach(o=>o.style.pointerEvents='none');
+      opt.classList.add('kc-opt-correct');
+      block.classList.remove('kc-incorrect');
+      block.classList.add('kc-correct');
+      block.dataset.answered='true';
+      exp.textContent='✅ '+q.explanation;
+      exp.classList.add('visible');
+      announce('Correct! '+q.explanation);
+      correctCount++;
+      checkKCAllDone();
+    } else {
+      // Highlight wrong red, keep other options active for retry
+      opt.classList.add('kc-opt-wrong');
+      block.classList.add('kc-incorrect');
+      wrongAttempts[qi]++;
+      rushGuard.recordWrong(wB);
+
+      // Progressive hints
+      const attempts=wrongAttempts[qi];
+      let hint='';
+      if(attempts===1){
+        hint='❌ Not quite — re-read the question and try again.';
+      } else if(attempts===2){
+        hint=`❌ Still not right. Hint: ${q.hint||'Think about the definitions from the flip cards.'}`;
+      } else {
+        // 3rd+ wrong: reveal the correct answer highlighted green but keep it selectable
+        qsa('.kc-opt',block).forEach(o=>{
+          if(o.dataset.correct==='true') o.classList.add('kc-opt-correct');
+        });
+        hint='The correct answer is highlighted above. Select it to continue.';
+      }
+
+      exp.textContent=hint;
+      exp.classList.add('visible');
+      announce('Incorrect. '+hint);
+
+      // Re-enable all non-wrong options after a beat so learner can retry
+      setTimeout(()=>{
+        qsa('.kc-opt',block).forEach(o=>{
+          if(!o.classList.contains('kc-opt-wrong')&&!o.classList.contains('kc-opt-correct')){
+            o.style.pointerEvents='';
+          }
+        });
+      },400);
+    }
+  }
+
+  function checkKCAllDone(){
+    const blocks=qsa('.kc-question',wB);
+    const allCorrect=blocks.every(b=>b.dataset.answered==='true'&&b.classList.contains('kc-correct'));
+    if(allCorrect){
+      qs('#act1-continue',wB).disabled=false;
+      announce('All questions correct! Continue button is now available.');
+    }
+  }
+
+  qs('#act1-continue',wB).addEventListener('click',()=>{completeActivity(0);showActivity(1);});
+}
+
+/* ==========================================================
+   ACTIVITY 2 – CARD SORT 3 BUCKETS (Understand)
+   Cocaine vs. Amphetamines vs. Both
+========================================================== */
+function renderAct2(area){
+  const allCards=[
+    {id:'a2c0',text:'Derived from coca leaves',bucket:'cocaine'},
+    {id:'a2c1',text:'Synthetic drugs',bucket:'amphetamines'},
+    {id:'a2c2',text:'Can produce stimulant psychosis',bucket:'both'},
+    {id:'a2c3',text:'Shorter duration of action (20–80 minutes)',bucket:'cocaine'},
+    {id:'a2c4',text:'Longer lasting stimulant effects (4–12 hours)',bucket:'amphetamines'},
+    {id:'a2c5',text:'Associated with formication syndrome at high doses',bucket:'both'},
+    {id:'a2c6',text:'Used medically to treat ADHD',bucket:'amphetamines'},
+    {id:'a2c7',text:'Blocks monoamine reuptake as its primary mechanism',bucket:'cocaine'},
+    {id:'a2c8',text:'Withdrawal commonly includes depression',bucket:'both'}
+  ];
+  shuffle(allCards);
+
+  const wrongCounts={};
+  let correct=0;
+  const total=allCards.length;
+  let selectedCard=null;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Cocaine vs. Amphetamines vs. Both</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Activity 2 – Card Sort</strong> (Bloom's: Understand)<br>
+      Drag the top card from the stack into the correct bucket. Wrong drops return the card to the stack and show a hint.
+    </div>
+    <div class="ix-counter" id="a2-prog">Progress: 0/${total}</div>
+
+    <!-- Card stack -->
+    <div style="display:flex;justify-content:center;margin-bottom:28px;">
+      <div id="a2-stack" style="position:relative;width:300px;min-height:100px;" aria-label="Card stack"></div>
+    </div>
+
+    <!-- Three horizontal buckets -->
+    <div style="display:flex;gap:14px;align-items:flex-start;">
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+        <div class="col-sort-head" style="border-radius:8px 8px 0 0;">Cocaine</div>
+        <div class="col-sort-zone" id="a2-cocaine" data-bucket="cocaine" tabindex="0" role="region" aria-label="Cocaine bucket" style="border-radius:0 0 8px 8px;min-height:80px;"></div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+        <div class="col-sort-head" style="border-radius:8px 8px 0 0;">Amphetamines</div>
+        <div class="col-sort-zone" id="a2-amphetamines" data-bucket="amphetamines" tabindex="0" role="region" aria-label="Amphetamines bucket" style="border-radius:0 0 8px 8px;min-height:80px;"></div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+        <div class="col-sort-head" style="border-radius:8px 8px 0 0;">Both</div>
+        <div class="col-sort-zone" id="a2-both" data-bucket="both" tabindex="0" role="region" aria-label="Both bucket" style="border-radius:0 0 8px 8px;min-height:80px;"></div>
+      </div>
+    </div>
+
+    <div id="a2-feedback" class="ix-feedback" style="margin-top:14px;"></div>
+    <button id="act2-continue" class="ix-continue-btn" disabled>Continue to Activity 3</button>
+  `;
+  area.appendChild(w);
+
+  // Build stacked cards — render all in DOM, offset so they look like a stack
+  // Only the top card (last in DOM order = visually top) is draggable at a time
+  const stackEl=qs('#a2-stack',w);
+
+  function buildStack(){
+    stackEl.innerHTML='';
+    // Remaining unplaced cards — render bottom-first so top card is last child
+    const remaining=allCards.filter(item=>!item._placed);
+    remaining.forEach((item,i)=>{
+      const isTop=(i===remaining.length-1);
+      const offset=(remaining.length-1-i)*4; // stack shadow offset in px
+      const card=document.createElement('div');
+      card.className='sort-stack-card';
+      card.id=item.id;
+      card.dataset.bucket=item.bucket;
+      card.textContent=item.text;
+      card.style.cssText=`
+        position:absolute;top:${offset}px;left:${offset}px;right:${-offset}px;
+        background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);
+        color:#fff;border-radius:10px;padding:14px 16px;font-size:.9rem;font-weight:600;
+        line-height:1.4;box-shadow:0 4px 12px rgba(0,0,0,.18);
+        user-select:none;-webkit-user-select:none;
+        cursor:${isTop?'grab':'default'};
+        pointer-events:${isTop?'auto':'none'};
+        z-index:${i};
+        min-height:64px;
+      `;
+      if(isTop){
+        card.setAttribute('draggable','true');
+        card.setAttribute('tabindex','0');
+        card.setAttribute('aria-label',`Top card: ${item.text}. Drag to a bucket.`);
+        card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',card.id);card.style.opacity='.4';});
+        card.addEventListener('dragend',()=>{card.style.opacity='1';});
+        card.addEventListener('keydown',e=>{
+          if(e.key==='Enter'||e.key===' '){
+            e.preventDefault();
+            if(selectedCard===card){selectedCard=null;card.style.outline='';announce('Deselected.');}
+            else{selectedCard=card;card.style.outline='3px solid var(--sky)';announce(`"${item.text}" selected. Tab to a bucket and press Enter.`);}
+          }
+        });
+      }
+      stackEl.appendChild(card);
+    });
+    // Set stack container height
+    const h=remaining.length>0?80+(remaining.length-1)*4:40;
+    stackEl.style.height=h+'px';
+  }
+
+  function updateProg(){qs('#a2-prog',w).textContent=`Progress: ${correct}/${total}`;}
+
+  function dropCard(cardEl,zone){
+    const cardBucket=cardEl.dataset.bucket;
+    const zoneBucket=zone.dataset.bucket;
+    const item=allCards.find(c=>c.id===cardEl.id);
+    if(cardBucket===zoneBucket){
+      // Build a placed card for the bucket (non-draggable, same blue style)
+      const placed=document.createElement('div');
+      placed.style.cssText=`
+        background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);
+        color:#fff;border-radius:8px;padding:10px 12px;font-size:.82rem;font-weight:600;
+        line-height:1.3;margin-bottom:6px;box-shadow:0 2px 6px rgba(0,0,0,.15);
+      `;
+      placed.textContent=cardEl.textContent;
+      zone.appendChild(placed);
+      if(item) item._placed=true;
+      correct++; updateProg();
+      const fb=qs('#a2-feedback',w);
+      buildStack();
+      if(correct===total){
+        fb.textContent='✅ All cards correctly sorted! Cocaine has a shorter duration, amphetamines are synthetic with longer effects, and both can produce psychosis and withdrawal depression.';
+        fb.className='ix-feedback correct visible';
+        qs('#act2-continue',w).disabled=false;
+        announce('All cards sorted correctly. Activity 2 complete.');
+      } else {
+        fb.textContent='✅ Correct! Keep going.';
+        fb.className='ix-feedback correct visible';
+        announce('Correct placement.');
+      }
+    } else {
+      const key=cardEl.id;
+      wrongCounts[key]=(wrongCounts[key]||0)+1;
+      const wc=wrongCounts[key];
+      const fb=qs('#a2-feedback',w);
+      if(wc===1) fb.textContent='Not right — review how cocaine and amphetamines differ in origin, duration, and medical use.';
+      else if(wc===2) fb.textContent='Hint: Cocaine is plant-derived with a short duration; amphetamines are synthetic with longer effects; both share overdose and withdrawal features.';
+      else fb.textContent=`Hint: This card belongs in the "${cardBucket}" bucket.`;
+      fb.className='ix-feedback incorrect visible';
+      rushGuard.recordWrong(w);
+      announce('Incorrect placement.');
+    }
+    if(selectedCard){selectedCard.style.outline='';selectedCard=null;}
+  }
+
+  ['#a2-cocaine','#a2-amphetamines','#a2-both'].forEach(sel=>{
+    const zone=qs(sel,w);
+    zone.addEventListener('dragover',e=>e.preventDefault());
+    zone.addEventListener('dragenter',()=>zone.classList.add('drag-over'));
+    zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+    zone.addEventListener('drop',e=>{
+      e.preventDefault(); zone.classList.remove('drag-over');
+      const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+      if(card) dropCard(card,zone);
+    });
+    zone.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&selectedCard){
+        e.preventDefault(); dropCard(selectedCard,zone);
+      }
+    });
+  });
+
+  buildStack();
+  qs('#act2-continue',w).addEventListener('click',()=>{completeActivity(1);showActivity(2);});
+}
+
+/* ==========================================================
+   ACTIVITY 3 – DRAG-AND-DROP MATRIX (Apply)
+   Cocaine form → route → drug experience
+========================================================== */
+function renderAct3(area){
+  const rows=[
+    {
+      form:'Coca leaf (chewed)',
+      routeId:'oral',
+      expId:'mild',
+      routeLabel:'Oral',
+      expLabel:'Mild stimulation; slow absorption; low intensity'
+    },
+    {
+      form:'Street cocaine – HCl (intranasal)',
+      routeId:'intranasal',
+      expId:'moderate',
+      routeLabel:'Intranasal (snorting)',
+      expLabel:'Slower onset; moderate intensity; nasal tissue damage risk'
+    },
+    {
+      form:'Street cocaine – HCl (injected)',
+      routeId:'injection',
+      expId:'rapid',
+      routeLabel:'Intravenous injection',
+      expLabel:'Rapid onset (30 sec); intense rush; highest overdose risk'
+    },
+    {
+      form:'Crack cocaine',
+      routeId:'smoking',
+      expId:'veryrapid',
+      routeLabel:'Smoking (inhalation)',
+      expLabel:'Very rapid onset; intense euphoria; severe crash in 10–20 min'
+    }
+  ];
+
+  // Only the 4 correct route cards and 4 correct experience cards — no distractors
+  const routeCards=rows.map(r=>({id:r.routeId,label:r.routeLabel}));
+  const expCards=rows.map(r=>({id:r.expId,label:r.expLabel}));
+  shuffle(routeCards);
+  shuffle(expCards);
+
+  let correctCount=0;
+  const totalDrops=rows.length*2;
+  let selectedCard=null;
+  let selectedType=null;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+
+  const tableHTML=`
+    <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+      <thead>
+        <tr>
+          <th style="background:var(--navy);color:#fff;padding:10px 12px;text-align:left;border-radius:8px 0 0 0;font-size:.88rem;white-space:nowrap;">Cocaine Form</th>
+          <th style="background:var(--navy);color:#fff;padding:10px 12px;text-align:left;font-size:.88rem;">Route of Administration</th>
+          <th style="background:var(--navy);color:#fff;padding:10px 12px;text-align:left;border-radius:0 8px 0 0;font-size:.88rem;">Resulting Drug Experience</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((r,i)=>`
+          <tr>
+            <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;font-size:.9rem;font-weight:600;color:var(--navy);white-space:nowrap;">${r.form}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;vertical-align:middle;">
+              <div class="a3-drop" id="a3-route-${i}" data-row="${i}" data-type="route"
+                style="min-height:54px;border:2px dashed var(--accent);border-radius:8px;padding:6px;" tabindex="0" role="region" aria-label="Route drop for ${r.form}"></div>
+            </td>
+            <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;vertical-align:middle;">
+              <div class="a3-drop" id="a3-exp-${i}" data-row="${i}" data-type="exp"
+                style="min-height:54px;border:2px dashed var(--accent);border-radius:8px;padding:6px;" tabindex="0" role="region" aria-label="Experience drop for ${r.form}"></div>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  `;
+
+  w.innerHTML=`
+    <h1>Cocaine Form, Route &amp; Experience</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Activity 3 – Matrix Completion</strong> (Bloom's: Apply)<br>
+      Drag each card into the correct row. Routes go in the middle column, experiences go in the right column.
+    </div>
+    <div class="ix-counter" id="a3-prog">Progress: 0/${totalDrops}</div>
+
+    <div style="display:flex;gap:24px;margin-bottom:16px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:180px;">
+        <div style="font-weight:700;font-size:.85rem;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Routes of Administration</div>
+        <div id="a3-route-bank" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+      <div style="flex:2;min-width:220px;">
+        <div style="font-weight:700;font-size:.85rem;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Drug Experiences</div>
+        <div id="a3-exp-bank" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </div>
+
+    ${tableHTML}
+    <div id="a3-feedback" class="ix-feedback" style="margin-top:12px;"></div>
+    <button id="act3-continue" class="ix-continue-btn" disabled>Continue to Activity 4</button>
+  `;
+  area.appendChild(w);
+
+  function updateProg(){qs('#a3-prog',w).textContent=`Progress: ${correctCount}/${totalDrops}`;}
+
+  function makeBlueCard(label,id,bareId,type){
+    const card=document.createElement('div');
+    card.id=id;
+    card.dataset.cardid=bareId;   // bare id used for matching (e.g. "oral", "mild")
+    card.dataset.type=type;
+    card.textContent=label;
+    card.setAttribute('draggable','true');
+    card.setAttribute('tabindex','0');
+    card.style.cssText=`
+      background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);
+      color:#fff;border-radius:8px;padding:10px 14px;font-size:.85rem;font-weight:600;
+      line-height:1.4;box-shadow:0 3px 8px rgba(0,0,0,.18);cursor:grab;
+      user-select:none;-webkit-user-select:none;transition:opacity .15s,box-shadow .15s;
+    `;
+    card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',card.id);card.style.opacity='.4';});
+    card.addEventListener('dragend',()=>{card.style.opacity='1';});
+    card.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();
+        if(selectedCard===card){selectedCard=null;selectedType=null;card.style.outline='';announce('Deselected.');}
+        else{if(selectedCard){selectedCard.style.outline='';}selectedCard=card;selectedType=type;card.style.outline='3px solid var(--sky)';announce(`"${label}" selected. Tab to a drop zone and press Enter.`);}
+      }
+    });
+    return card;
+  }
+
+  const wrongCounts={};
+
+  function dropItem(card,zone){
+    const rowIdx=parseInt(zone.dataset.row);
+    const type=zone.dataset.type;
+    const row=rows[rowIdx];
+    const correctId=type==='route'?row.routeId:row.expId;
+    if(card.dataset.cardid===correctId){
+      card.setAttribute('draggable','false');
+      card.setAttribute('tabindex','-1');
+      card.style.cursor='default';
+      card.style.outline='';
+      card.style.opacity='1';
+      zone.dataset.filled='true';
+      zone.appendChild(card);
+      zone.style.border='2px solid var(--green-border)';
+      zone.style.background='var(--green-bg)';
+      correctCount++; updateProg();
+      const fb=qs('#a3-feedback',w);
+      if(correctCount===totalDrops){
+        fb.textContent='✅ Matrix complete! Notice how smoking and IV injection produce the most rapid, intense effects — and carry the highest risk of dependence and overdose.';
+        fb.className='ix-feedback correct visible';
+        qs('#act3-continue',w).disabled=false;
+        announce('Matrix complete. Activity 3 done.');
+      } else {
+        fb.textContent='✅ Correct! Keep going.';
+        fb.className='ix-feedback correct visible';
+        announce('Correct placement.');
+      }
+    } else {
+      const key=card.id+'-'+rowIdx+'-'+type;
+      wrongCounts[key]=(wrongCounts[key]||0)+1;
+      const fb=qs('#a3-feedback',w);
+      if(wrongCounts[key]===1) fb.textContent='Not right — think about how that cocaine form is typically taken and what happens.';
+      else if(wrongCounts[key]===2) fb.textContent='Hint: Match each form to its typical route. Coca leaves → oral; street powder → snorted or injected; crack → smoked.';
+      else fb.textContent=`Hint: The correct ${type==='route'?'route':'experience'} for this row is "${type==='route'?row.routeLabel:row.expLabel}."`;
+      fb.className='ix-feedback incorrect visible';
+      rushGuard.recordWrong(w);
+      announce('Incorrect placement.');
+    }
+    if(selectedCard){selectedCard.style.outline='';selectedCard=null;selectedType=null;}
+  }
+
+  // Build route cards
+  const routeBank=qs('#a3-route-bank',w);
+  routeCards.forEach((opt)=>{
+    const card=makeBlueCard(opt.label,`a3r-${opt.id}`,opt.id,'route');
+    routeBank.appendChild(card);
+  });
+
+  // Build experience cards
+  const expBank=qs('#a3-exp-bank',w);
+  expCards.forEach((opt)=>{
+    const card=makeBlueCard(opt.label,`a3e-${opt.id}`,opt.id,'exp');
+    expBank.appendChild(card);
+  });
+
+  // Wire drop zones
+  rows.forEach((r,i)=>{
+    ['route','exp'].forEach(type=>{
+      const zone=qs(`#a3-${type}-${i}`,w);
+      zone.dataset.filled='false';
+      zone.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';});
+      zone.addEventListener('dragenter',e=>{e.preventDefault();if(zone.dataset.filled==='false') zone.style.background='#eef6ff';});
+      zone.addEventListener('dragleave',()=>{if(zone.dataset.filled==='false') zone.style.background='';});
+      zone.addEventListener('drop',e=>{
+        e.preventDefault();
+        if(zone.dataset.filled==='true') return;
+        zone.style.background='';
+        const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+        if(card) dropItem(card,zone);
+      });
+      zone.addEventListener('keydown',e=>{
+        if((e.key==='Enter'||e.key===' ')&&selectedCard&&selectedType===type){
+          e.preventDefault();
+          if(zone.dataset.filled==='false') dropItem(selectedCard,zone);
+        }
+      });
+    });
+  });
+
+  qs('#act3-continue',w).addEventListener('click',()=>{completeActivity(2);showActivity(3);});
+}
+
+/* ==========================================================
+   ACTIVITY 4 – TIMELINE MATCHING (Analyze)
+   Dates on drop zones; description cards in a stack; 2×4 grid
+========================================================== */
+function renderAct4(area){
+  const steps=[
+    {text:'European chemists isolate cocaine from coca leaves',date:'1850s',step:'1'},
+    {text:'Harrison Narcotics Act — cocaine placed under legal control',date:'1914',step:'2'},
+    {text:'Amphetamine misuse rises significantly after World War II',date:'Post-WWII',step:'3'},
+    {text:'Crack cocaine epidemic emerges nationally',date:'1986',step:'4'},
+    {text:'Anti-Drug Abuse Acts specify penalties for crack cocaine',date:'1986 & 1988',step:'5'},
+    {text:'Methamphetamine resurges; kitchen labs spread across the Midwest',date:'1990s–2000s',step:'6'},
+    {text:'Combat Methamphetamine Epidemic Act limits pseudoephedrine sales',date:'2006',step:'7'},
+    {text:'Fair Sentencing Act reduces mandatory minimums for crack',date:'2010',step:'8'}
+  ];
+  const shuffled=[...steps]; shuffle(shuffled);
+
+  const wrongCounts={};
+  let correct=0;
+  let selectedCard=null;
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Stimulant Waves &amp; Policy Timeline</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Activity 4 – Timeline Matching</strong> (Bloom's: Analyze)<br>
+      Drag the top description card onto the correct date box. All 8 events must be matched correctly.
+    </div>
+    <div class="ix-counter" id="a4-prog">Progress: 0/8</div>
+
+    <div style="display:flex;justify-content:center;margin-bottom:28px;">
+      <div id="a4-stack" style="position:relative;width:360px;min-height:80px;" aria-label="Description card stack"></div>
+    </div>
+
+    <div id="a4-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;"></div>
+
+    <div id="a4-feedback" class="ix-feedback" style="margin-top:12px;"></div>
+    <button id="act4-continue" class="ix-continue-btn" disabled>Continue to Activity 5</button>
+  `;
+  area.appendChild(w);
+
+  function updateProg(){qs('#a4-prog',w).textContent=`Progress: ${correct}/8`;}
+
+  function buildStack4(){
+    const stackEl=qs('#a4-stack',w);
+    stackEl.innerHTML='';
+    const remaining=shuffled.filter(item=>!item._placed);
+    remaining.forEach((item,i)=>{
+      const isTop=(i===remaining.length-1);
+      const offset=(remaining.length-1-i)*4;
+      const card=document.createElement('div');
+      card.id='a4card-'+item.step;
+      card.dataset.step=item.step;
+      card.textContent=item.text;
+      card.style.cssText=`
+        position:absolute;top:${offset}px;left:${offset}px;right:${-offset}px;
+        background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);
+        color:#fff;border-radius:10px;padding:14px 16px;font-size:.88rem;font-weight:600;
+        line-height:1.45;box-shadow:0 4px 12px rgba(0,0,0,.18);
+        user-select:none;-webkit-user-select:none;
+        cursor:${isTop?'grab':'default'};
+        pointer-events:${isTop?'auto':'none'};
+        z-index:${i};min-height:64px;
+      `;
+      if(isTop){
+        card.setAttribute('draggable','true');
+        card.setAttribute('tabindex','0');
+        card.setAttribute('aria-label',`Top card: ${item.text}. Drag to the correct date.`);
+        card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',card.id);card.style.opacity='.4';});
+        card.addEventListener('dragend',()=>{card.style.opacity='1';});
+        card.addEventListener('keydown',e=>{
+          if(e.key==='Enter'||e.key===' '){
+            e.preventDefault();
+            if(selectedCard===card){selectedCard=null;card.style.outline='';announce('Deselected.');}
+            else{selectedCard=card;card.style.outline='3px solid var(--sky)';announce(`"${item.text}" selected. Tab to a date and press Enter.`);}
+          }
+        });
+      }
+      stackEl.appendChild(card);
+    });
+    const h=remaining.length>0?80+(remaining.length-1)*4:40;
+    stackEl.style.height=h+'px';
+  }
+
+  // Build 2×4 date grid
+  const grid=qs('#a4-grid',w);
+  steps.forEach(item=>{
+    const cell=document.createElement('div');
+    cell.innerHTML=`
+      <div style="background:var(--navy);color:#fff;font-weight:800;font-size:.9rem;
+        text-align:center;padding:8px 10px;border-radius:8px 8px 0 0;letter-spacing:.3px;">${item.date}</div>
+      <div class="a4-drop" id="a4-drop-${item.step}" data-step="${item.step}"
+        style="border:2px dashed var(--accent);border-top:none;border-radius:0 0 8px 8px;
+        min-height:60px;padding:6px;transition:background .15s,border-color .15s;"
+        tabindex="0" role="region" aria-label="Drop zone for ${item.date}"></div>
+    `;
+    grid.appendChild(cell);
+  });
+
+  function dropStep(cardEl,drop){
+    if(drop.querySelector('[data-step]')) return;
+    const cardStep=cardEl.dataset.step;
+    const dropStep=drop.dataset.step;
+    const item=shuffled.find(s=>s.step===cardStep);
+    if(cardStep===dropStep){
+      const placed=document.createElement('div');
+      placed.style.cssText=`
+        background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);
+        color:#fff;border-radius:6px;padding:8px 10px;font-size:.82rem;font-weight:600;
+        line-height:1.3;box-shadow:0 2px 6px rgba(0,0,0,.15);
+      `;
+      placed.textContent=cardEl.textContent;
+      drop.appendChild(placed);
+      drop.style.cssText+=';border:2px solid var(--green-border);background:var(--green-bg);';
+      if(item) item._placed=true;
+      correct++; updateProg();
+      buildStack4();
+      const fb=qs('#a4-feedback',w);
+      if(correct===8){
+        fb.textContent='✅ All 8 events matched! Notice the recurring pattern: drug use rises → harms emerge → legal control follows → production shifts elsewhere.';
+        fb.className='ix-feedback correct visible';
+        qs('#act4-continue',w).disabled=false;
+        announce('Timeline complete. Activity 4 done.');
+      } else {
+        fb.textContent='✅ Correct match! Keep going.';
+        fb.className='ix-feedback correct visible';
+        announce('Correct match.');
+      }
+    } else {
+      const key=cardStep;
+      wrongCounts[key]=(wrongCounts[key]||0)+1;
+      const wc=wrongCounts[key];
+      const fb=qs('#a4-feedback',w);
+      if(wc===1) fb.textContent='Not right — think about when this event happened.';
+      else if(wc===2) fb.textContent='Hint: Order — 1850s isolation → 1914 Harrison Act → Post-WWII → 1986 crack → 1986 & 1988 Acts → 1990s–2000s meth → 2006 → 2010.';
+      else{const cf=steps.find(s=>s.step===cardStep);fb.textContent=`Hint: "${cardEl.textContent.substring(0,45)}…" belongs under ${cf?cf.date:'the correct date'}.`;}
+      fb.className='ix-feedback incorrect visible';
+      rushGuard.recordWrong(w);
+      announce('Incorrect match.');
+    }
+    if(selectedCard){selectedCard.style.outline='';selectedCard=null;}
+  }
+
+  qsa('.a4-drop',w).forEach(drop=>{
+    drop.addEventListener('dragover',e=>e.preventDefault());
+    drop.addEventListener('dragenter',()=>{if(!drop.style.background.includes('green')) drop.style.background='#eef6ff';});
+    drop.addEventListener('dragleave',()=>{if(!drop.style.background.includes('green')) drop.style.background='';});
+    drop.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(drop.style.background.includes('green')) return;
+      drop.style.background='';
+      const card=document.getElementById(e.dataTransfer.getData('text/plain'));
+      if(card) dropStep(card,drop);
+    });
+    drop.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&selectedCard){
+        e.preventDefault();
+        if(!drop.style.background.includes('green')) dropStep(selectedCard,drop);
+      }
+    });
+  });
+
+  buildStack4();
+  qs('#act4-continue',w).addEventListener('click',()=>{completeActivity(3);showActivity(4);});
+}
+
+/* ==========================================================
+   ACTIVITY 5 – BRANCHING SCENARIO (Evaluate)
+   Clinical scenario: stimulant psychosis patient
+========================================================== */
+function renderAct5(area){
+  const scenarios=[
+    {
+      title:'Decision Point 1 – Identifying Stimulant Psychosis',
+      context:'A 22-year-old student is brought to the ER by friends after several days of stimulant use. The patient is agitated, paranoid, and has not slept in days. They believe they are being followed and there are insects crawling under their skin.',
+      question:'Which symptom most strongly indicates stimulant psychosis?',
+      choices:[
+        {text:'Sleepiness and sedation',type:'poor',
+         feedback:'Sleepiness is not associated with stimulant psychosis. Stimulants increase arousal and alertness — sedation is a sign of CNS depressant use, not stimulant overdose.'},
+        {text:'Paranoid delusions',type:'optimal',
+         feedback:'✅ Correct! Paranoid delusions are the hallmark of stimulant psychosis — a state caused by prolonged use or overdose of cocaine or amphetamines that resembles paranoid schizophrenia. The "insects crawling" sensation is formication syndrome, also a classic overdose sign.'},
+        {text:'Bradycardia (slow heart rate)',type:'poor',
+         feedback:'Stimulants cause tachycardia (elevated heart rate), not bradycardia. Stimulants are sympathomimetic drugs — they increase heart rate, blood pressure, and body temperature.'},
+        {text:'Respiratory depression',type:'poor',
+         feedback:'Respiratory depression is associated with opioid overdose, not stimulant psychosis. Stimulants increase respiratory rate.'}
+      ]
+    },
+    {
+      title:'Decision Point 2 – Interpreting Route of Administration',
+      context:'The patient reports they have been smoking crack cocaine. You recall from Chapter 6 that route of administration is a critical determinant of misuse potential.',
+      question:'What does smoking crack cocaine imply about the drug experience and risk?',
+      choices:[
+        {text:'Slower onset than snorting because inhalation takes longer',type:'poor',
+         feedback:'Incorrect. Smoking crack produces faster absorption than snorting, not slower. When crack is smoked, cocaine is absorbed rapidly through the lung tissue, reaching the brain in seconds — faster than intranasal absorption.'},
+        {text:'Lower addiction risk because the high is milder',type:'poor',
+         feedback:'Incorrect. Smoking crack is associated with higher, not lower, addiction risk. The intense, rapid rush followed by a severe crash within 10–20 minutes drives powerful cravings and compulsive re-use.'},
+        {text:'Rapid absorption into the brain, producing an intense rush followed by a severe crash',type:'optimal',
+         feedback:'✅ Correct! Smoking crack delivers cocaine to the brain very rapidly through lung tissue. The intense euphoria is short-lived — within 10–20 minutes, users experience a crash and begin craving another hit. This pattern drives extreme dependence.'},
+        {text:'Reduced overdose risk because dose is harder to control when smoking',type:'acceptable',
+         feedback:'While dose control is more difficult when smoking, this does not reduce overdose risk — it may actually increase it. Smoking crack is associated with some of the highest overdose risks, including cardiac events and severe paranoid reactions.'}
+      ]
+    },
+    {
+      title:'Decision Point 3 – Applying Policy Knowledge',
+      context:'In treating this patient, you think about what you learned regarding how drug form and legal policy interact. You recall the controversy surrounding crack cocaine sentencing laws.',
+      question:'Which policy lesson from Chapter 6 best applies here?',
+      choices:[
+        {text:'Harsh penalties always reduce drug use across all populations',type:'poor',
+         feedback:'Incorrect. The chapter describes how harsh crack penalties created inequitable outcomes and did not eliminate use. The 2010 Fair Sentencing Act was passed specifically to address these inequities.'},
+        {text:'Drug form and route of administration strongly influence harm and dependence potential',type:'optimal',
+         feedback:'✅ Correct! Chapter 6 consistently emphasizes that how a drug is taken matters enormously. Crack cocaine — smokable freebase — carries higher risks than powdered cocaine taken intranasally, due to faster absorption, more intense high, and greater dependence potential.'},
+        {text:'All stimulants carry identical risks regardless of form or route',type:'poor',
+         feedback:'Incorrect. The chapter explicitly distinguishes risk levels by form and route. Crack smoked vs. cocaine snorted vs. coca leaf chewed all carry very different risk profiles due to differences in absorption rate and peak concentration.'},
+        {text:'Medical stimulants like Ritalin never cause harm or dependence',type:'poor',
+         feedback:'Incorrect. The chapter discusses how Ritalin (methylphenidate) and other ADHD medications have significant misuse potential and are increasingly diverted for recreational use on college campuses.'}
+      ]
+    }
+  ];
+
+  let scenIdx=0;
+  let totalScore=0;
+  const answers=[];
+
+  const w=document.createElement('div');
+  w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Clinical Scenario: Stimulant Psychosis</h1>
+    <div class="ix-explanation visible" style="display:block;margin-bottom:16px;">
+      <strong>Activity 5 – Branching Scenario</strong> (Bloom's: Evaluate)<br>
+      Read the clinical scenario carefully. Select the best answer at each decision point and read the feedback before moving on. Work through all 3 decision points to complete Chapter 6.
+    </div>
+    <div class="scenario-progress" id="a5-prog">Decision Point 1 of ${scenarios.length}</div>
+    <div id="a5-scenario-area"></div>
+    <button id="act5-continue" class="ix-continue-btn" disabled>✅ Complete Chapter 6</button>
+  `;
+  area.appendChild(w);
+
+  function loadScenario(idx){
+    rushGuard.clearTimestamps();
+    const sc=scenarios[idx];
+    qs('#a5-prog',w).textContent=`Decision Point ${idx+1} of ${scenarios.length}`;
+    const scArea=qs('#a5-scenario-area',w);
+    scArea.innerHTML=`
+      <div class="scenario-box">
+        <strong>${sc.title}</strong><br><br>${sc.context}
+      </div>
+      <div class="ix-prompt">${sc.question}</div>
+      <div class="branch-choices" id="a5-choices"></div>
+      <div id="a5-result" style="display:none;"></div>
+      <div style="margin-top:16px;text-align:right;" id="a5-next-wrap"></div>
+    `;
+    const choicesEl=qs('#a5-choices',w);
+    const shuffledChoices=[...sc.choices]; shuffle(shuffledChoices);
+    shuffledChoices.forEach(ch=>{
+      const btn=document.createElement('div');
+      btn.className='branch-choice';
+      btn.setAttribute('tabindex','0'); btn.setAttribute('role','button');
+      btn.textContent=ch.text;
+      btn.addEventListener('click',()=>selectChoice(ch,shuffledChoices));
+      btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectChoice(ch,shuffledChoices);}});
+      choicesEl.appendChild(btn);
+    });
+  }
+
+  function selectChoice(choice,allChoices){
+    qsa('.branch-choice',w).forEach(b=>{b.style.pointerEvents='none';b.style.opacity='.6';});
+    answers.push({scenario:scenIdx,choice});
+    const pts=choice.type==='optimal'?2:choice.type==='acceptable'?1:0;
+    totalScore+=pts;
+
+    const resultEl=qs('#a5-result',w);
+    resultEl.style.display='block';
+    resultEl.className='branch-result '+choice.type;
+    resultEl.innerHTML=`<strong>${choice.type==='optimal'?'✅ Best Choice':choice.type==='acceptable'?'⚠️ Acceptable but not ideal':'❌ Not the best choice'}</strong><br><br>${choice.feedback}`;
+
+    const nextWrap=qs('#a5-next-wrap',w);
+    nextWrap.style.display='block';
+    const btn=document.createElement('button');
+    btn.className='flip-nav-btn';
+    btn.style.marginTop='12px';
+    if(scenIdx<scenarios.length-1){
+      btn.textContent='Next Decision Point ⟩';
+      btn.addEventListener('click',()=>{scenIdx++;loadScenario(scenIdx);});
+    } else {
+      btn.textContent='See Results';
+      btn.addEventListener('click',()=>showResults());
+    }
+    nextWrap.appendChild(btn);
+    announce(choice.feedback);
+  }
+
+  function showResults(){
+    const scArea=qs('#a5-scenario-area',w);
+    const maxScore=scenarios.length*2;
+    const pct=Math.round(totalScore/maxScore*100);
+    let msg='';
+    if(pct>=85) msg='Excellent clinical reasoning! You correctly applied stimulant pharmacology to a real-world scenario.';
+    else if(pct>=60) msg='Good work. Review the decision points where you chose an acceptable rather than optimal answer.';
+    else msg='Keep studying! Review Chapter 6 sections on stimulant psychosis, routes of administration, and drug policy before the quiz.';
+
+    scArea.innerHTML=`
+      <div class="scenario-box" style="border-left-color:var(--navy);">
+        <strong>Activity 5 Complete</strong><br><br>
+        Score: ${totalScore}/${maxScore} (${pct}%)<br><br>${msg}
+      </div>
+      <div style="margin-top:16px;">
+        ${answers.map((a,i)=>`
+          <div class="branch-result ${a.choice.type}" style="margin-bottom:12px;">
+            <strong>Decision Point ${i+1}:</strong> ${a.choice.type==='optimal'?'✅ Best choice':a.choice.type==='acceptable'?'⚠️ Acceptable':'❌ Incorrect'}<br>
+            <span style="font-size:.88rem;">${a.choice.feedback}</span>
+          </div>`).join('')}
+      </div>
+    `;
+    qs('#act5-continue',w).disabled=false;
+    announce('Activity 5 complete. Complete Chapter 6 button is now available.');
+  }
+
+  qs('#act5-continue',w).addEventListener('click',()=>{completeActivity(4);showActivity(4);});
+  loadScenario(0);
+}
+
+/* ==========================================================
+   MODALS & RESET
+========================================================== */
+document.getElementById('instrStartBtn').addEventListener('click',()=>{
+  const _im=document.getElementById('instructionsModal');
+  _im.classList.remove('visible');
+  if(typeof _im.close==='function'&&_im.open)_im.close();
+  if(currentView==='cover') showCover();
+  else if(typeof currentView==='number') showActivity(currentView);
+  else showCover();
+});
+
+document.getElementById('resetProgressBtn').addEventListener('click',()=>{
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.add('visible');
+  if(typeof _rst.showModal==='function'&&!_rst.open){try{_rst.showModal();}catch(e){}}
+});
+document.getElementById('resetCancelBtn').addEventListener('click',()=>{
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.remove('visible');
+  if(typeof _rst.close==='function'&&_rst.open)_rst.close();
+});
+document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
+  const _rst2=document.getElementById('resetModal');
+  _rst2.classList.remove('visible');
+  if(typeof _rst2.close==='function'&&_rst2.open)_rst2.close();
+  ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i>0);});
+  partADone.fill(false);
+  currentView='cover';
+  savedReflectionQuestion='';
+  localStorage.removeItem(STORAGE_KEY);
+  rushGuard.hardReset();
+  renderSidebar();
+  showCover();
+  announce('Progress has been reset. Activity 1 is now unlocked.');
+});
+
+document.getElementById('closeCompletion').addEventListener('click',()=>{
+  const _cm=document.getElementById('completionModal');
+  _cm.classList.remove('visible');
+  if(typeof _cm.close==='function'&&_cm.open)_cm.close();
+});
+
+document.getElementById('downloadGuideBtn').addEventListener('click',()=>{
+  const guide=`Chapter 6 – Cocaine, Amphetamines, and Related Stimulants: Study Notes
+
+KEY TERMS
+• Stimulant: drug that increases neural activity, heightens mood, increases alertness, decreases fatigue
+• Cocaine: derived from Erythroxylum coca; blocks monoamine reuptake (dopamine, norepinephrine, serotonin)
+• Amphetamines: synthetic stimulants; similar to cocaine but longer-lasting (4–12 hours vs 20–80 min)
+• Formication Syndrome: sensation of insects crawling under skin ("speed bugs"); sign of stimulant overdose
+• Stimulant Psychosis: paranoid delusions + disorientation resembling paranoid schizophrenia; from high doses/prolonged use
+• Crack cocaine: smokable freebase cocaine; rapid intense high; severe crash in 10–20 minutes
+• Bath Salts: synthetic cathinones (mephedrone, MDPV); amphetamine-like; can cause acute psychosis
+• Monoamines: dopamine, norepinephrine, serotonin — all affected by stimulant drugs
+• Withdrawal Depression: primary withdrawal symptom; "cocaine blues"; caused by monoamine depletion
+• Vasoconstriction: nasal blood vessel narrowing from intranasal cocaine; causes tissue damage over time
+
+MECHANISM OF ACTION
+• Both cocaine AND amphetamines block reuptake of dopamine, norepinephrine, and serotonin
+• Amphetamines ALSO increase release of dopamine and norepinephrine (cocaine does not)
+• Stimulants act on mesolimbic dopaminergic pathway (the brain's reward system)
+• Long-term use depletes monoamines → explains post-use depression
+
+COCAINE vs. AMPHETAMINES (KEY DIFFERENCES)
+• Cocaine: plant-derived (coca leaf); duration 20–80 minutes; blocks reuptake only
+• Amphetamines: synthetic; duration 4–12 hours; blocks reuptake AND increases release
+• Both: similar physical/behavioral effects; can produce stimulant psychosis; withdrawal includes depression
+
+COCAINE FORMS & ROUTES
+• Coca leaf → oral → mild stimulation, slow absorption
+• Street cocaine (HCl) → intranasal → slower onset, moderate intensity, nasal damage
+• Street cocaine (HCl) → IV injection → rapid onset (30 sec), intense rush, highest overdose risk
+• Crack cocaine → smoking → very rapid onset, intense euphoria, severe crash in 10–20 min
+
+PHYSIOLOGICAL EFFECTS (at low/moderate doses)
+• Heart rate ↑, blood pressure ↑, respiratory rate ↑
+• Pupil dilation, body temperature ↑, sweating ↑
+• Decreased appetite (anorectic effects)
+• Blood flow decreases to organs/extremities, increases to muscles/brain
+
+BEHAVIORAL EFFECTS
+• Elevated mood, increased talkativeness, increased alertness/arousal, insomnia
+• Enhanced physical endurance and strength
+• State-dependent learning: information learned "high" best recalled when "high"
+• May IMPAIR complex reasoning and learning (cocaine/amphetamine use ≠ enhanced intellect)
+
+HIGH-DOSE EFFECTS
+• Stimulant psychosis: paranoid delusions, compulsive stereotyped behavior, hallucinations, formication
+• Risk of overdose death: seizures/convulsions, myocardial infarction (coronary artery spasm), stroke
+• Treated with chlorpromazine (Thorazine) or other antipsychotics
+
+CHRONIC USE
+• Tolerance develops (acute tolerance to subjective effects within a single session)
+• Dependence: depression, anxiety, insomnia, craving — not dramatic physical withdrawal
+• Withdrawal phases: "crash" (days) → prolonged depression/anhedonia (weeks) → extinction phase (months)
+
+HISTORICAL TIMELINE
+1850s → Cocaine isolated from coca leaves
+1914 → Harrison Narcotics Act — cocaine controlled
+Post-WWII → Amphetamine misuse epidemic (Japan, Sweden, Europe)
+1960s → Meth used as heroin treatment → backfired
+1986 → Crack epidemic; Anti-Drug Abuse Acts
+1990s–2000s → Meth resurfaces; kitchen labs proliferate
+2006 → Combat Meth Epidemic Act — pseudoephedrine regulated
+2010 → Fair Sentencing Act — reduced crack penalties
+
+QUIZ MISCONCEPTIONS TO REMEMBER
+✗ Cocaine is NOT synthetic — it comes from the coca plant
+✗ Stimulant withdrawal does NOT cause severe physical symptoms (no seizures, no fever)
+✗ Depression IS the primary withdrawal symptom — not seizures
+✗ Cocaine does NOT enhance intellectual performance
+✗ Crack is smokable COCAINE, not amphetamine
+✗ Amphetamines last LONGER than cocaine (4–12 hours vs 20–80 min)
+✗ Stimulants IMPAIR complex learning (state-dependent + may hurt complex reasoning)
+✗ Bath salts are synthetic cathinones, not methcathinone salts used in bathing
+`;
+  const blob=new Blob([guide],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='Chapter6_Study_Notes.txt'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* ==========================================================
+   INIT
+========================================================== */
+loadProgress();
+renderSidebar();
+const _im=document.getElementById('instructionsModal');
+_im.classList.add('visible');
+if(typeof _im.showModal==='function'&&!_im.open){try{_im.showModal();}catch(e){}}
+if(currentView==='cover') showCover();
+else if(typeof currentView==='number') showActivity(currentView);
+else showCover();
+
+/* ==========================================================
+   FULLSCREEN TOGGLE
+   Strategy 1 — Real Fullscreen API (works when Canvas iframe
+                has allow="fullscreen").
+   Strategy 2 — Pseudo-fullscreen via CSS (position:fixed,
+                always works inside any iframe / Canvas embed).
+========================================================== */
+(function(){
+  const btn=document.getElementById('fsBtn');
+  let pseudoFS=false;
+
+  function enterIcon(){ btn.textContent='✕'; btn.title='Exit fullscreen'; btn.setAttribute('aria-label','Exit fullscreen'); }
+  function exitIcon() { btn.textContent='⛶'; btn.title='Enter fullscreen'; btn.setAttribute('aria-label','Enter fullscreen'); }
+
+  function enterPseudo(){ document.body.classList.add('pseudo-fs'); pseudoFS=true; enterIcon(); announce('Fullscreen on.'); }
+  function exitPseudo() { document.body.classList.remove('pseudo-fs'); pseudoFS=false; exitIcon(); announce('Fullscreen off.'); }
+
+  const fsTarget=document.getElementById('app-wrapper');
+
+  function tryRealFS(){
+    if(fsTarget.requestFullscreen){
+      fsTarget.requestFullscreen().catch(()=>enterPseudo());
+    } else if(fsTarget.webkitRequestFullscreen){
+      try{ fsTarget.webkitRequestFullscreen(); } catch(e){ enterPseudo(); }
+    } else { enterPseudo(); }
+  }
+
+  function isRealFS(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+
+  document.addEventListener('fullscreenchange',       ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+  document.addEventListener('webkitfullscreenchange', ()=>{ if(!isRealFS()) exitIcon(); else enterIcon(); });
+
+  btn.addEventListener('click',()=>{
+    if(isRealFS())       (document.exitFullscreen||document.webkitExitFullscreen||(()=>{})).call(document);
+    else if(pseudoFS)    exitPseudo();
+    else                 tryRealFS();
+  });
+  btn.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); btn.click(); } });
+})();
+</script>
+</body>
+</html>

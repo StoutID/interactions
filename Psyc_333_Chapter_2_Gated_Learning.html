@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 2 – Gated Sequential Learning</title>
+<style>
+:root{
+  --navy:#13294B;--blue:#1D4F91;--sky:#00A3E0;--accent:#D3E3FF;
+  --bg:#F3F3F5;--white:#FFFFFF;--border:1px solid rgba(19,41,75,.15);
+  --shadow:0 10px 15px -3px rgba(0,0,0,.1);--sidebar-w:300px;
+  --green-bg:#dcfce7;--green-border:#14532d;--red-bg:#fee2e2;--red-border:#7f1d1d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--navy);display:flex;justify-content:center;overflow:hidden;height:100vh;}
+#app-wrapper{width:100%;max-width:1200px;height:100vh;display:flex;background:white;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);}
+#sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);border-right:var(--border);display:flex;flex-direction:column;transition:width .3s,min-width .3s;overflow:hidden;}
+#sidebar.collapsed{width:0;min-width:0;border-right:none;}
+.sidebar-header{background:var(--navy);color:white;padding:24px 20px;font-weight:800;font-size:1rem;letter-spacing:.5px;line-height:1.4;flex-shrink:0;}
+.sidebar-header small{display:block;font-weight:400;font-size:.75rem;opacity:.75;margin-top:4px;letter-spacing:0;}
+.nav-list{overflow-y:auto;flex:1;}
+.nav-item{padding:14px 18px;border-bottom:1px solid rgba(0,0,0,.05);display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:.93rem;transition:background .15s;gap:8px;}
+.nav-item:hover:not(.locked){background:#f0f5ff}
+.nav-item:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.nav-item.active{background:var(--accent);font-weight:700}
+.nav-item.locked{opacity:.55;cursor:not-allowed}
+.nav-item.done .nav-title::after{content:' ✓';color:#16a34a;font-weight:700}
+.nav-title{flex:1}.lock-icon{font-size:.85rem;flex-shrink:0}
+.nav-progress{width:100%;height:4px;background:#e5e7eb;flex-shrink:0;}
+.nav-progress-fill{height:4px;background:var(--sky);transition:width .4s;}
+.sidebar-footer{padding:12px 18px;border-top:var(--border);font-size:.8rem;color:#666;display:flex;flex-direction:column;gap:8px;}
+.reset-btn{background:none;border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:.78rem;color:#888;cursor:pointer;text-align:left;transition:background .15s,color .15s,border-color .15s;touch-action:manipulation;}
+.reset-btn:hover{background:#fee2e2;color:#991b1b;border-color:#f87171;}
+.reset-btn:focus{outline:3px solid var(--sky);}
+#main-content{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.top-bar{padding:10px 18px;border-bottom:var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:white;flex-wrap:wrap;}
+.menu-btn{background:var(--blue);color:white;border:none;padding:9px 16px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:.9rem;white-space:nowrap;touch-action:manipulation;}
+.menu-btn:focus{outline:3px solid var(--sky);}
+.top-bar-title{font-weight:700;color:var(--navy);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+.step-dots{display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0;}
+.step-dot{width:12px;height:12px;border-radius:50%;background:#e5e7eb;border:2px solid #d1d5db;transition:background .3s,border-color .3s;flex-shrink:0;}
+.step-dot.done{background:#16a34a;border-color:#15803d;}
+.step-dot.active{background:var(--sky);border-color:#0284c7;}
+.step-label{font-size:.75rem;color:#666;white-space:nowrap;margin-left:4px;}
+/* ── FULLSCREEN TOGGLE ────────────────────────────────────────────── */
+.fs-btn{
+  background:none;border:1px solid rgba(19,41,75,.25);border-radius:6px;
+  padding:6px 10px;font-size:1rem;cursor:pointer;color:var(--navy);
+  line-height:1;flex-shrink:0;transition:background .15s,border-color .15s;
+  touch-action:manipulation;
+}
+.fs-btn:hover{background:var(--accent);border-color:var(--blue);}
+.fs-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+/* Pseudo-fullscreen: overlays the entire viewport, works inside Canvas iframes */
+body.pseudo-fs{overflow:auto;}
+body.pseudo-fs #app-wrapper{
+  position:fixed;inset:0;max-width:none;height:100%;
+  z-index:9999;box-shadow:none;
+}
+.content-scroll{flex:1;overflow-y:auto;padding:0;-webkit-overflow-scrolling:touch;}
+#cover-page{max-width:820px;margin:40px auto;padding:20px 20px 40px;}
+.cover-badge{display:inline-block;background:var(--accent);color:var(--blue);font-weight:700;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:16px;}
+.cover-title{font-size:2rem;font-weight:800;color:var(--navy);line-height:1.2;margin-bottom:12px;}
+.cover-subtitle{font-size:1.05rem;color:#444;margin-bottom:32px;line-height:1.6;}
+.cover-complete-banner{background:linear-gradient(135deg,#dcfce7,#bbf7d0);border:2px solid #16a34a;border-radius:12px;padding:20px 24px;margin-bottom:28px;display:flex;gap:16px;align-items:center;}
+.cover-complete-banner .banner-icon{font-size:2.2rem;flex-shrink:0;}
+.cover-complete-banner h2{font-size:1.1rem;color:#14532d;margin-bottom:4px;}
+.cover-complete-banner p{font-size:.88rem;color:#166534;line-height:1.5;}
+.cover-complete-banner .review-download-btn{margin-top:10px;display:inline-block;background:#15803d;color:white;border:none;padding:9px 18px;border-radius:8px;font-size:.88rem;font-weight:700;cursor:pointer;touch-action:manipulation;}
+.cover-complete-banner .review-download-btn:hover{background:#166534;}
+.cover-complete-banner .review-download-btn:focus{outline:3px solid var(--sky);}
+.cover-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:36px;}
+.cover-card{border:var(--border);border-radius:12px;padding:20px;background:white;box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start;transition:border-color .2s;}
+.cover-card.completed-card{border-color:#16a34a;background:#f0fdf4;}
+.cover-card-num{background:var(--navy);color:white;font-weight:800;font-size:.95rem;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cover-card.completed-card .cover-card-num{background:#16a34a;}
+.cover-card-body h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:5px;}
+.cover-card-body p{font-size:.85rem;color:#555;line-height:1.5;}
+.cover-tag{display:inline-block;background:#f0f5ff;color:var(--blue);font-size:.73rem;font-weight:600;padding:2px 8px;border-radius:10px;margin-top:8px;border:1px solid var(--accent);}
+.cover-instructions{background:#f8faff;border:var(--border);border-left:4px solid var(--sky);border-radius:8px;padding:16px 20px;margin-bottom:28px;font-size:.9rem;line-height:1.7;color:#333;}
+.cover-instructions strong{display:block;margin-bottom:6px;color:var(--navy);}
+.get-started-btn{display:inline-block;background:var(--navy);color:white;border:none;padding:16px 40px;font-size:1.1rem;font-weight:700;border-radius:10px;cursor:pointer;letter-spacing:.5px;touch-action:manipulation;transition:background .2s,transform .1s;}
+.get-started-btn:hover{background:var(--blue);}
+.get-started-btn:active{transform:scale(.98);}
+.get-started-btn:focus{outline:3px solid var(--sky);outline-offset:3px;}
+.interaction-wrapper{padding:30px 30px 50px;max-width:960px;margin:0 auto;width:100%;}
+.interaction-wrapper h1{margin-top:0;color:var(--navy);}
+.ix-instructions{font-size:1.05rem;margin-bottom:20px;line-height:1.6;color:#333;}
+.ix-card{background:white;border:var(--border);border-radius:8px;padding:12px 14px;margin:8px 0;cursor:grab;font-size:.95rem;user-select:none;-webkit-user-select:none;touch-action:none;transition:box-shadow .15s,opacity .15s,border-color .2s;line-height:1.35;}
+.ix-card:focus{outline:3px solid var(--sky);}
+.ix-card.placed-correct{opacity:.55;cursor:default;pointer-events:none;}
+.ix-card.shake{animation:shake .4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+.ix-card.dragging{opacity:.35;box-shadow:0 8px 20px rgba(0,0,0,.2);}
+.ix-dropzone{border:2px dashed var(--accent);border-radius:10px;padding:12px;min-height:90px;margin-bottom:16px;transition:background .15s,border-color .15s;}
+.ix-dropzone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.ix-dropzone.correct-zone{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.ix-dropzone.touch-dragging-active{border-color:var(--accent)!important;background:transparent!important;}
+.ix-definition{border:2px dashed var(--accent);border-radius:10px;padding:14px;margin-bottom:16px;min-height:72px;font-size:.92rem;transition:background .15s,border-color .15s;}
+.ix-definition.drag-over{background:#eef6ff;border-color:var(--sky);}
+.ix-definition.correct-def{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.ix-option{border:var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px;cursor:pointer;font-size:.95rem;transition:background .15s,opacity .15s;user-select:none;-webkit-user-select:none;touch-action:manipulation;line-height:1.4;}
+.ix-option:hover{background:var(--accent);}
+.ix-option:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.ix-option.correct-opt{background:var(--green-bg);border-color:var(--green-border);}
+.ix-option.incorrect-opt{background:var(--red-bg);border-color:var(--red-border);}
+.ix-option.locked-wrong{opacity:.55;cursor:default;pointer-events:none;background:var(--red-bg);border-color:var(--red-border);}
+.ix-explanation{margin-top:16px;padding:14px 16px;border-radius:8px;background:#eef6ff;font-size:.92rem;line-height:1.6;display:none;}
+.ix-explanation.visible{display:block;}
+.ix-feedback{margin-top:18px;padding:14px 16px;border-radius:8px;font-weight:600;font-size:.95rem;display:none;}
+.ix-feedback.visible{display:block;}
+.ix-feedback.correct{background:var(--green-bg);color:#166534;}
+.ix-feedback.incorrect{background:var(--red-bg);color:#991b1b;}
+.ix-hint{margin-top:10px;padding:12px 16px;border-radius:8px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;font-size:.88rem;line-height:1.5;display:none;}
+.ix-hint.visible{display:block;}
+.ix-counter{font-weight:700;margin-bottom:10px;color:var(--blue);font-size:.9rem;}
+.ix-prompt{font-weight:600;margin-bottom:18px;font-size:1rem;line-height:1.5;}
+.ix-next-btn{margin-top:12px;padding:10px 22px;background:var(--blue);color:white;border:none;border-radius:8px;font-size:.95rem;cursor:pointer;touch-action:manipulation;}
+.ix-next-btn:focus{outline:3px solid var(--sky);}
+.ix-continue-btn{display:block;margin-top:28px;padding:13px 28px;font-size:1rem;font-weight:700;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;touch-action:manipulation;transition:background .15s,opacity .15s;}
+.ix-continue-btn:disabled{opacity:.35;cursor:default;}
+.ix-continue-btn:not(:disabled):hover{background:var(--navy);}
+.ix-continue-btn:focus{outline:3px solid var(--sky);}
+.ix-columns-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:16px;}
+.ix-columns-2{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+.ix-col h2{font-size:.95rem;font-weight:700;margin-bottom:8px;color:var(--navy);}
+/* Flip Cards */
+.flip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin:20px 0;}
+.flip-card{perspective:1000px;height:150px;cursor:pointer;touch-action:manipulation;}
+.flip-card:focus{outline:3px solid var(--sky);outline-offset:3px;border-radius:10px;}
+.flip-card-inner{position:relative;width:100%;height:100%;transition:transform .55s;transform-style:preserve-3d;}
+.flip-card.flipped .flip-card-inner{transform:rotateY(180deg);}
+.flip-card-front,.flip-card-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:14px;text-align:center;font-weight:700;font-size:.88rem;line-height:1.35;}
+.flip-card-front{background:var(--navy);color:white;}
+.flip-card-back{background:white;color:var(--navy);transform:rotateY(180deg);border:2px solid var(--blue);}
+/* Timeline */
+.timeline-layout{display:grid;grid-template-columns:1fr 1.3fr;gap:16px;margin-top:16px;}
+.timeline-panel{background:var(--bg);border:var(--border);border-radius:12px;padding:14px;}
+.timeline-panel h2{margin:0 0 10px;font-size:.95rem;color:var(--navy);}
+.tl-deck{display:flex;flex-direction:column;gap:10px;min-height:280px;}
+.tl-card{background:white;border:var(--border);border-radius:8px;padding:12px 14px;cursor:grab;font-size:.85rem;line-height:1.35;user-select:none;-webkit-user-select:none;touch-action:none;}
+.tl-card:focus{outline:3px solid var(--sky);}
+.tl-card.dragging{opacity:.35;}
+.tl-card.placed-correct{opacity:.55;cursor:default;pointer-events:none;}
+.tl-card.shake{animation:shake .4s ease;}
+.timeline-slots{display:flex;flex-direction:column;gap:10px;}
+.tl-slot{border:2px dashed #cbd5e1;border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:flex-start;background:#fafafa;min-height:60px;transition:background .15s,border-color .15s;}
+.tl-slot.drag-over{border-color:var(--sky);background:#eef6ff;}
+.tl-slot.correct-slot{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.tl-slot.touch-dragging-active{border-color:#cbd5e1!important;background:#fafafa!important;}
+.tl-slot-label{font-weight:800;font-size:.9rem;color:var(--navy);min-width:80px;flex-shrink:0;padding-right:8px;}
+.tl-slot-content{flex:1;font-size:.82rem;line-height:1.3;}
+/* Locked */
+.locked-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;text-align:center;color:#666;gap:14px;}
+.locked-screen .lock-big{font-size:3.5rem;}
+.locked-screen p{max-width:320px;line-height:1.6;font-size:.95rem;}
+/* Modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;justify-content:center;align-items:flex-start;z-index:2000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.modal-overlay.visible{display:flex;}
+/* ── dialog: guaranteed full-screen overlay using !important ─────────────
+   !important on position/inset/z-index beats any UA or author rule that
+   could shrink or hide the dialog. No display:none here — .modal-overlay
+   already handles that; only [open] sets display:flex. ── */
+dialog.modal-overlay{
+  position:fixed !important;inset:0 !important;
+  width:100% !important;height:100% !important;margin:0 !important;
+  border:0;padding:20px;box-sizing:border-box;
+  background:rgba(0,0,0,.65) !important;
+  z-index:2147483647 !important;
+  justify-content:center;align-items:flex-start;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  max-width:none !important;max-height:none !important;
+}
+dialog.modal-overlay[open]{display:flex !important;}
+dialog.modal-overlay::backdrop{display:none;}
+.modal-box{background:white;padding:40px 36px;max-width:520px;width:100%;border-radius:16px;box-shadow:0 30px 60px rgba(0,0,0,.3);text-align:center;position:relative;max-height:calc(100vh - 40px);overflow-y:auto;margin:auto;}
+.modal-icon{font-size:3.5rem;margin-bottom:16px;}
+.modal-box h2{color:var(--navy);font-size:1.6rem;font-weight:800;margin-bottom:12px;}
+.modal-box p{color:#444;line-height:1.7;margin-bottom:24px;font-size:.97rem;}
+.download-btn{display:inline-block;background:var(--navy);color:white;padding:14px 32px;font-size:1rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;text-decoration:none;touch-action:manipulation;transition:background .2s;}
+.download-btn:hover{background:var(--blue);}
+.download-btn:focus{outline:3px solid var(--sky);outline-offset:3px;}
+.modal-close{position:sticky;float:right;top:0;margin:-24px -16px 0 0;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888;line-height:1;padding:4px 8px;z-index:1;}
+.modal-close:hover{color:var(--navy);}
+.modal-close:focus{outline:3px solid var(--sky);}
+.modal-checklist{text-align:left;background:#f8faff;border-radius:10px;padding:16px 20px;margin-bottom:24px;}
+.modal-checklist li{list-style:none;padding:5px 0;font-size:.9rem;color:#333;}
+.modal-checklist li::before{content:'✅ ';margin-right:4px;}
+#instructionsModal .modal-box{text-align:left;}
+#instructionsModal h2{text-align:center;}
+.instr-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;font-size:.93rem;line-height:1.5;}
+.instr-icon{font-size:1.4rem;flex-shrink:0;margin-top:1px;}
+#resetModal .modal-box{max-width:400px;}
+#resetModal h2{font-size:1.2rem;}
+.reset-modal-btns{display:flex;gap:12px;justify-content:center;margin-top:4px;}
+.confirm-reset-btn{background:#dc2626;color:white;border:none;padding:10px 22px;border-radius:8px;font-weight:700;cursor:pointer;touch-action:manipulation;}
+.confirm-reset-btn:hover{background:#b91c1c;}
+.confirm-reset-btn:focus{outline:3px solid var(--sky);}
+.cancel-reset-btn{background:#e5e7eb;color:#374151;border:none;padding:10px 22px;border-radius:8px;font-weight:700;cursor:pointer;touch-action:manipulation;}
+.cancel-reset-btn:hover{background:#d1d5db;}
+.cancel-reset-btn:focus{outline:3px solid var(--sky);}
+/* Submenus */
+.nav-submenu{padding:4px 0 6px 0;background:#f8faff;border-bottom:1px solid rgba(0,0,0,.05);}
+.nav-subitem{padding:6px 18px 6px 32px;font-size:.8rem;color:#555;display:flex;align-items:center;gap:7px;line-height:1.3;}
+.nav-subitem.sub-done{color:#15803d;font-weight:600;}
+.nav-subitem.sub-active{color:var(--blue);font-weight:700;}
+.sub-dot{width:7px;height:7px;border-radius:50%;background:#d1d5db;flex-shrink:0;}
+.sub-done .sub-dot{background:#16a34a;}
+.sub-active .sub-dot{background:var(--sky);}
+/* Part transitions */
+@keyframes partFadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes partFadeOut{from{opacity:1;}to{opacity:0;}}
+.part-fade-in{animation:partFadeIn .36s ease forwards;}
+.part-fade-out{animation:partFadeOut .3s ease forwards;}
+#aria-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+@media(max-width:700px){
+  #sidebar{width:260px;min-width:260px;}
+  .cover-title{font-size:1.5rem;}
+  .ix-columns-3,.ix-columns-2,.timeline-layout{grid-template-columns:1fr;}
+  .interaction-wrapper{padding:20px 16px 40px;}
+  #cover-page{padding:16px 16px 40px;}
+  .step-label{display:none;}
+  .flip-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+}
+#rushModal .modal-box{max-width:480px;border-top:5px solid #f59e0b;}
+.activity-locked-overlay{position:absolute;inset:0;background:rgba(255,255,255,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:100;border-radius:12px;padding:30px;text-align:center;}
+.activity-locked-overlay h3{color:#dc2626;font-size:1.1rem;margin:0;}
+.activity-locked-overlay p{font-size:.9rem;color:#555;margin:0;line-height:1.5;}
+.lock-countdown{font-size:2rem;font-weight:800;color:#dc2626;}
+/* ── completion warning / reflection / review ── */
+.completion-warning{display:flex;gap:12px;align-items:flex-start;background:#fef2f2;border:1px solid #fecaca;border-left:5px solid #dc2626;border-radius:10px;padding:14px 16px;margin:6px 0 20px;font-size:.92rem;line-height:1.55;color:#7f1d1d;text-align:left;}
+.completion-warning-icon{font-size:1.4rem;flex-shrink:0;line-height:1.2;}
+.reflection-block{background:#f0f5ff;border:1px solid var(--accent);border-left:5px solid var(--blue);border-radius:10px;padding:16px 18px;margin-bottom:18px;text-align:left;}
+.reflection-label{font-size:.78rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--blue);margin-bottom:8px;}
+.reflection-question{font-size:1rem;line-height:1.55;color:var(--navy);font-weight:600;margin:0;}
+.reflection-instructions{font-size:.9rem;color:#333;line-height:1.6;text-align:left;}
+.reflection-instructions ol{margin:10px 0 0 0;padding-left:22px;}
+.reflection-instructions li{margin-bottom:8px;}
+.reflection-note{margin-top:14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:.86rem;color:#92400e;font-weight:600;}
+.completion-divider{height:1px;background:rgba(19,41,75,.12);margin:24px 0 4px;}
+.review-summary-card{background:white;border:var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:var(--shadow);}
+.review-summary-card h3{font-size:1rem;color:var(--navy);margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid var(--accent);}
+.review-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
+.review-list li{background:#f0f5ff;border-left:4px solid var(--sky);border-radius:0 8px 8px 0;padding:11px 16px;font-size:.93rem;line-height:1.55;color:var(--navy);}
+.review-list li strong{color:var(--blue);}
+</style>
+</head>
+<body>
+<div id="aria-live" aria-live="polite" aria-atomic="true"></div>
+
+<!-- INSTRUCTIONS MODAL -->
+<dialog class="modal-overlay" id="instructionsModal" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+  <div class="modal-box">
+    <h2 id="instrTitle">How to Use This Module</h2><br>
+    <div class="instr-row"><span class="instr-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Click or tap to select answers, flip cards, and drag items. Press Continue to advance.</div></div>
+    <div class="instr-row"><span class="instr-icon">⌨️</span><div><strong>Keyboard:</strong> <kbd>Tab</kbd> to move between elements, <kbd>Enter</kbd> or <kbd>Space</kbd> to select or flip.</div></div>
+    <div class="instr-row"><span class="instr-icon">🔒</span><div><strong>Gated Progress:</strong> Each activity must be completed correctly before the next one unlocks.</div></div>
+    <div class="instr-row"><span class="instr-icon">📝</span><div><strong>Final Reflection:</strong> After the last activity a reflection question appears. Copy it into the Canvas text box below this activity and answer in your own words — at least one five-sentence paragraph, no AI.</div></div>
+    <div class="instr-row"><span class="instr-icon">📋</span><div><strong>Study Guide:</strong> A downloadable study guide and a Review &amp; Study Guide page in the sidebar become available once all 4 activities are complete.</div></div><br>
+    <div class="instr-row"><span class="instr-icon">⚠️</span><div><strong>Rush Guard:</strong> Interacting too quickly without reading may trigger a warning and temporary lockout. Take time to read each card or option.</div></div><br>
+    <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
+  </div>
+</dialog>
+
+<!-- COMPLETION MODAL -->
+<dialog class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
+  <div class="modal-box" style="max-width:600px;text-align:left;">
+    <button class="modal-close" id="closeCompletion" aria-label="Close">✕</button>
+
+    <div class="completion-warning" role="alert">
+      <span class="completion-warning-icon">⚠️</span>
+      <div><strong>You're not done yet!</strong> Finishing the activities is only part of this assignment. To receive credit, you must still answer the reflection question below in the Canvas text box.</div>
+    </div>
+
+    <div class="modal-icon" style="text-align:center;">⚖️</div>
+    <h2 id="complTitle" style="text-align:center;">Activities Complete — One Step Left</h2>
+    <p style="text-align:center;">You explored the history and structure of U.S. drug laws and policy, from early ordinances to the Controlled Substances Act and beyond. Complete the reflection below to finish the assignment.</p>
+
+    <div class="reflection-block">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question" id="reflectionQuestion">&nbsp;</p>
+    </div>
+
+    <div class="reflection-instructions">
+      <strong>To complete this assignment:</strong>
+      <ol>
+        <li><strong>Copy and paste the question above</strong> into the Canvas text box below this activity.</li>
+        <li>Answer the question in your <strong>own words</strong> — a minimum of <strong>one paragraph of at least five sentences</strong>.</li>
+        <li><strong>Do not use AI</strong> to write or generate any part of your answer. The reflection must be entirely your own thinking.</li>
+      </ol>
+      <p class="reflection-note">⬇ Scroll down to the Canvas text box beneath this activity to submit your written response.</p>
+    </div>
+
+    <div class="completion-divider"></div>
+
+    <div style="text-align:center;margin-top:18px;">
+      <button class="download-btn" id="downloadGuideBtn">⬇ Download Study Guide</button>
+      <p style="font-size:.82rem;color:#666;margin-top:8px;">Optional: keep this study guide for review. You can also reopen it any time from the <strong>Review &amp; Study Guide</strong> menu item in the sidebar.</p>
+    </div>
+  </div>
+</dialog>
+
+<!-- RESET MODAL -->
+<dialog class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+  <div class="modal-box">
+    <h2 id="resetTitle">Reset Progress?</h2>
+    <p>This will clear all your activity completions and start Chapter 2 from the beginning. This cannot be undone.</p>
+    <div class="reset-modal-btns">
+      <button class="confirm-reset-btn" id="confirmResetBtn">Yes, Reset</button>
+      <button class="cancel-reset-btn" id="cancelResetBtn">Cancel</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- RUSH GUARD MODAL -->
+<dialog class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle">
+  <div class="modal-box" style="border-top:5px solid #f59e0b;max-width:460px;">
+    <div class="modal-icon" id="rushIcon">⚠️</div>
+    <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
+    <p id="rushMsg" style="color:#78350f;"></p>
+    <div id="rushDetail" style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;"></div>
+    <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
+    <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
+  </div>
+</dialog>
+
+<!-- APP SHELL -->
+<div id="app-wrapper">
+  <aside id="sidebar" aria-label="Activity navigation">
+    <div class="sidebar-header">Chapter 2<small>Drug Laws &amp; Policy</small></div>
+    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="4" id="overallProgressBar">
+      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
+    </div>
+    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
+    <div class="sidebar-footer">
+      <span id="sidebar-footer-text">0 of 4 activities complete</span>
+      <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">↺ Reset My Progress</button>
+    </div>
+  </aside>
+  <main id="main-content">
+    <div class="top-bar">
+      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
+      <span class="top-bar-title" id="topBarTitle">Chapter 2 – Drug Laws &amp; Policy</span>
+      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="img"></div>
+      <span class="step-label" id="stepLabel"></span>
+      <button class="fs-btn" id="fsBtn" aria-label="Enter fullscreen" title="Toggle fullscreen">⛶</button>
+    </div>
+    <div class="content-scroll" id="content-area" tabindex="-1"></div>
+  </main>
+</div>
+
+<script>
+/* ── UTILITY ─────────────────────────────────────────── */
+function announce(msg){const el=document.getElementById('aria-live');el.textContent='';setTimeout(()=>el.textContent=msg,60);}
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
+function qs(sel,root=document){return root.querySelector(sel);}
+function qsa(sel,root=document){return[...root.querySelectorAll(sel)];}
+
+/* ── RUSH GUARD (escalating-timeout model) ────────────
+   A rush event = 2 wrong answers within a 5s window (or 3
+   rapid card flips). Each step: dismissable warning -> rush
+   again -> timed lockout. Lockouts escalate 60s -> 3m -> 4m
+   -> 5m ... (+1 min each). No permanent lock, no password.
+──────────────────────────────────────────────────────── */
+const rushGuard = (() => {
+  const WINDOW_MS = 5000;       // wrong-answer rush window
+  const THRESHOLD = 2;          // wrong answers within window = 1 rush event
+  const FLIP_WINDOW_MS = 2000;  // rapid-flip window
+  const FLIP_THRESHOLD = 4;     // rapid flips within window = 1 rush event
+
+  let wrongTimestamps = [];
+  let strikes         = 0;   // strikes within the current step (1 = warned, 2 = lock)
+  let lockCount       = 0;   // lockouts triggered so far this session
+  let locked          = false;
+  let cooldownTimer   = null;
+  let currentWrapper  = null;
+  let flipTimestamps  = [];
+  let flipStrikes     = 0;
+
+  const $modal     = () => document.getElementById('rushModal');
+  const $icon      = () => document.getElementById('rushIcon');
+  const $title     = () => document.getElementById('rushTitle');
+  const $msg       = () => document.getElementById('rushMsg');
+  const $detail    = () => document.getElementById('rushDetail');
+  const $countdown = () => document.getElementById('rushCountdown');
+  const $dismiss   = () => document.getElementById('rushDismissBtn');
+
+  /* Duration (seconds) of the k-th lockout: k=1 -> 60s, k=2 -> 180s, then +60s each. */
+  function durFor(k){ return k <= 1 ? 60 : 180 + (k - 2) * 60; }
+  function fmtLong(secs){
+    if(secs < 60) return secs + ' seconds';
+    const m = Math.round(secs / 60);
+    return m + ' minute' + (m !== 1 ? 's' : '');
+  }
+  function fmtAdj(secs){ return secs < 60 ? secs + '-Second' : Math.round(secs / 60) + '-Minute'; }
+  function fmtClock(secs){
+    if(secs < 60) return secs + 's';
+    const m = Math.floor(secs / 60), s = secs % 60;
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  function setModal(iconTxt,titleTxt,titleColor,borderColor,msgTxt,detailHTML,cdVisible,btnVisible,btnTxt){
+    const m=$modal();
+    m.querySelector('.modal-box').style.borderTopColor=borderColor;
+    $icon().textContent=iconTxt; $title().textContent=titleTxt; $title().style.color=titleColor;
+    $msg().textContent=msgTxt; $detail().innerHTML=detailHTML;
+    $countdown().style.display=cdVisible?'block':'none';
+    $dismiss().style.display=btnVisible?'':'none';
+    if(btnVisible) $dismiss().textContent=btnTxt;
+    m.classList.add('visible');
+    if(typeof m.showModal==='function'&&!m.open){try{m.showModal();}catch(e){}}
+    if(btnVisible) setTimeout(()=>$dismiss().focus(),50);
+  }
+
+  function showWarning(){
+    const nextLock = durFor(lockCount + 1);
+    if(lockCount===0){
+      setModal('\u26A0\uFE0F','Slow Down!','#92400e','#f59e0b',
+        "You're moving through this activity very quickly without reading carefully. Take a moment to think before selecting.",
+        "Tip: Read each card or option fully before choosing.<br><br>One more rush and this activity locks for <strong>60 seconds</strong>.",
+        false,true,"I'll Read More Carefully");
+    } else if(lockCount===1){
+      setModal('\uD83D\uDEA8','Final Warning','#dc2626','#dc2626',
+        "You're rushing again after already receiving a timeout.",
+        "One more rush and this activity locks for <strong>3 minutes</strong>.",
+        false,true,"I Understand \u2014 I'll Think First");
+    } else {
+      setModal('\uD83D\uDEA8','Final Warning','#7f1d1d','#7f1d1d',
+        "You're rushing again after multiple timeouts.",
+        "One more rush and this activity locks for <strong>"+fmtLong(nextLock)+"</strong>.<br><br>\u26A0\uFE0F Each additional rush adds <strong>another minute</strong> to the next lockout.",
+        false,true,"I Understand \u2014 I'll Slow Down");
+    }
+    announce(lockCount===0?'Slow down warning. Read the content carefully.':'Final warning. Rushing again will lock the activity.');
+  }
+
+  function showTimeout(){
+    lockCount++;
+    const dur = durFor(lockCount);
+    setModal('\uD83D\uDD12','Activity Locked \u2013 '+fmtAdj(dur)+' Timeout','#dc2626','#dc2626',
+      "You rushed again immediately after a warning. This activity is locked for "+fmtLong(dur)+".",
+      "Use this time to carefully study the content before continuing.<br><br>\u26A0\uFE0F Each additional rush adds <strong>another minute</strong> to the next lockout.",
+      true,false,'');
+    announce('Activity locked for '+fmtLong(dur)+' due to rapid guessing.');
+    startCooldown(dur);
+  }
+
+  function startCooldown(durSecs){
+    locked=true;
+    let secs=durSecs;
+    $countdown().textContent=fmtClock(secs);
+    if(currentWrapper){
+      currentWrapper.style.position='relative';
+      let ov=document.getElementById('rush-lock-overlay');
+      if(!ov){ ov=document.createElement('div'); ov.className='activity-locked-overlay'; ov.id='rush-lock-overlay'; currentWrapper.appendChild(ov); }
+      ov.innerHTML='<h3>\uD83D\uDD12 Activity Locked</h3><p>Take '+fmtLong(durSecs)+' to study the content.</p><div class="lock-countdown" id="lock-secs">'+fmtClock(secs)+'</div><p style="font-size:.82rem;">This activity will reset when the timer ends.</p>';
+    }
+    if(cooldownTimer){ clearInterval(cooldownTimer); }
+    cooldownTimer=setInterval(()=>{
+      secs--;
+      const cd=$countdown(), ls=document.getElementById('lock-secs');
+      if(cd) cd.textContent=fmtClock(secs);
+      if(ls) ls.textContent=fmtClock(secs);
+      if(secs<=0){
+        clearInterval(cooldownTimer); cooldownTimer=null;
+        locked=false; strikes=0; wrongTimestamps=[]; flipTimestamps=[];
+        const _rm=document.getElementById('rushModal');
+        _rm.classList.remove('visible');
+        if(typeof _rm.close==='function'&&_rm.open)_rm.close();
+        const ov=document.getElementById('rush-lock-overlay');
+        if(ov) ov.remove();
+        if(typeof currentView==='number') showActivity(currentView);
+      }
+    },1000);
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    const _rushDlg=document.getElementById('rushModal');
+    if(_rushDlg) _rushDlg.addEventListener('cancel',e=>{
+      const btn=document.getElementById('rushDismissBtn');
+      if(btn&&btn.style.display==='none')e.preventDefault();
+    });
+    const d=document.getElementById('rushDismissBtn');
+    if(d) d.addEventListener('click',()=>{
+      _rushDlg.classList.remove('visible');
+      if(typeof _rushDlg.close==='function'&&_rushDlg.open)_rushDlg.close();
+      wrongTimestamps=[]; flipTimestamps=[];
+    });
+  });
+
+  return {
+    reset(){
+      wrongTimestamps=[]; strikes=0; locked=false;
+      flipTimestamps=[]; flipStrikes=0;
+      if(cooldownTimer){clearInterval(cooldownTimer);cooldownTimer=null;}
+      const ov=document.getElementById('rush-lock-overlay');
+      if(ov) ov.remove();
+    },
+    hardReset(){            // full reset incl. escalation ladder (Reset Progress)
+      this.reset();
+      lockCount=0;
+    },
+    clearTimestamps(){
+      wrongTimestamps=[]; flipTimestamps=[];
+    },
+    recordWrong(wrapper){
+      if(locked) return;
+      currentWrapper=wrapper;
+      const now=Date.now();
+      wrongTimestamps.push(now);
+      wrongTimestamps=wrongTimestamps.filter(t=>now-t<WINDOW_MS);
+      if(wrongTimestamps.length<THRESHOLD) return;
+      wrongTimestamps=[]; strikes++;
+      if(strikes===1){ showWarning(); }
+      else { strikes=0; showTimeout(); }
+    },
+    recordFlipRush(wrapper){
+      if(locked) return;
+      currentWrapper=wrapper;
+      const now=Date.now();
+      flipTimestamps.push(now);
+      flipTimestamps=flipTimestamps.filter(t=>now-t<FLIP_WINDOW_MS);
+      if(flipTimestamps.length<FLIP_THRESHOLD) return;
+      flipTimestamps=[]; flipStrikes++;
+      if(flipStrikes===1){ showWarning(); }
+      else { flipStrikes=0; showTimeout(); }
+    },
+    isLocked(){ return locked; }
+  };
+})();
+
+const ACTIVITIES=[
+  {id:'act1',title:'Activity 1',subtitle:'Key Drug Laws & Policies',        type:'FLIP',     locked:false,done:false},
+  {id:'act2',title:'Activity 2',subtitle:'Match the Law to Its Outcome',    type:'LAW_MATCH',locked:true, done:false},
+  {id:'act4',title:'Activity 3',subtitle:'Timeline Ordering (Parts A & B)', type:'TIMELINE', locked:true, done:false},
+  {id:'act5',title:'Activity 4',subtitle:'Policy Synthesis Challenge',      type:'SCENARIO', locked:true, done:false}
+];
+let currentView='cover';
+let savedReflectionQuestion='';
+
+/* ── PERSISTENCE ─────────────────────────────────────── */
+const STORAGE_KEY='ch2-gated-v1';
+function saveProgress(){localStorage.setItem(STORAGE_KEY,JSON.stringify({currentView,done:ACTIVITIES.map(a=>a.done),locked:ACTIVITIES.map(a=>a.locked),reflectionQ:savedReflectionQuestion}));}
+function loadProgress(){try{const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!d)return;currentView=d.currentView;ACTIVITIES.forEach((a,i)=>{a.done=d.done[i];a.locked=d.locked[i];});savedReflectionQuestion=d.reflectionQ||'';announce('Previous progress restored.');}catch(e){}}
+function resetProgress(){localStorage.removeItem(STORAGE_KEY);rushGuard.hardReset();currentView='cover';savedReflectionQuestion='';ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i!==0);});renderSidebar();showCover();announce('Progress reset.');}
+
+/* ── SIDEBAR ─────────────────────────────────────────── */
+function doneCount(){return ACTIVITIES.filter(a=>a.done).length;}
+
+// Track which sub-parts have been reached (for sidebar submenu indicators)
+const subPartState={
+  act4:{partA:false,partB:false}
+};
+
+function renderSidebar(){
+  const nav=document.getElementById('nav-list');nav.innerHTML='';
+  const done=doneCount(),pct=Math.round(done/ACTIVITIES.length*100);
+  document.getElementById('overallProgressFill').style.width=pct+'%';
+  document.getElementById('overallProgressBar').setAttribute('aria-valuenow',done);
+  document.getElementById('sidebar-footer-text').textContent=`${done} of ${ACTIVITIES.length} activities complete`;
+  renderStepDots();
+  const cover=document.createElement('div');
+  cover.className='nav-item'+(currentView==='cover'?' active':'');
+  cover.tabIndex=0;cover.setAttribute('role','button');cover.setAttribute('aria-label','Cover page');
+  cover.innerHTML='<span class="nav-title">📋 Cover Page</span>';
+  cover.onclick=()=>showCover();cover.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cover.click();}};
+  nav.appendChild(cover);
+  ACTIVITIES.forEach((a,i)=>{
+    const item=document.createElement('div');
+    item.className=`nav-item${currentView===i?' active':''}${a.locked?' locked':''}${a.done?' done':''}`;
+    item.tabIndex=a.locked?-1:0;item.setAttribute('role','button');
+    item.setAttribute('aria-disabled',a.locked?'true':'false');
+    item.setAttribute('aria-label',`${a.title}: ${a.subtitle}${a.done?' – Completed':a.locked?' – Locked':''}`);
+    item.innerHTML=`<span class="nav-title">${a.title}<br><small style="font-weight:400;font-size:.78rem;color:#555">${a.subtitle}</small></span>${a.locked?'<span class="lock-icon" aria-hidden="true">🔒</span>':''}`;
+    item.onclick=()=>{if(!a.locked)showActivity(i);else announce('Locked. Complete the previous activity first.');};
+    item.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();item.click();}};
+    nav.appendChild(item);
+
+    // ── Submenu for Timeline activity (Parts A & B) ──
+    if(i===2&&!a.locked){
+      const sub=document.createElement('div');sub.className='nav-submenu';
+      const pADone=subPartState.act4.partA;
+      const pBDone=a.done;
+      sub.innerHTML=`
+        <div class="nav-subitem${pADone?' sub-done':''}">
+          <span class="sub-dot"></span>Part A — Early Laws &amp; Prohibition${pADone?' ✓':''}
+        </div>
+        <div class="nav-subitem${pBDone?' sub-done':''}">
+          <span class="sub-dot"></span>Part B — Modern Policy 1930→2012${pBDone?' ✓':''}
+        </div>`;
+      nav.appendChild(sub);
+    }
+  });
+
+  // Review & Study Guide — appears once all activities are complete
+  if(done===ACTIVITIES.length){
+    const review=document.createElement('div');
+    review.className='nav-item'+(currentView==='review'?' active':'');
+    review.tabIndex=0;
+    review.setAttribute('role','button');
+    review.setAttribute('aria-label','Review and study guide');
+    review.innerHTML='<span class="nav-title">⭐ Review &amp; Study Guide</span>';
+    review.onclick=()=>showReviewSummary();
+    review.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();review.click();}};
+    nav.appendChild(review);
+  }
+}
+function renderStepDots(){
+  const dots=document.getElementById('stepDots');dots.innerHTML='';
+  ACTIVITIES.forEach((a,i)=>{
+    const dot=document.createElement('div');dot.className='step-dot';
+    if(a.done)dot.classList.add('done');
+    else if(currentView===i)dot.classList.add('active');
+    else if(a.locked)dot.classList.add('locked');
+    dot.title=`${a.title}: ${a.done?'Complete':a.locked?'Locked':'In Progress'}`;
+    dot.setAttribute('aria-label',dot.title);dots.appendChild(dot);
+  });
+  document.getElementById('stepLabel').textContent=`${doneCount()}/${ACTIVITIES.length}`;
+}
+
+/* ── SIDEBAR TOGGLE ──────────────────────────────────── */
+document.getElementById('toggleBtn').addEventListener('click',()=>{
+  const c=document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('toggleBtn').setAttribute('aria-expanded',String(!c));
+  announce(c?'Navigation hidden':'Navigation shown');
+});
+
+/* ── RESET MODAL ─────────────────────────────────────── */
+document.getElementById('resetProgressBtn').addEventListener('click',()=>{
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.add('visible');
+  if(typeof _rst.showModal==='function'&&!_rst.open){try{_rst.showModal();}catch(e){}}
+  document.getElementById('confirmResetBtn').focus();
+});
+document.getElementById('confirmResetBtn').addEventListener('click',()=>{
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.remove('visible');
+  if(typeof _rst.close==='function'&&_rst.open)_rst.close();
+  resetProgress();
+});
+document.getElementById('cancelResetBtn').addEventListener('click',()=>{
+  const _rst=document.getElementById('resetModal');
+  _rst.classList.remove('visible');
+  if(typeof _rst.close==='function'&&_rst.open)_rst.close();
+  announce('Reset cancelled.');
+});
+
+/* ── COVER PAGE ──────────────────────────────────────── */
+const actDescriptions=[
+  {num:1,name:'Key Drug Laws & Policies',desc:'Flip six cards — arranged in chronological order — to reveal what each landmark drug law or policy did, from the San Francisco Ordinance of 1875 through the Fair Sentencing Act of 2010. View all cards to continue.',tag:'Flip Cards'},
+  {num:2,name:'Match the Law to Its Outcome',desc:'Drag five law cards onto their correct historical outcomes. Incorrect drops snap back. Cards shuffle each attempt.',tag:'Drag & Match'},
+  {num:3,name:'Timeline Ordering (Parts A & B)',desc:'Place key events in chronological order across two timelines: Part A covers Early U.S. Drug Laws & Prohibition; Part B covers Modern Drug Policy (1930→2012).',tag:'Timeline Drag'},
+  {num:4,name:'Policy Synthesis Challenge',desc:'Apply Chapter 2 concepts to five real-world policy scenarios. Score at least 4 out of 5 to complete the activity.',tag:'Scenario Quiz'}
+];
+function showCover(){
+  currentView='cover';
+  document.getElementById('topBarTitle').textContent='Chapter 2 – Drug Laws & Policy';
+  renderSidebar();saveProgress();
+  const area=document.getElementById('content-area');area.innerHTML='';
+  const page=document.createElement('div');page.id='cover-page';
+  const allDone=doneCount()===ACTIVITIES.length;
+  const banner=allDone?`<div class="cover-complete-banner" role="status" aria-live="polite"><div class="banner-icon">🏆</div><div><h2>Chapter 2 Complete!</h2><p>You've successfully completed all four activities. Your study guide is ready.</p><button class="review-download-btn" id="coverDownloadBtn">⬇ Download Study Guide</button></div></div>`:'';
+  const subtitle=`This module covers four interactive activities on the history and structure of U.S. drug laws and policy. Complete each activity correctly to unlock the next. A study guide download becomes available after all four are finished. <strong>The reasoning practiced in these activities will prepare you for the Chapter 2 Quiz.</strong>`;
+  page.innerHTML=`
+    <div class="cover-badge">Chapter 2</div>
+    <h1 class="cover-title">Drug Laws &amp; Policy</h1>
+    <p class="cover-subtitle">${subtitle}</p>
+    ${banner}
+    <div class="cover-instructions"><strong>📌 How Gated Learning Works</strong>
+    Activities must be completed in order. Each one unlocks the next only when completed correctly. Use the sidebar to track your progress.<br><br>
+    <strong>🖱️ Mouse / Touch &nbsp;|&nbsp; ⌨️ Keyboard &nbsp;|&nbsp; 📱 Touch screen</strong> — all interaction methods are fully supported.</div>
+    <div class="cover-cards">${actDescriptions.map((a,i)=>`
+      <div class="cover-card${ACTIVITIES[i].done?' completed-card':''}" role="article">
+        <div class="cover-card-num" aria-hidden="true">${ACTIVITIES[i].done?'✓':a.num}</div>
+        <div class="cover-card-body"><h3>${a.name}</h3><p>${a.desc}</p><span class="cover-tag">${a.tag}</span></div>
+      </div>`).join('')}
+    </div>
+    <button class="get-started-btn" id="coverStartBtn">${allDone?'🔁 Review Activities':doneCount()===0?'🚀 Get Started':'▶ Continue Where You Left Off'}</button>`;
+  area.appendChild(page);
+  if(allDone){
+    qs('#coverDownloadBtn').addEventListener('click',downloadStudyGuide);
+    qs('#coverDownloadBtn').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();downloadStudyGuide();}});
+  }
+  qs('#coverStartBtn').addEventListener('click',()=>{
+    if(allDone)showActivity(0);
+    else{const next=ACTIVITIES.findIndex(a=>!a.done&&!a.locked);showActivity(next>=0?next:0);}
+  });
+  qs('#coverStartBtn').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();qs('#coverStartBtn').click();}});
+  area.scrollTop=0;
+  announce('Cover page loaded.');
+}
+
+/* ── ROUTER ──────────────────────────────────────────── */
+function showActivity(index){
+  currentView=index;const a=ACTIVITIES[index];
+  document.getElementById('topBarTitle').textContent=`${a.title} – ${a.subtitle}`;
+  renderSidebar();saveProgress();
+  const area=document.getElementById('content-area');area.innerHTML='';area.scrollTop=0;
+  if(a.locked){
+    area.innerHTML=`<div class="locked-screen"><div class="lock-big" aria-hidden="true">🔒</div><h2>Activity Locked</h2><p>Complete the previous activity correctly to unlock <strong>${a.title}: ${a.subtitle}</strong>.</p></div>`;
+    announce(`${a.title} is locked.`);return;
+  }
+  switch(a.type){
+    case 'FLIP':     renderAct1(area);break;
+    case 'LAW_MATCH':renderAct2(area);break;
+    case 'TIMELINE': renderAct4(area);break;
+    case 'SCENARIO': renderAct5(area);break;
+  }
+  announce(`Now viewing ${a.title}: ${a.subtitle}`);
+}
+
+/* ── UNLOCK ──────────────────────────────────────────── */
+function completeActivity(index){
+  const wasAlreadyDone=ACTIVITIES[index].done;
+  ACTIVITIES[index].done=true;
+  if(index+1<ACTIVITIES.length){ACTIVITIES[index+1].locked=false;announce(`${ACTIVITIES[index].title} complete. ${ACTIVITIES[index+1].title} unlocked.`);}
+  renderSidebar();saveProgress();
+  // Only show completion modal when Activity 5 (index 4) is completed for the FIRST time
+  if(index===3&&!wasAlreadyDone){savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];saveProgress();showReviewSummary();setTimeout(()=>showCompletionModal(),400);}
+}
+
+/* ── REFLECTION QUESTIONS (same 5 for all chapters) ─────────── */
+const REFLECTION_QUESTIONS=[
+  'What was the most important concept in this chapter? Describe the concept in your own words and why it matters.',
+  'How does this chapter connect to something you already know? Explain both the new idea and the old idea and how they connect.',
+  'What part of the chapter seemed most useful or relevant to real life? Explain the idea or concept in your own words. How is it relevant or useful?',
+  'How could the information in this chapter apply to your future coursework or your future career? Select at least 1 idea or concept and describe it in your own words. How does it apply to your future?',
+  'What is one takeaway from this chapter that you will remember later? Describe the takeaway in your own words. Why will you remember it later?'
+];
+
+/* ── COMPLETION MODAL ────────────────────────────────── */
+function showCompletionModal(){
+  const q=savedReflectionQuestion;
+  const qEl=document.getElementById('reflectionQuestion');
+  if(qEl) qEl.textContent=q;
+  const _cm=document.getElementById('completionModal');
+  _cm.classList.add('visible');
+  if(typeof _cm.showModal==='function'&&!_cm.open){try{_cm.showModal();}catch(e){}}
+  document.getElementById('closeCompletion').focus();
+  announce('Congratulations! All 4 Chapter 2 activities complete. A reflection question is now shown. Copy it into the Canvas text box below and answer in your own words.');
+}
+document.getElementById('closeCompletion').addEventListener('click',()=>{
+  const _cm=document.getElementById('completionModal');
+  _cm.classList.remove('visible');
+  if(typeof _cm.close==='function'&&_cm.open)_cm.close();
+});
+document.getElementById('closeCompletion').addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    const _cm=document.getElementById('completionModal');
+    _cm.classList.remove('visible');
+    if(typeof _cm.close==='function'&&_cm.open)_cm.close();
+  }
+});
+document.getElementById('downloadGuideBtn').addEventListener('click',()=>downloadStudyGuide());
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){['completionModal','resetModal','instructionsModal'].forEach(id=>{
+    const m=document.getElementById(id);
+    if(m.classList.contains('visible')||m.open){
+      m.classList.remove('visible');
+      if(typeof m.close==='function'&&m.open)m.close();
+      if(id==='instructionsModal'){if(currentView==='review')showReviewSummary();else showCover();}
+    }
+  });}
+});
+
+/* ── REVIEW & STUDY GUIDE PAGE ──────────────────────── */
+const REVIEW_DATA=[
+  {
+    title:'Activity 1 — Key Drug Laws & Policies',
+    points:[
+      '<strong>San Francisco Ordinance (1875)</strong>: banned opium dens — one of the first local drug-control laws in the U.S.',
+      '<strong>Pure Food and Drug Act (1906)</strong>: required medicines to list certain ingredients on labels.',
+      '<strong>Harrison Narcotics Tax Act (1914)</strong>: required licensing and registration for manufacture and sale of opiates and cocaine.',
+      '<strong>Prohibition (1920s)</strong>: nationwide alcohol ban; unintended consequence was organized crime controlling distribution.',
+      '<strong>Controlled Substances Act (1970)</strong>: created a scheduling system based on medical use and abuse potential; allows rescheduling.',
+      '<strong>Fair Sentencing Act (2010)</strong>: reduced sentencing disparities; gave judges more discretion.'
+    ]
+  },
+  {
+    title:'Activity 2 — Match the Law to Its Outcome',
+    points:[
+      '<strong>Prohibition</strong> → Organized crime controlled alcohol distribution.',
+      '<strong>Harrison Narcotics Tax Act (1914)</strong> → Required licensing to manufacture and sell drugs.',
+      '<strong>Controlled Substances Act (1970)</strong> → Allows drugs to be added or rescheduled.',
+      '<strong>Fair Sentencing Act (2010)</strong> → Gave judges more discretion in sentencing.',
+      '<strong>Synthetic Drug Abuse Prevention Act (2012)</strong> → Allowed synthetic versions of drugs to be regulated.'
+    ]
+  },
+  {
+    title:'Activity 3 — Timeline Ordering',
+    points:[
+      '<strong>Part A (Early Laws):</strong> Before 1900 (unregulated) → 1906 (PFDA) → 1914 (Harrison Act) → 1920 (Prohibition) → 1920s (organized crime) → 1933 (Prohibition repealed).',
+      '<strong>Part B (Modern Policy):</strong> 1930 (Bureau of Narcotics) → 1933 (Repeal) → 1937 (Marijuana Tax Act) → 1970 (CSA) → 2010 (Fair Sentencing Act) → 2012 (Synthetic Drug Act).',
+      'Key principle: U.S. drug policy has shifted from local/state control to increasing federal oversight over time.'
+    ]
+  },
+  {
+    title:'Activity 4 — Policy Synthesis Challenge',
+    points:[
+      '<strong>Designer drugs / loopholes</strong>: use existing scheduling authority to add compounds and close labeling loopholes — do not build new regulatory structures from scratch.',
+      '<strong>Classifying drugs</strong>: modern scheduling uses <em>medical use + misuse/dependence potential</em>, not pharmacological action alone.',
+      '<strong>Updating policy</strong>: the CSA\'s key strength is flexibility — drugs can be added, removed, or rescheduled as use patterns change.',
+      '<strong>Lessons from Prohibition</strong>: outright bans can produce unintended consequences; consider whether regulation and taxation may be more effective.',
+      '<strong>Modern direction</strong>: a harm-reduction approach separates possession/use from trafficking enforcement.'
+    ]
+  }
+];
+
+function showReviewSummary(){
+  currentView='review';
+  document.getElementById('topBarTitle').textContent='Chapter 2 – Review & Study Guide';
+  renderSidebar();saveProgress();
+  const area=document.getElementById('content-area');
+  area.innerHTML='';
+  const page=document.createElement('div');
+  page.className='interaction-wrapper';
+  const sections=REVIEW_DATA.map(d=>`
+    <div class="review-summary-card">
+      <h3>${d.title}</h3>
+      <ul class="review-list">${d.points.map(pt=>`<li>${pt}</li>`).join('')}</ul>
+    </div>`).join('');
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
+  page.innerHTML=`
+    <h1 style="color:var(--navy);margin-bottom:6px;">Chapter 2 Review</h1>
+    <p class="ix-instructions">
+      You\'ve completed all ${ACTIVITIES.length} activities. Use this page to review key concepts,
+      and download the study guide for later reference.
+    </p>
+    ${reflectionBlock}
+    <div style="text-align:center;margin:18px 0 28px;">
+      <button class="download-btn" id="reviewPageDownloadBtn">⬇ Download Study Guide</button>
+    </div>
+    ${sections}`;
+  area.appendChild(page);
+  qs('#reviewPageDownloadBtn').addEventListener('click',()=>downloadStudyGuide());
+  area.scrollTop=0;
+  announce('Review and study guide page. Key concepts from each activity listed, with study guide download.');
+}
+
+/* ── STUDY GUIDE ─────────────────────────────────────── */
+function downloadStudyGuide(){
+  const guide=`CHAPTER 2 STUDY GUIDE
+Drug Laws & Policy
+Generated: ${new Date().toLocaleDateString()}
+========================================
+
+ACTIVITY 1 – KEY DRUG LAWS & POLICIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SAN FRANCISCO ORDINANCE (1875)
+  Banned opium dens — one of the first local drug-control laws in the U.S.
+
+PURE FOOD AND DRUG ACT (1906)
+  Required medicines to list certain ingredients on labels.
+  First major federal consumer-protection law for drugs.
+
+HARRISON NARCOTICS TAX ACT (1914)
+  Required licensing and registration for legal manufacture and sale
+  of opiates and cocaine. Expanded federal control through licensing.
+
+PROHIBITION (1920s)
+  Nationwide ban on manufacture and sale of alcohol.
+  Unintended consequence: organized crime took control of illegal
+  alcohol distribution.
+
+CONTROLLED SUBSTANCES ACT (1970)
+  Created a scheduling system for drugs based on medical use and
+  abuse potential. Allows drugs to be added, removed, or rescheduled.
+
+FAIR SENTENCING ACT (2010)
+  Reduced sentencing disparities for certain drug offenses.
+  Gave judges more discretion in sentencing.
+
+
+ACTIVITY 2 – MATCH THE LAW TO ITS OUTCOME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Prohibition                              → Organized crime controlled alcohol distribution
+Controlled Substances Act (1970)         → Allows drugs to be added or rescheduled
+Synthetic Drug Abuse Prevention Act (2012)→ Allowed synthetic versions of drugs to be regulated
+Fair Sentencing Act (2010)               → Gave judges more discretion in sentencing
+Harrison Narcotics Tax Act (1914)        → Required licensing to manufacture and sell drugs
+
+
+ACTIVITY 3A – TIMELINE: EARLY U.S. DRUG LAWS & PROHIBITION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Before 1900 → Drugs widely available and largely unregulated
+1906        → Pure Food and Drug Act (ingredient labeling required)
+1914        → Harrison Narcotics Tax Act (licensing for opiates/cocaine)
+1920        → Alcohol Prohibition begins (nationwide ban)
+1920s       → Organized crime controls illegal alcohol distribution
+1933        → Repeal of Prohibition (returns regulation to states)
+
+
+ACTIVITY 3B – TIMELINE: MODERN U.S. DRUG POLICY (1930→2012)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1930  → Federal Bureau of Narcotics established (centralized enforcement)
+1933  → Repeal of Prohibition
+1937  → Marijuana Tax Act (federal restrictions via taxation/registration)
+1970  → Controlled Substances Act (scheduling system created)
+2010  → Fair Sentencing Act (reduced sentencing disparities)
+2012  → Synthetic Drug Abuse Prevention Act (closed loopholes)
+
+
+ACTIVITY 4 – POLICY SYNTHESIS KEY CONCEPTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DESIGNER DRUGS / LOOPHOLES
+  Best response: Use existing scheduling authority to add compounds
+  and close labeling loopholes — do not create new structures from scratch.
+
+CLASSIFYING DRUGS
+  Modern scheduling uses medical use + misuse/dependence potential —
+  NOT pharmacological action alone.
+
+UPDATING POLICY
+  The CSA's key strength is flexibility: drugs can be added,
+  removed, or rescheduled as use patterns change over time.
+
+PROHIBITION LESSONS
+  Strict bans can reduce use but generate unintended consequences
+  (illegal markets, criminal distribution). Public support is critical.
+
+MODERN POLICY DIRECTION
+  Contemporary approaches increasingly distinguish personal possession
+  (public health response) from trafficking (criminal penalties),
+  while investing in treatment and recovery services.
+
+
+QUICK REFERENCE: MAJOR LAWS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SF Ordinance (1875)              → Banned opium dens
+Pure Food & Drug Act (1906)      → Ingredient labeling required
+Harrison Narcotics Tax Act (1914)→ Licensing for opiates/cocaine
+Prohibition (1920)               → Banned alcohol; organized crime rose
+Repeal of Prohibition (1933)     → Alcohol returned to state control
+Marijuana Tax Act (1937)         → Federal marijuana restrictions
+Controlled Substances Act (1970) → Scheduling system created
+Fair Sentencing Act (2010)       → Reduced sentencing disparities
+Synthetic Drug Prevention (2012) → Closed synthetic-drug loopholes
+
+========================================
+End of Chapter 2 Study Guide
+The reasoning practiced in these activities will prepare you for the Chapter 2 Quiz.
+`;
+  const blob=new Blob([guide],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='Chapter_2_Study_Guide.txt';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  announce('Study guide downloaded.');
+}
+
+/* ── TOUCH DRAG HELPER ───────────────────────────────── */
+function makeDraggable(cardEl,onDropFn,zoneAttr){
+  cardEl.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',cardEl.id);cardEl.classList.add('dragging');});
+  cardEl.addEventListener('dragend',()=>cardEl.classList.remove('dragging'));
+  let clone=null,sx=0,sy=0;
+  cardEl.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse')return;
+    if(cardEl.classList.contains('placed-correct'))return;
+    e.preventDefault();sx=e.clientX;sy=e.clientY;
+    clone=cardEl.cloneNode(true);
+    clone.style.cssText=`position:fixed;z-index:9999;opacity:.85;pointer-events:none;width:${cardEl.offsetWidth}px;left:${cardEl.getBoundingClientRect().left}px;top:${cardEl.getBoundingClientRect().top}px;margin:0;`;
+    document.body.appendChild(clone);cardEl.classList.add('dragging');
+    qsa(zoneAttr||'[data-droptarget]').forEach(z=>z.classList.add('touch-dragging-active'));
+  },{passive:false});
+  document.addEventListener('pointermove',e=>{if(!clone)return;e.preventDefault();clone.style.left=(e.clientX-sx+cardEl.getBoundingClientRect().left)+'px';clone.style.top=(e.clientY-sy+cardEl.getBoundingClientRect().top)+'px';},{passive:false});
+  document.addEventListener('pointerup',e=>{
+    if(!clone)return;clone.remove();clone=null;cardEl.classList.remove('dragging');
+    qsa(zoneAttr||'[data-droptarget]').forEach(z=>z.classList.remove('touch-dragging-active'));
+    const el=document.elementFromPoint(e.clientX,e.clientY);if(!el)return;
+    const zone=el.closest('[data-droptarget]');if(zone)onDropFn(cardEl,zone);
+  });
+}
+function makeKeyboardSelect(cardEl,onSelectFn){cardEl.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onSelectFn(cardEl);}});}
+
+/* ══════════════════════════════════════════════════════
+   ACTIVITY 1 — Key Drug Laws & Policies (Flip Cards)
+   Learner must flip ALL 6 cards to unlock Continue.
+══════════════════════════════════════════════════════ */
+function renderAct1(area){
+  rushGuard.reset();
+  const laws=[
+    {front:'San Francisco Ordinance (1875)',   back:'Banned opium dens'},
+    {front:'Pure Food and Drug Act (1906)',     back:'Required medicines to list ingredients on labels'},
+    {front:'Harrison Narcotics Tax Act (1914)',back:'Required licensing to manufacture and sell narcotics'},
+    {front:'Prohibition (1920s)',              back:'Led to organized crime controlling alcohol distribution'},
+    {front:'Controlled Substances Act (1970)', back:'Created drug schedules and allows rescheduling'},
+    {front:'Fair Sentencing Act (2010)',        back:'Gave judges more discretion in sentencing'}
+  ];
+  const w=document.createElement('div');w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Key Drug Laws &amp; Policies</h1>
+    <p class="ix-instructions" id="act1-instr">These laws and policies are arranged in chronological order. Click or tap each card to flip it and see what the law did.
+    Use <strong>Tab</strong> to navigate cards and <strong>Enter</strong> or <strong>Space</strong> to flip.
+    You must view <strong>all 6 cards</strong> before you can continue.</p>
+    <p id="act1-progress" class="ix-counter" aria-live="polite">Viewed: 0 of 6 cards</p>
+    <div class="flip-grid" id="act1-grid" aria-describedby="act1-instr"></div>
+    <div id="act1-feedback" class="ix-feedback"></div>
+    <button id="act1-continue" class="ix-continue-btn" disabled>Continue to Activity 2</button>`;
+  area.appendChild(w);
+  const grid=qs('#act1-grid',w);
+  const seen=new Set();
+  laws.forEach((law,i)=>{
+    const card=document.createElement('div');
+    card.className='flip-card';card.setAttribute('tabindex','0');card.setAttribute('role','button');
+    card.setAttribute('aria-pressed','false');
+    card.setAttribute('aria-label',`Card ${i+1}: ${law.front}. Press Enter to flip.`);
+    card.innerHTML=`<div class="flip-card-inner"><div class="flip-card-front" aria-hidden="true">${law.front}</div><div class="flip-card-back" aria-hidden="true">${law.back}</div></div>`;
+    function flip(){
+      const wasFlipped=card.classList.contains('flipped');
+      card.classList.toggle('flipped');
+      card.setAttribute('aria-pressed',String(!wasFlipped));
+      card.setAttribute('aria-label',wasFlipped?`Card ${i+1}: ${law.front}. Press Enter to flip.`:`Card ${i+1}: ${law.front} — ${law.back}. Press Enter to flip back.`);
+      if(!seen.has(i)){
+        seen.add(i);
+        qs('#act1-progress',w).textContent=`Viewed: ${seen.size} of ${laws.length} cards`;
+        announce(`${law.front}: ${law.back}`);
+        if(seen.size===laws.length){
+          const fb=qs('#act1-feedback',w);fb.textContent='You have reviewed all key drug laws. Click Continue to proceed.';fb.className='ix-feedback correct visible';
+          qs('#act1-continue',w).disabled=false;announce('All cards viewed. Continue enabled.');
+        }
+      }else{announce(wasFlipped?`Front: ${law.front}`:`Back: ${law.back}`);}
+    }
+    card.addEventListener('click',()=>{if(rushGuard.isLocked())return;rushGuard.recordFlipRush(w);flip();});
+    card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();if(rushGuard.isLocked())return;rushGuard.recordFlipRush(w);flip();}});
+    grid.appendChild(card);
+  });
+  qs('#act1-continue',w).addEventListener('click',()=>{completeActivity(0);showActivity(1);});
+  qs('#act1-continue',w).addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();qs('#act1-continue',w).click();}});
+}
+
+/* ══════════════════════════════════════════════════════
+   ACTIVITY 2 — Match the Law to Its Outcome (Parts A & B)
+   Part A: Cards include law names with dates.
+   Part B: Cards show law names only (no dates); dates appear in drop zones.
+   Rush Guard active on all drops.
+══════════════════════════════════════════════════════ */
+function renderAct2(area){
+  const w=document.createElement('div');w.className='interaction-wrapper';
+  w.innerHTML=`<div id="act2-partA"></div>`;
+  area.appendChild(w);
+  rushGuard.reset();
+
+  // ── PART A ───────────────────────────────────────────
+  function buildPartA(){
+    const pairs=[
+      {id:'harrison',   law:'Harrison Narcotics Tax Act (1914)',         outcome:'Required licensing to manufacture and sell drugs',hint:'This law involves registration and licensing for narcotics manufacturers.'},
+      {id:'prohibition',law:'Prohibition',                               outcome:'Organized crime controlled alcohol distribution',hint:'Think about what happened to alcohol distribution after it became illegal.'},
+      {id:'csa',        law:'Controlled Substances Act (1970)',          outcome:'Allows drugs to be added or rescheduled',hint:'Look for flexibility in scheduling — the ability to add and move substances.'},
+      {id:'fair',       law:'Fair Sentencing Act (2010)',                outcome:'Gave judges more discretion in sentencing',hint:'Focus on sentencing flexibility and reducing disparities.'},
+      {id:'synthetic',  law:'Synthetic Drug Abuse Prevention Act (2012)',outcome:'Allowed for synthetic versions of drugs to be regulated',hint:'This act extended regulation to cover synthetic (designer) versions of existing drugs.'}
+    ];
+    const lawOrder=[...pairs];shuffle(lawOrder);
+    const wrong={};pairs.forEach(p=>wrong[p.id]=0);
+    let correctCount=0,selectedCard=null;
+    const container=qs('#act2-partA',w);
+    container.innerHTML=`
+      <h1>Match the Law to Its Outcome</h1>
+      <p class="ix-instructions" id="act2a-instr">Drag each law card onto its correct outcome. Incorrect drops snap back.
+      Use <strong>Tab</strong> to focus a card, <strong>Enter</strong> to select,
+      then <strong>Tab</strong> to an outcome and <strong>Enter</strong> to match.</p>
+      <div class="ix-columns-2" aria-describedby="act2a-instr">
+        <div class="ix-col"><h2>Law Cards</h2><div id="act2a-deck"></div></div>
+        <div class="ix-col"><h2>Outcomes</h2><div id="act2a-targets"></div></div>
+      </div>
+      <div id="act2a-hint" class="ix-hint"></div>
+      <div id="act2a-feedback" class="ix-feedback"></div>
+      <p id="act2a-prog" class="ix-counter" style="margin-top:12px;">Progress: 0 / 5</p>
+      <button id="act2a-next" class="ix-continue-btn" disabled>Continue to Activity 3</button>`;
+    const deck=qs('#act2a-deck',w),targetsDiv=qs('#act2a-targets',w);
+    lawOrder.forEach((pair,i)=>{
+      const card=document.createElement('div');card.className='ix-card';card.textContent=pair.law;
+      card.setAttribute('draggable','true');card.setAttribute('tabindex','0');card.dataset.id=pair.id;card.id='a2ac-'+i;
+      deck.appendChild(card);
+      makeDraggable(card,(c,zone)=>dropA(c,zone),'.ix-definition,[data-droptarget]');
+      makeKeyboardSelect(card,()=>{
+        if(card.classList.contains('placed-correct'))return;
+        if(selectedCard===card){selectedCard=null;card.style.outline='';announce('Deselected.');return;}
+        if(selectedCard)selectedCard.style.outline='';
+        selectedCard=card;card.style.outline='3px solid var(--sky)';announce(`Selected: ${card.textContent}. Tab to an outcome and press Enter.`);
+      });
+    });
+    pairs.forEach((pair)=>{
+      const t=document.createElement('div');t.className='ix-definition';t.textContent=pair.outcome;
+      t.dataset.match=pair.id;t.dataset.droptarget='1';t.setAttribute('tabindex','0');t.setAttribute('role','region');
+      t.setAttribute('aria-label',`Outcome: ${pair.outcome}`);t.setAttribute('aria-describedby','act2a-instr');
+      targetsDiv.appendChild(t);
+      t.addEventListener('dragover',e=>e.preventDefault());t.addEventListener('dragenter',()=>t.classList.add('drag-over'));t.addEventListener('dragleave',()=>t.classList.remove('drag-over'));
+      t.addEventListener('drop',e=>{e.preventDefault();t.classList.remove('drag-over');const card=document.getElementById(e.dataTransfer.getData('text/plain'));if(card)dropA(card,t);});
+      t.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!selectedCard)return;dropA(selectedCard,t);selectedCard=null;}});
+    });
+    function dropA(card,t){
+      if(card.classList.contains('placed-correct')||t.dataset.matched)return;
+      if(card.dataset.id===t.dataset.match){
+        t.appendChild(card);t.classList.add('correct-def');card.classList.add('placed-correct');card.setAttribute('draggable','false');card.setAttribute('tabindex','-1');t.dataset.matched='1';
+        correctCount++;qs('#act2a-hint',w).className='ix-hint';qs('#act2a-prog',w).textContent=`Progress: ${correctCount} / 5`;announce(`Correct! ${card.textContent} matched.`);
+        if(correctCount===pairs.length){const fb=qs('#act2a-feedback',w);fb.textContent='✅ All laws matched correctly! Continue to Activity 3.';fb.className='ix-feedback correct visible';qs('#act2a-next',w).disabled=false;announce('Activity 2 complete. Continue to Activity 3.');}
+      }else{
+        card.classList.add('shake');setTimeout(()=>card.classList.remove('shake'),450);
+        wrong[card.dataset.id]=(wrong[card.dataset.id]||0)+1;
+        if(wrong[card.dataset.id]>=2){const p=pairs.find(p=>p.id===card.dataset.id);if(p){const h=qs('#act2a-hint',w);h.textContent=`💡 Hint: ${p.hint}`;h.className='ix-hint visible';}}
+        const fb=qs('#act2a-feedback',w);fb.textContent='That law does not match that outcome. Try again.';fb.className='ix-feedback incorrect visible';announce('Incorrect. Try again.');
+        rushGuard.recordWrong(w);
+      }
+    }
+    qs('#act2a-next',w).addEventListener('click',()=>{completeActivity(1);showActivity(2);});
+    qs('#act2a-next',w).addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();qs('#act2a-next',w).click();}});
+  }
+
+  buildPartA();
+}
+
+
+/* ══════════════════════════════════════════════════════
+   ACTIVITY 4 — Timeline Ordering (Parts A & B)
+   Part B appears on a NEW page after Part A completes.
+   Rush Guard active on all drops.
+══════════════════════════════════════════════════════ */
+function renderAct4(area){
+  const partA={
+    label:'Part A: Early U.S. Drug Laws &amp; Prohibition',
+    note:'Drag each event to the correct point on the timeline.',
+    events:[
+      {id:'pre',    slot:'Before 1900',text:'Prior to major federal regulation, drugs such as alcohol, opiates, and cocaine were widely available and largely unregulated.',hint:'This belongs at the very beginning of the timeline.'},
+      {id:'pfda',   slot:'1906',       text:'<strong>Pure Food and Drug Act</strong>: Required medicines to list certain ingredients, protecting consumers from dangerous or misleading products.',hint:'This law focuses on labeling, not licensing.'},
+      {id:'harrison',slot:'1914',      text:'<strong>Harrison Narcotics Tax Act</strong>: Required licensing and registration for the legal manufacture and sale of opiates and cocaine.',hint:'Licensing comes after ingredient labeling.'},
+      {id:'prohib', slot:'1920',       text:'<strong>Alcohol Prohibition</strong>: Nationwide ban on the manufacture and sale of alcoholic beverages.',hint:'This event begins Prohibition, not its effects.'},
+      {id:'crime',  slot:'1920s',      text:'As a result of Prohibition, illegal markets expanded and organized crime took control of alcohol distribution.',hint:'This happens after alcohol is banned.'},
+      {id:'repeal', slot:'1933',       text:'<strong>Repeal of Prohibition</strong>: Ended the national ban on alcohol and returned regulation to the states.',hint:'This marks the end of Prohibition.'}
+    ]
+  };
+  const partB={
+    label:'Part B: U.S. Drug Policy (1930 → Modern)',
+    note:'Drag each event to the correct point on the timeline.',
+    events:[
+      {id:'fbn',      slot:'1930',text:'<strong>Federal Bureau of Narcotics</strong>: A federal agency is created to centralize drug enforcement efforts (later replaced by the DEA).',hint:'This is the earliest modern enforcement agency on this timeline.'},
+      {id:'repeal2',  slot:'1933',text:'<strong>Repeal of Prohibition</strong>: The national ban on alcohol ends, returning alcohol regulation largely to the states.',hint:'This comes immediately after Prohibition.'},
+      {id:'marijuana',slot:'1937',text:'<strong>Marijuana Tax Act</strong>: Federal restrictions are imposed on marijuana through taxation and registration requirements.',hint:'This law targets marijuana after Prohibition ends.'},
+      {id:'csa',      slot:'1970',text:'<strong>Controlled Substances Act</strong>: Drugs are organized into schedules that guide regulation, enforcement, and penalties.',hint:'This is the major restructuring of drug policy into schedules.'},
+      {id:'fair',     slot:'2010',text:'<strong>Fair Sentencing Act</strong>: Sentencing disparities for certain drug offenses are reduced.',hint:'This is a modern sentencing reform.'},
+      {id:'synthetic',slot:'2012',text:'<strong>Synthetic Drug Abuse Prevention Act</strong>: Federal law expands control over newly developed synthetic drugs.',hint:'This addresses very recent synthetic drugs.'}
+    ]
+  };
+
+  rushGuard.reset();
+  const w=document.createElement('div');w.className='interaction-wrapper';
+  w.innerHTML=`
+    <div id="act4-partA"></div>
+    <div id="act4-partB" style="display:none;"></div>`;
+  area.appendChild(w);
+
+  function buildTimeline(part,containerId,onComplete,partLabel){
+    const container=qs('#'+containerId,w);
+    const evShuffled=[...part.events];shuffle(evShuffled);
+    const wrong={};part.events.forEach(e=>wrong[e.id]=0);
+    let correct=0,selected=null;
+    container.innerHTML=`
+      <h1>Timeline Ordering</h1>
+      <div class="two-part-banner" style="background:#f0f5ff;border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center;">
+        <span style="font-size:1.3rem;">📅</span>
+        <div><span style="background:var(--blue);color:white;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-right:6px;">${partLabel}</span>Drag each event to the correct date on the timeline.</div>
+      </div>
+      <p class="ix-instructions">Complete this timeline. Drag each event card to the correct date slot.
+      Incorrect drops snap back. Use <strong>Tab</strong> to select a card, then <strong>Tab</strong> to a slot and press <strong>Enter</strong>.</p>
+      <h2 style="font-size:1.05rem;color:var(--navy);margin-bottom:4px;">${part.label}</h2>
+      <p style="font-size:.88rem;color:#555;margin-bottom:14px;">${part.note}</p>
+      <div class="timeline-layout">
+        <div class="timeline-panel"><h2>Event Cards</h2><div class="tl-deck" id="${containerId}-deck"></div></div>
+        <div class="timeline-panel"><h2>Timeline</h2><div class="timeline-slots" id="${containerId}-slots"></div></div>
+      </div>
+      <p id="${containerId}-prog" class="ix-counter" style="margin-top:10px;">Progress: 0 / ${part.events.length}</p>
+      <div id="act4-hint" class="ix-hint" style="margin-top:16px;"></div>
+      <div id="act4-feedback" class="ix-feedback" style="margin-top:8px;"></div>`;
+    const deckEl=qs('#'+containerId+'-deck',w),slotsEl=qs('#'+containerId+'-slots',w);
+    part.events.forEach(ev=>{
+      const slot=document.createElement('div');slot.className='tl-slot';slot.dataset.match=ev.id;slot.dataset.droptarget='1';
+      slot.setAttribute('tabindex','0');slot.setAttribute('role','region');slot.setAttribute('aria-label',`${ev.slot} slot`);
+      slot.innerHTML=`<span class="tl-slot-label">${ev.slot}</span><div class="tl-slot-content"></div>`;
+      slotsEl.appendChild(slot);
+      slot.addEventListener('dragover',e=>e.preventDefault());
+      slot.addEventListener('dragenter',()=>{if(!slot.classList.contains('correct-slot'))slot.classList.add('drag-over');});
+      slot.addEventListener('dragleave',()=>slot.classList.remove('drag-over'));
+      slot.addEventListener('drop',e=>{e.preventDefault();slot.classList.remove('drag-over');const card=document.getElementById(e.dataTransfer.getData('text/plain'));if(card)drop(card,slot);});
+      slot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!selected)return;drop(selected,slot);selected=null;}});
+    });
+    evShuffled.forEach((ev,i)=>{
+      const card=document.createElement('div');card.className='tl-card';card.innerHTML=ev.text;
+      card.setAttribute('draggable','true');card.setAttribute('tabindex','0');card.dataset.id=ev.id;card.id=containerId+'-c'+i;
+      deckEl.appendChild(card);
+      card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',card.id);card.classList.add('dragging');});
+      card.addEventListener('dragend',()=>card.classList.remove('dragging'));
+      /* touch drag */
+      let clone=null,sx=0,sy=0;
+      card.addEventListener('pointerdown',e=>{
+        if(e.pointerType==='mouse')return;if(card.classList.contains('placed-correct'))return;
+        e.preventDefault();sx=e.clientX;sy=e.clientY;
+        clone=card.cloneNode(true);clone.style.cssText=`position:fixed;z-index:9999;opacity:.85;pointer-events:none;width:${card.offsetWidth}px;left:${card.getBoundingClientRect().left}px;top:${card.getBoundingClientRect().top}px;margin:0;font-size:.82rem;`;
+        document.body.appendChild(clone);card.classList.add('dragging');
+        qsa('.tl-slot').forEach(z=>z.classList.add('touch-dragging-active'));
+      },{passive:false});
+      document.addEventListener('pointermove',e=>{if(!clone)return;e.preventDefault();clone.style.left=(e.clientX-sx+card.getBoundingClientRect().left)+'px';clone.style.top=(e.clientY-sy+card.getBoundingClientRect().top)+'px';},{passive:false});
+      document.addEventListener('pointerup',e=>{
+        if(!clone)return;clone.remove();clone=null;card.classList.remove('dragging');
+        qsa('.tl-slot').forEach(z=>z.classList.remove('touch-dragging-active'));
+        const el=document.elementFromPoint(e.clientX,e.clientY);if(!el)return;
+        const slot=el.closest('[data-droptarget]');if(slot)drop(card,slot);
+      });
+      makeKeyboardSelect(card,()=>{
+        if(card.classList.contains('placed-correct'))return;
+        if(selected===card){selected=null;card.style.outline='';announce('Deselected.');return;}
+        if(selected)selected.style.outline='';selected=card;card.style.outline='3px solid var(--sky)';announce('Card selected. Tab to a slot and press Enter.');
+      });
+    });
+    function drop(card,slot){
+      if(card.classList.contains('placed-correct')||slot.classList.contains('correct-slot'))return;
+      if(card.dataset.id===slot.dataset.match){
+        slot.querySelector('.tl-slot-content').appendChild(card);slot.classList.add('correct-slot');
+        card.classList.add('placed-correct');card.setAttribute('draggable','false');card.setAttribute('tabindex','-1');
+        correct++;qs('#act4-hint',w).className='ix-hint';qs('#'+containerId+'-prog',w).textContent=`Progress: ${correct} / ${part.events.length}`;
+        announce(`Correct! Event placed at ${slot.querySelector('.tl-slot-label').textContent}.`);
+        if(correct===part.events.length)onComplete();
+      }else{
+        card.classList.add('shake');setTimeout(()=>card.classList.remove('shake'),450);
+        wrong[card.dataset.id]=(wrong[card.dataset.id]||0)+1;
+        if(wrong[card.dataset.id]>=2){const ev=part.events.find(e=>e.id===card.dataset.id);if(ev){const h=qs('#act4-hint',w);h.textContent=`💡 Hint: ${ev.hint}`;h.className='ix-hint visible';}}
+        const fb=qs('#act4-feedback',w);fb.textContent='That event does not belong at that date. Try again.';fb.className='ix-feedback incorrect visible';announce('Incorrect. Try again.');
+        rushGuard.recordWrong(w);
+      }
+    }
+  }
+
+  // Build Part A — on completion, transition to Part B page
+  buildTimeline(partA,'act4-partA',()=>{
+    subPartState.act4.partA=true;renderSidebar();
+    announce('Part A complete! Part B is now loading.');
+    const fb=qs('#act4-feedback',w);if(fb){fb.textContent='✅ Part A complete! Loading Part B…';fb.className='ix-feedback correct visible';}
+    // Add a "Continue to Part B" button
+    const nextBtn=document.createElement('button');
+    nextBtn.className='ix-continue-btn';nextBtn.textContent='Continue to Part B →';nextBtn.style.marginTop='12px';
+    qs('#act4-partA',w).appendChild(nextBtn);
+    nextBtn.focus();
+    nextBtn.addEventListener('click',()=>{
+      const pA=qs('#act4-partA',w),pB=qs('#act4-partB',w);
+      pA.classList.add('part-fade-out');
+      setTimeout(()=>{
+        pA.style.display='none';pB.style.display='block';pB.classList.add('part-fade-in');
+        buildTimeline(partB,'act4-partB',()=>{
+          // Part B done — show continue button
+          announce('Part B complete!');
+          const cont=document.createElement('button');
+          cont.className='ix-continue-btn';cont.id='act4-continue';cont.textContent='Continue to Activity 4';
+          qs('#act4-partB',w).appendChild(cont);
+          cont.focus();
+          cont.addEventListener('click',()=>{completeActivity(2);showActivity(3);});
+          cont.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cont.click();}});
+          const fb2=qs('#act4-feedback',w);if(fb2){fb2.textContent='✅ Both timelines complete! Outstanding!';fb2.className='ix-feedback correct visible';}
+        },'Part B of 2');
+        area.scrollTop=0;rushGuard.reset();
+      },360);
+    });
+    nextBtn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();nextBtn.click();}});
+    // Update sidebar submenu to show Part B is unlocked
+    renderSidebar();
+  },'Part A of 2');
+}
+
+
+/* ══════════════════════════════════════════════════════
+   ACTIVITY 5 — Policy Synthesis Challenge (5 scenarios)
+   Score ≥ 4/5 to pass. Wrong options lock; hint after 2 wrongs.
+   Scenarios and options shuffle each load.
+══════════════════════════════════════════════════════ */
+function renderAct5(area){
+  rushGuard.reset();
+  const steps=[
+    {title:'Scenario: A new "designer drug" avoids enforcement',
+     scenario:'A new psychoactive product is sold online as "not for human consumption." It produces strong stimulant-like effects and is linked to hospitalizations. Local officials want a response that closes loopholes and prevents sellers from exploiting labeling tricks, so they create…',
+     options:['Create a new schedule category outside existing law, then decide later how to enforce it.','Use scheduling authority to add relevant compounds under existing controlled-substance scheduling and close loopholes used to evade enforcement.','Focus only on punishing users; avoid regulating sellers so the market can self-correct.','Ban all medicines containing stimulants, regardless of medical use.'],
+     correct:1,
+     whyCorrect:'✅ Best choice. This matches how policy responds by adding new compounds within the existing scheduling framework and closing labeling loopholes.',
+     whyWrong:['Not the best fit: creating a new structure delays action and does not address the immediate loophole problem.','','Not the best fit: focusing only on users does not address the supply-side loophole.','Not the best fit: this is overly broad and ignores medical use distinctions.'],
+     hint:'Think about how recent policy responses added newly developed synthetic compounds into existing schedules and addressed labeling loopholes.'},
+    {title:'Scenario: Classifying a drug under the scheduling approach',
+     scenario:'A new medication has legitimate medical use, but also a high potential for misuse and dependence. Regulators must choose a classification approach consistent with the way drug laws classify substances today. Modern policy suggests that regulators…',
+     options:['Classify drugs only by pharmacological action (stimulant, depressant, hallucinogen).','Classify drugs based on medical use and their potential for misuse and dependence, using schedules.','Do not classify any psychoactive substances, since classification is too subjective.','Classify only illegal drugs; if it has medical use it should never be scheduled.'],
+     correct:1,
+     whyCorrect:'✅ Best choice. Modern classification uses schedules based on medical use and misuse/dependence potential.',
+     whyWrong:['Not the best fit: modern scheduling is not based on pharmacological action alone.','','Not the best fit: the scheduling system exists to classify most psychoactive substances.','Not the best fit: drugs can be scheduled even if they have accepted medical use.'],
+     hint:'The scheduling framework distinguishes substances using medical use + misuse/dependence potential — not just pharmacology.'},
+    {title:'Scenario: Updating policy as patterns change',
+     scenario:'Over time, a substance not originally scheduled begins to be misused widely. Policymakers want a system that can adapt as use patterns change without rewriting the entire law each time. Following modern policy, the state might…',
+     options:['A fixed list of drugs with no mechanism to add or reschedule substances.','A system that includes provisions for adding drugs to schedules and rescheduling them when patterns of misuse change.','A policy that relies only on voluntary compliance from manufacturers and sellers.','A system where only states can schedule drugs; federal law should never classify them.'],
+     correct:1,
+     whyCorrect:'✅ Best choice. A key strength of the scheduling approach is that it can add and reschedule drugs as misuse patterns change.',
+     whyWrong:['Not the best fit: a fixed list cannot keep up with new drugs or changing patterns.','','Not the best fit: voluntary compliance does not match how scheduling and enforcement work.','Not the best fit: federal scheduling is central to the current national framework.'],
+     hint:'Think about why a law would include a mechanism to add/reschedule substances over time.'},
+    {title:'Scenario: Learning from Prohibition\'s unintended consequences',
+     scenario:'A city considers a sweeping ban on a widely used substance. Some leaders point to historical examples where bans produced unintended harms, including illegal markets and criminal control of distribution, so they should create…',
+     options:['Assume bans always reduce use with no downsides; focus only on strict punishment.','Plan for unintended consequences (like illegal markets) and consider how public support and enforcement realities affect outcomes.','Ignore historical outcomes; they never apply to modern policy decisions.','Rely solely on social stigma and avoid any legislation or regulation.'],
+     correct:1,
+     whyCorrect:'✅ Best choice. Historical bans can reduce some use but also generate unintended outcomes (like illegal markets) and can fail without public support.',
+     whyWrong:['Not the best fit: history shows strict bans can generate significant unintended consequences.','','Not the best fit: Chapter 2 emphasizes using historical patterns to inform present decisions.','Not the best fit: policy is one central way society formalizes guidelines for drug use.'],
+     hint:'Think of Prohibition — speakeasies, criminal distribution, and repeal when public support was insufficient.'},
+    {title:'Scenario: Choosing a modern policy direction',
+     scenario:'A state debates whether to treat possession for personal use primarily as a criminal issue or shift toward a model that prioritizes treatment and services while keeping trafficking illegal, so they could…',
+     options:['Treat possession and substance problems entirely as criminal issues; avoid treatment funding.','Shift toward treating personal possession as a civil/public health issue and invest in treatment/services while maintaining penalties for manufacturing/dealing.','Remove all laws related to drug possession, manufacturing, and dealing.','Enforce only for one drug category and ignore others.'],
+     correct:1,
+     whyCorrect:'✅ Best choice. This reflects modern legislative action that distinguishes personal possession from trafficking and supports treatment/services.',
+     whyWrong:['Not the best fit: modern approaches increasingly consider treatment and services.','','Not the best fit: removing all laws also removes controls on manufacturing and dealing.','Not the best fit: selective enforcement does not match the broader policy goals.'],
+     hint:'Think about modern policy moves that treat rather than criminalize personal possession while keeping trafficking illegal.'}
+  ];
+  const stepOrder=[...steps];shuffle(stepOrder);
+  let idx=0,score=0,wrongThisStep=0,locked=false,optionOrder=[];
+  const w=document.createElement('div');w.className='interaction-wrapper';
+  w.innerHTML=`
+    <h1>Policy Synthesis Challenge</h1>
+    <p class="ix-instructions" id="act5-instr">Apply Chapter 2 concepts to five real-world policy scenarios.
+    Select the best answer. You need at least <strong>4 out of 5</strong> to complete this activity.
+    Hints appear after two incorrect choices on the same step.</p>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+      <div class="ix-counter" id="a5-step">Step 1 of 5</div>
+      <div class="ix-counter" id="a5-score">Score: 0 / 5</div>
+    </div>
+    <div id="a5-panel" style="background:var(--bg);border:var(--border);border-radius:12px;padding:20px;">
+      <div id="a5-title" style="font-size:1rem;font-weight:800;color:var(--navy);margin-bottom:10px;"></div>
+      <div id="a5-scenario" style="background:white;border:var(--border);border-radius:8px;padding:14px;margin-bottom:14px;line-height:1.5;font-size:.95rem;"></div>
+      <div id="a5-options" aria-describedby="act5-instr"></div>
+      <div id="a5-feedback" class="ix-feedback"></div>
+      <div id="a5-hint" class="ix-hint"></div>
+    </div>
+    <div id="a5-results" style="display:none;margin-top:16px;padding:16px;border-radius:12px;border:var(--border);"></div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+      <button id="a5-next" class="ix-next-btn" style="display:none;">Next</button>
+      <button id="a5-continue" class="ix-continue-btn" style="display:none;margin-top:0;">Complete Chapter 2</button>
+    </div>`;
+  area.appendChild(w);
+
+  function renderStep(){
+    rushGuard.clearTimestamps();
+    const step=stepOrder[idx];wrongThisStep=0;locked=false;
+    qs('#a5-step',w).textContent=`Step ${idx+1} of ${stepOrder.length}`;qs('#a5-score',w).textContent=`Score: ${score} / ${stepOrder.length}`;
+    qs('#a5-title',w).textContent=step.title;qs('#a5-scenario',w).textContent=step.scenario;
+    optionOrder=step.options.map((text,oi)=>({text,oi}));shuffle(optionOrder);
+    const optEl=qs('#a5-options',w);optEl.innerHTML='';
+    optionOrder.forEach(obj=>{
+      const btn=document.createElement('div');btn.className='ix-option';btn.textContent=obj.text;
+      btn.setAttribute('tabindex','0');btn.setAttribute('role','button');btn.setAttribute('aria-label',obj.text);
+      btn.dataset.oi=obj.oi;
+      btn.addEventListener('click',()=>pick(btn,step));btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(btn,step);}});
+      optEl.appendChild(btn);
+    });
+    const fb=qs('#a5-feedback',w);fb.textContent='';fb.className='ix-feedback';qs('#a5-hint',w).className='ix-hint';
+    qs('#a5-next',w).style.display='none';qs('#a5-continue',w).style.display='none';qs('#a5-results',w).style.display='none';
+  }
+  function pick(btn,step){
+    if(locked||btn.classList.contains('locked-wrong')||btn.classList.contains('correct-opt'))return;
+    const chosen=parseInt(btn.dataset.oi,10);
+    const fb=qs('#a5-feedback',w),hintEl=qs('#a5-hint',w);
+    if(chosen===step.correct){
+      locked=true;score++;btn.classList.add('correct-opt');
+      fb.textContent=step.whyCorrect;fb.className='ix-feedback correct visible';
+      qs('#a5-score',w).textContent=`Score: ${score} / ${stepOrder.length}`;
+      qsa('.ix-option',w).forEach(o=>{if(!o.classList.contains('correct-opt')){o.style.pointerEvents='none';o.setAttribute('tabindex','-1');}});
+      announce('Correct!');
+      const nxt=qs('#a5-next',w);nxt.style.display='inline-block';nxt.textContent=idx<stepOrder.length-1?'Next Scenario':'View Results';setTimeout(()=>nxt.focus(),80);
+    }else{
+      wrongThisStep++;btn.classList.add('locked-wrong');
+      const wm=step.whyWrong[chosen]||'Not quite. Try another option.';
+      fb.textContent=`❌ ${wm}`;fb.className='ix-feedback incorrect visible';
+      if(wrongThisStep>=2){hintEl.textContent=`💡 Hint: ${step.hint}`;hintEl.className='ix-hint visible';}
+      announce('Incorrect. Try again.');
+      rushGuard.recordWrong(w);
+    }
+  }
+  qs('#a5-next',w).addEventListener('click',function(){
+    if(idx<stepOrder.length-1){idx++;renderStep();area.scrollTop=0;}
+    else{
+      const pass=score>=4;const res=qs('#a5-results',w);res.style.display='block';
+      res.style.background=pass?'var(--green-bg)':'var(--red-bg)';res.style.borderColor=pass?'var(--green-border)':'var(--red-border)';
+      res.innerHTML=`<h3 style="margin:0 0 8px;color:${pass?'#166534':'#991b1b'}">${pass?'🎉 Passed!':'🔁 Not Yet — Try Again'}</h3><p style="margin:0;font-size:.95rem;color:${pass?'#166534':'#7f1d1d'}">Your score: <strong>${score} / ${stepOrder.length}</strong>. ${pass?'You demonstrated strong understanding of Chapter 2 policy concepts.':'You need at least 4/5. Review the feedback and try again.'}</p>`;
+      qs('#a5-next',w).style.display='none';
+      if(pass){qs('#a5-continue',w).style.display='block';announce(`Passed with ${score}/5. Complete Chapter 2 button enabled.`);}
+      else{
+        qs('#a5-next',w).style.display='inline-block';qs('#a5-next',w).textContent='Try Again';
+        const self=this;self.onclick=()=>{idx=0;score=0;self.textContent='Next Scenario';self.onclick=null;renderStep();};
+        announce(`Score ${score}/5. Need 4 to pass. Select Try Again.`);
+      }
+    }
+  });
+  qs('#a5-next',w).addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();qs('#a5-next',w).click();}});
+  qs('#a5-continue',w).addEventListener('click',()=>{completeActivity(3);});
+  qs('#a5-continue',w).addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();qs('#a5-continue',w).click();}});
+  renderStep();
+}
+
+/* ── INIT ────────────────────────────────────────────── */
+loadProgress();
+renderSidebar();
+showCover();
+const _im=document.getElementById('instructionsModal');
+_im.classList.add('visible');
+if(typeof _im.showModal==='function'&&!_im.open){try{_im.showModal();}catch(e){}}
+document.getElementById('instrStartBtn').addEventListener('click',()=>{
+  const _im=document.getElementById('instructionsModal');
+  _im.classList.remove('visible');
+  if(typeof _im.close==='function'&&_im.open)_im.close();
+  if(currentView==='cover')showCover();
+  else if(currentView==='review')showReviewSummary();
+  else showActivity(currentView);
+  announce('Module started.');
+});
+document.getElementById('instrStartBtn').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();document.getElementById('instrStartBtn').click();}});
+/* ==========================================================
+   FULLSCREEN TOGGLE
+   Strategy 1 — Real Fullscreen API (works when Canvas iframe
+                has allow="fullscreen").
+   Strategy 2 — Pseudo-fullscreen via CSS (position:fixed,
+                always works inside any iframe / Canvas embed).
+========================================================== */
+(function(){
+  const btn = document.getElementById('fsBtn');
+  let pseudoFS = false;
+
+  function enterIcon(){ btn.textContent='✕'; btn.title='Exit fullscreen'; btn.setAttribute('aria-label','Exit fullscreen'); }
+  function exitIcon() { btn.textContent='⛶'; btn.title='Enter fullscreen'; btn.setAttribute('aria-label','Enter fullscreen'); }
+
+  function enterPseudo(){
+    document.body.classList.add('pseudo-fs');
+    pseudoFS = true;
+    enterIcon();
+    announce('Fullscreen on.');
+  }
+  function exitPseudo(){
+    document.body.classList.remove('pseudo-fs');
+    pseudoFS = false;
+    exitIcon();
+    announce('Fullscreen off.');
+  }
+
+  const fsTarget = document.getElementById('app-wrapper');
+
+  function tryRealFS(){
+    if(fsTarget.requestFullscreen){
+      fsTarget.requestFullscreen().catch(()=>{ enterPseudo(); });
+    } else if(fsTarget.webkitRequestFullscreen){
+      try{ fsTarget.webkitRequestFullscreen(); } catch(e){ enterPseudo(); }
+    } else {
+      enterPseudo();
+    }
+  }
+
+  function isRealFS(){
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  document.addEventListener('fullscreenchange', ()=>{
+    if(!isRealFS()) exitIcon(); else enterIcon();
+  });
+  document.addEventListener('webkitfullscreenchange', ()=>{
+    if(!isRealFS()) exitIcon(); else enterIcon();
+  });
+
+  btn.addEventListener('click', ()=>{
+    if(isRealFS()){
+      (document.exitFullscreen || document.webkitExitFullscreen || (()=>{})).call(document);
+    } else if(pseudoFS){
+      exitPseudo();
+    } else {
+      tryRealFS();
+    }
+  });
+
+  btn.addEventListener('keydown', e=>{
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); btn.click(); }
+  });
+})();
+
+</script>
+</body>
+</html>
