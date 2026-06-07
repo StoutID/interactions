@@ -1012,8 +1012,8 @@ const ACT_SUBPARTS={
   ],
   2:[
     {key:'2a',label:'3a – Absorption Sort'},
-    {key:'2c',label:'3c – College Scenarios'},
-    {key:'2d',label:'3d – Myth Check'}
+    {key:'2c',label:'3b – College Scenarios'},
+    {key:'2d',label:'3c – Myth Check'}
   ],
   3:[
     {key:'3a',label:'4a – Sort the Evidence'},
@@ -1234,7 +1234,7 @@ document.getElementById('toggleBtn').addEventListener('click',()=>{
 const actDescriptions=[
   {num:1,name:'Alcohol Basics: Vocabulary & Clarifications',desc:'Study 8 core alcohol terms and 4 college-specific myth-busting cards using flip cards, then pass a 4-question understanding check.',tag:'Flip Cards + Knowledge Check · Remember → Understand'},
   {num:2,name:'Alcohol in Society: History & Culture',desc:'Sequence 5 major historical eras of alcohol use, match social attitudes to time periods, and answer 3 interpretation questions connecting history to campus culture.',tag:'Sequence + Matching + MC · Understand'},
-  {num:3,name:'BAC Reality Check',desc:'Sort 8 absorption factors, practice BAC math with 4 calculations, apply pharmacology to 6 college scenarios, and bust 4 sobering-up myths.',tag:'4-Stage Activity · Apply → Analyze'},
+  {num:3,name:'BAC Reality Check',desc:'Sort 8 absorption factors into categories, apply pharmacology to 6 college scenarios, and bust 4 sobering-up myths.',tag:'3-Part Activity · Apply → Analyze'},
   {num:4,name:'Tolerance, Dependence & Withdrawal',desc:'Sort 20 evidence cards into 5 tolerance/dependence categories, then answer 5 case-based questions to confirm your understanding.',tag:'Card Sort + Case Checks · Analyze'},
   {num:5,name:'Alcohol, Behavior & Decision-Making',desc:'Work through 5 realistic college scenarios involving drinking games, driving, aggression, sexual decision-making, and harm reduction.',tag:'Branching Scenario · Evaluate'}
 ];
@@ -2119,7 +2119,7 @@ function renderAct3(area){
 
     stages[0].innerHTML=`
       <h1>BAC Reality Check</h1>
-      <div class="stage-banner"><span class="stage-badge">Stage 1 of 3</span>Absorption &amp; Timing: Sort each factor into the correct category.</div>
+      <div class="stage-banner"><span class="stage-badge">3a – Absorption Sort</span>Absorption &amp; Timing: Sort each factor into the correct category.</div>
       <div class="ix-explanation visible" style="display:block;margin-bottom:14px;">
         <strong>Drag each factor</strong> into the best category based on Chapter 9. Sort all 8 cards correctly to advance.
       </div>
@@ -2142,7 +2142,7 @@ function renderAct3(area){
         </div>
       </div>
       <div id="s1-feedback" class="ix-feedback" style="margin-top:14px;"></div>
-      <button id="s1-continue" class="ix-continue-btn" disabled>Continue to Stage 2: BAC Math →</button>
+      <button id="s1-continue" class="ix-continue-btn" disabled>Continue to 3b: College Scenarios →</button>
     `;
 
     const s1Stack=qs('#s1-stack',stages[0]);
@@ -2249,9 +2249,9 @@ function renderAct3(area){
 
     stages[1].innerHTML=`
       <h1>BAC Reality Check</h1>
-      <div class="stage-banner"><span class="stage-badge">Stage 2 of 3</span>College Scenarios — Apply pharmacology to real situations.</div>
+      <div class="stage-banner"><span class="stage-badge">3b – College Scenarios</span>College Scenarios — Apply pharmacology to real situations.</div>
       <div id="s3-questions"></div>
-      <button id="s3-continue" class="ix-continue-btn" disabled>Continue to Stage 4: Myth Check →</button>
+      <button id="s3-continue" class="ix-continue-btn" disabled>Continue to 3c: Myth Check →</button>
     `;
 
     const qArea=qs('#s3-questions',stages[1]);
@@ -2321,7 +2321,7 @@ function renderAct3(area){
 
     stages[2].innerHTML=`
       <h1>BAC Reality Check</h1>
-      <div class="stage-banner"><span class="stage-badge">Stage 3 of 3</span>Myth Check — Sobering up and morning-after risk.</div>
+      <div class="stage-banner"><span class="stage-badge">3c – Myth Check</span>Myth Check — Sobering up and morning-after risk.</div>
       <div id="s4-items"></div>
       <button id="s4-continue" class="ix-continue-btn" disabled>✅ Continue to Activity 4</button>
     `;
