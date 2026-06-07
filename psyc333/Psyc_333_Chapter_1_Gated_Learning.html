@@ -912,6 +912,7 @@ const ACTIVITIES=[
 ];
 
 let currentView='cover';
+let savedReflectionQuestion='';
 
 /* ==========================================================
    PROGRESS / PERSISTENCE
@@ -921,7 +922,8 @@ function saveProgress(){
   localStorage.setItem(STORAGE_KEY,JSON.stringify({
     currentView,
     done:ACTIVITIES.map(a=>a.done),
-    locked:ACTIVITIES.map(a=>a.locked)
+    locked:ACTIVITIES.map(a=>a.locked),
+    reflectionQ:savedReflectionQuestion
   }));
 }
 function loadProgress(){
@@ -930,6 +932,7 @@ function loadProgress(){
     if(!d)return;
     currentView=d.currentView;
     ACTIVITIES.forEach((a,i)=>{a.done=d.done[i];a.locked=d.locked[i];});
+    savedReflectionQuestion=d.reflectionQ||'';
     announce('Your previous progress has been restored.');
   }catch(e){}
 }
@@ -937,6 +940,7 @@ function resetProgress(){
   localStorage.removeItem(STORAGE_KEY);
   rushGuard.hardReset();
   currentView='cover';
+  savedReflectionQuestion='';
   ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i!==0);});
   renderSidebar();
   showCover();
@@ -1207,12 +1211,23 @@ function showReviewSummary(){
       </ul>
     </div>`).join('');
 
+  const reflectionBlock = savedReflectionQuestion ? `
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>` : '';
+
   page.innerHTML=`
     <h1 style="color:var(--navy);margin-bottom:6px;">Chapter 1 Review</h1>
     <p class="ix-instructions">
       You've completed all ${ACTIVITIES.length} activities. Use this page to review key concepts,
       and download the study guide for later reference.
     </p>
+    ${reflectionBlock}
     <div style="text-align:center;margin:18px 0 28px;">
       <button class="download-btn" id="reviewPageDownloadBtn">⬇ Download Study Guide</button>
     </div>
@@ -1267,6 +1282,10 @@ function completeActivity(index){
   renderSidebar();
   saveProgress();
   if(doneCount()===ACTIVITIES.length){
+    // Pick and persist the reflection question BEFORE rendering the review page
+    // so showReviewSummary() can display it immediately.
+    savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+    saveProgress();
     showReviewSummary();
     setTimeout(()=>showCompletionModal(),400);
   }
@@ -1284,7 +1303,7 @@ const REFLECTION_QUESTIONS=[
 ];
 
 function showCompletionModal(){
-  const q=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+  const q=savedReflectionQuestion;
   const qEl=document.getElementById('reflectionQuestion');
   if(qEl) qEl.textContent=q;
   const _cm=document.getElementById('completionModal');
