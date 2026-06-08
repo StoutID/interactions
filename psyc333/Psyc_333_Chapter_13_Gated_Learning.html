@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 13 – Psychotherapeutic Medications</title>
+<style>
+:root{
+  --navy:#13294B;--blue:#1D4F91;--sky:#00A3E0;--accent:#D3E3FF;
+  --bg:#F3F3F5;--white:#FFFFFF;--border:1px solid rgba(19,41,75,.15);
+  --shadow:0 10px 15px -3px rgba(0,0,0,.1);--sidebar-w:300px;
+  --green-bg:#dcfce7;--green-border:#14532d;
+  --red-bg:#fee2e2;--red-border:#7f1d1d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--navy);display:flex;justify-content:center;overflow:hidden;height:100vh;}
+#app-wrapper{width:100%;max-width:1200px;height:100vh;display:flex;background:white;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);}
+#sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);border-right:var(--border);display:flex;flex-direction:column;transition:width .3s,min-width .3s;overflow:hidden;}
+#sidebar.collapsed{width:0;min-width:0;border-right:none;}
+.sidebar-header{background:var(--navy);color:white;padding:24px 20px;font-weight:800;font-size:1rem;letter-spacing:.5px;line-height:1.4;flex-shrink:0;}
+.sidebar-header small{display:block;font-weight:400;font-size:.75rem;opacity:.75;margin-top:4px;letter-spacing:0;}
+.nav-list{overflow-y:auto;flex:1;}
+.nav-item{padding:12px 18px;border-bottom:1px solid rgba(0,0,0,.05);display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:.93rem;transition:background .15s;gap:8px;}
+.nav-item:hover:not(.locked){background:#f0f5ff}
+.nav-item:focus{outline:3px solid var(--sky);outline-offset:-2px}
+.nav-item.active{background:var(--accent);font-weight:700}
+.nav-item.locked{opacity:.55;cursor:not-allowed}
+.nav-item.done .nav-title::after{content:' ✓';color:#16a34a;font-weight:700}
+.nav-item.sub-item{padding-left:32px;font-size:.83rem;background:#fafbff;border-bottom:1px solid rgba(0,0,0,.04);}
+.nav-item.sub-item:hover:not(.locked){background:#eef3ff}
+.nav-item.sub-item.active{background:var(--accent);font-weight:600;}
+.nav-item.sub-item .nav-title{color:#444;}
+.nav-item.sub-item.done .nav-title::after{content:' ✓';color:#16a34a;}
+.nav-title{flex:1}.lock-icon{font-size:.85rem;flex-shrink:0}
+.nav-group-header{padding:8px 18px 4px;font-size:.72rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#888;background:#f8f9fb;border-bottom:1px solid rgba(0,0,0,.06);}
+.nav-progress{width:100%;height:4px;background:#e5e7eb;flex-shrink:0;}
+.nav-progress-fill{height:4px;background:var(--sky);transition:width .4s;}
+.sidebar-footer{padding:14px 18px;border-top:var(--border);font-size:.8rem;color:#666;}
+.reset-btn{margin:10px 18px 14px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:6px;padding:8px 14px;font-size:.8rem;font-weight:600;cursor:pointer;}
+.reset-btn:hover{background:#fecaca}
+#main-content{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.top-bar{padding:12px 18px;border-bottom:var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;background:white;}
+.menu-btn{background:var(--blue);color:white;border:none;padding:9px 16px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:.9rem;white-space:nowrap;touch-action:manipulation;}
+.menu-btn:focus{outline:3px solid var(--sky)}
+.top-bar-title{font-weight:700;color:var(--navy);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top-bar-progress{margin-left:auto;font-size:.82rem;color:#555;white-space:nowrap;}
+.content-scroll{flex:1;overflow-y:auto;padding:0;-webkit-overflow-scrolling:touch;}
+#cover-page{max-width:820px;margin:40px auto;padding:20px 20px 40px;}
+.cover-badge{display:inline-block;background:var(--accent);color:var(--blue);font-weight:700;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:16px;}
+.cover-title{font-size:2rem;font-weight:800;color:var(--navy);line-height:1.2;margin-bottom:12px;}
+.cover-subtitle{font-size:1.05rem;color:#444;margin-bottom:32px;line-height:1.6;}
+.cover-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:36px;}
+.cover-card{border:var(--border);border-radius:12px;padding:20px;background:white;box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start;}
+.cover-card-num{background:var(--navy);color:white;font-weight:800;font-size:.95rem;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cover-card-body h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:5px;}
+.cover-card-body p{font-size:.85rem;color:#555;line-height:1.5;}
+.cover-tag{display:inline-block;background:#f0f5ff;color:var(--blue);font-size:.73rem;font-weight:600;padding:2px 8px;border-radius:10px;margin-top:8px;border:1px solid var(--accent);}
+.cover-instructions{background:#f8faff;border:var(--border);border-left:4px solid var(--sky);border-radius:8px;padding:16px 20px;margin-bottom:28px;font-size:.9rem;line-height:1.7;color:#333;}
+.cover-instructions strong{display:block;margin-bottom:6px;color:var(--navy)}
+.get-started-btn{display:inline-block;background:var(--navy);color:white;border:none;padding:16px 40px;font-size:1.1rem;font-weight:700;border-radius:10px;cursor:pointer;letter-spacing:.5px;touch-action:manipulation;transition:background .2s,transform .1s;}
+.get-started-btn:hover{background:var(--blue)}.get-started-btn:active{transform:scale(.98)}.get-started-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+.interaction-wrapper{padding:30px 30px 50px;max-width:960px;margin:0 auto;width:100%;}
+.interaction-wrapper h1{margin-top:0;color:var(--navy);}
+.ix-card{background:white;border:var(--border);border-radius:8px;padding:12px 14px;margin:8px 0;cursor:grab;font-size:.95rem;user-select:none;-webkit-user-select:none;touch-action:none;transition:box-shadow .15s,opacity .15s;}
+.ix-card:focus{outline:3px solid var(--sky)}.ix-card.dragging{opacity:.35;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+.ix-card.card-locked{cursor:default;pointer-events:none;}
+@keyframes shake{0%{transform:translateX(0)}15%{transform:translateX(-8px)}35%{transform:translateX(8px)}55%{transform:translateX(-6px)}70%{transform:translateX(6px)}85%{transform:translateX(-3px)}100%{transform:translateX(0)}}
+.shake{animation:shake .45s ease;}
+@keyframes correctPop{0%{transform:scale(1)}40%{transform:scale(1.04)}100%{transform:scale(1)}}
+.correct-pop{animation:correctPop .3s ease;}
+@keyframes fadeOutCard{0%{opacity:1;transform:scale(1)}70%{opacity:.4;transform:scale(.95)}100%{opacity:0;transform:scale(.9)}}
+.fade-out-card{animation:fadeOutCard .5s ease forwards;}
+.ix-explanation{margin-top:16px;padding:14px 16px;border-radius:8px;background:#eef6ff;font-size:.92rem;line-height:1.6;display:none;}
+.ix-explanation.visible{display:block}
+.ix-feedback{margin-top:18px;padding:14px 16px;border-radius:8px;font-weight:600;font-size:.95rem;display:none;}
+.ix-feedback.visible{display:block}.ix-feedback.correct{background:var(--green-bg);color:#166534}.ix-feedback.incorrect{background:var(--red-bg);color:#991b1b}
+.ix-prompt{font-weight:600;margin-bottom:18px;font-size:1rem;line-height:1.5;}
+.ix-continue-btn{display:block;margin-top:28px;padding:13px 28px;font-size:1rem;font-weight:700;background:var(--blue);color:white;border:none;border-radius:8px;cursor:pointer;touch-action:manipulation;transition:background .15s,opacity .15s;}
+.ix-continue-btn:disabled{opacity:.35;cursor:default}.ix-continue-btn:not(:disabled):hover{background:var(--navy)}.ix-continue-btn:focus{outline:3px solid var(--sky)}
+.next-activity-btn{display:inline-flex;align-items:center;gap:8px;margin-top:24px;padding:14px 32px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,var(--navy),var(--blue));color:white;border:none;border-radius:10px;cursor:pointer;touch-action:manipulation;transition:opacity .15s,transform .1s;box-shadow:0 4px 14px rgba(0,0,0,.18);}
+.next-activity-btn:hover{opacity:.9;transform:translateY(-1px)}.next-activity-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+/* Stacked card sort */
+.stack-sort-layout{display:flex;flex-direction:column;gap:24px;margin-top:8px;}
+.stack-area{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.stack-label{font-size:.85rem;font-weight:700;color:var(--navy);margin-bottom:2px;text-align:center;}
+.card-stack-wrap{position:relative;width:100%;max-width:420px;min-height:90px;}
+.card-stack-wrap .ix-card{position:absolute;width:100%;left:0;top:0;background:linear-gradient(135deg,#1D4F91 0%,#00A3E0 100%);color:white;border:none;border-radius:10px;padding:14px 16px;font-size:.9rem;line-height:1.4;cursor:grab;box-shadow:0 4px 12px rgba(0,0,0,.18);}
+.stack-empty-msg{font-size:.85rem;color:#888;font-style:italic;text-align:center;padding:12px 0;}
+.drop-zones-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;width:100%;}
+.drop-zone-col{flex:1 1 140px;min-width:130px;max-width:260px;display:flex;flex-direction:column;}
+.drop-zone-head{background:var(--navy);color:#fff;font-weight:700;font-size:.82rem;text-align:center;padding:9px 8px;border-radius:8px 8px 0 0;line-height:1.3;}
+.drop-zone-body{border:2px dashed var(--accent);border-top:none;border-radius:0 0 8px 8px;min-height:70px;padding:6px;display:flex;flex-direction:column;gap:5px;transition:background .15s,border-color .15s;}
+.drop-zone-body.drag-over{background:#eef6ff;border-color:var(--sky);}
+.drop-zone-body.all-correct{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.drop-zone-body .placed-card{background:linear-gradient(135deg,#1D4F91 0%,#00A3E0 100%);color:white;border:none;border-radius:8px;padding:10px 12px;font-size:.82rem;line-height:1.3;margin:0;}
+/* col-sort */
+.col-sort-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;}
+.col-sort-col{flex:1 1 160px;display:flex;flex-direction:column;gap:0;min-width:140px;}
+.col-sort-head{background:var(--navy);color:#fff;font-weight:700;font-size:.84rem;text-align:center;padding:9px 8px;border-radius:8px 8px 0 0;line-height:1.3;}
+.col-sort-zone{border:2px dashed var(--accent);border-top:none;border-radius:0 0 8px 8px;min-height:56px;padding:6px;display:flex;flex-direction:column;gap:5px;transition:background .15s,border-color .15s;}
+.col-sort-zone.drag-over{background:#eef6ff;border-color:var(--sky);}
+.col-sort-zone.all-correct{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.col-sort-zone .ix-card{font-size:.82rem;margin:0;line-height:1.3;background:linear-gradient(135deg,#1D4F91 0%,#00A3E0 100%);color:white;border:none;}
+.col-sort-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.col-sort-bank .ix-card{font-size:.85rem;cursor:grab;background:linear-gradient(135deg,#1D4F91 0%,#00A3E0 100%);color:white;border:none;}
+.sort-progress{font-size:.85rem;font-weight:600;color:var(--blue);margin-bottom:8px;}
+/* sequence */
+.seq-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;}
+.seq-col-title{font-size:.95rem;font-weight:700;margin-bottom:8px;color:var(--navy);}
+.seq-pool-cards{display:flex;flex-direction:column;gap:8px;}
+.seq-pool-cards .ix-card{background:linear-gradient(135deg,#1D4F91 0%,#00A3E0 100%);color:white;border:none;font-size:.85rem;cursor:grab;}
+.seq-slots{display:flex;flex-direction:column;gap:10px;}
+.seq-slot-row{display:flex;gap:8px;align-items:center;}
+.seq-num{min-width:22px;color:var(--sky);font-weight:800;}
+.seq-drop{flex:1;min-height:52px;border:2px dashed var(--accent);border-radius:10px;padding:8px;transition:background .15s,border-color .15s;}
+.seq-drop.drag-over{background:#eef6ff;border-color:var(--sky);}
+.seq-drop.slot-correct{border-style:solid;border-color:var(--green-border);background:var(--green-bg);}
+.seq-drop .ix-card{font-size:.82rem;cursor:default;pointer-events:none;margin:0;background:linear-gradient(135deg,#1D4F91 0%,#00A3E0 100%);color:white;border:none;}
+/* flip cards */
+.flip-deck{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.flip-card-wrap{width:100%;max-width:560px;perspective:1200px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.flip-card-inner{position:relative;width:100%;height:200px;transition:transform .55s ease;transform-style:preserve-3d;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.1);}
+.flip-card-wrap.flipped .flip-card-inner{transform:rotateY(180deg);}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 28px;text-align:center;}
+.flip-front{background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);color:#fff;}
+.flip-back{background:#fff;color:var(--navy);transform:rotateY(180deg);border:2px solid var(--accent);}
+.flip-label{font-size:.7rem;letter-spacing:1.2px;text-transform:uppercase;opacity:.65;font-weight:600;margin-bottom:8px;}
+.flip-term{font-size:1.25rem;font-weight:800;line-height:1.2;}
+.flip-def{font-size:.88rem;line-height:1.6;color:#333;}
+.flip-tap-hint{font-size:.75rem;opacity:.55;margin-top:10px;}
+.flip-nav{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.flip-nav-btn{background:var(--navy);color:white;border:none;border-radius:999px;padding:8px 20px;font-size:.88rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:background .2s,transform .1s;}
+.flip-nav-btn:not(:disabled):hover{background:var(--blue);transform:translateY(-1px);}.flip-nav-btn:disabled{opacity:.35;cursor:default;}.flip-nav-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+.flip-counter{font-size:.85rem;color:#555;font-weight:600;}
+.flip-progress-row{display:flex;align-items:center;gap:10px;width:100%;max-width:560px;}
+.flip-progress-bar{flex:1;height:7px;background:#e5e7eb;border-radius:999px;overflow:hidden;}
+.flip-progress-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--blue));transition:width .3s;}
+.viewed-badge{display:inline-flex;align-items:center;gap:5px;background:#f0f7ff;border:1px solid var(--accent);border-radius:999px;padding:4px 12px;font-size:.78rem;font-weight:600;color:var(--blue);}
+/* scenario / MC */
+.scenario-box{background:#f8faff;border:var(--border);border-left:4px solid var(--sky);border-radius:10px;padding:16px 20px;margin-bottom:20px;font-size:.95rem;line-height:1.65;color:#333;}
+.scenario-box strong{color:var(--navy);}
+.branch-result{margin-top:16px;padding:14px 16px;border-radius:10px;font-size:.93rem;line-height:1.6;}
+.branch-result.optimal{background:#dcfce7;border:1px solid #14532d;color:#166534;}
+.branch-result.poor{background:#fee2e2;border:1px solid #7f1d1d;color:#991b1b;}
+.branch-choices{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.branch-choice{border:var(--border);border-radius:8px;padding:14px 16px;cursor:pointer;font-size:.92rem;line-height:1.5;transition:background .15s,border-color .15s;user-select:none;touch-action:manipulation;}
+.branch-choice:hover:not(.choice-locked){background:var(--accent);}.branch-choice:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.branch-choice.choice-locked{cursor:default;}
+.branch-choice.choice-wrong{background:var(--red-bg);border-color:var(--red-border);}
+.scenario-progress{font-size:.82rem;color:#555;margin-bottom:14px;}
+/* Progressive hints */
+.hint-strip{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+.hint-strip-item{display:flex;align-items:flex-start;gap:8px;background:#fef9c3;border:1px solid #d97706;border-radius:8px;padding:10px 12px;font-size:.87rem;color:#78350f;line-height:1.5;animation:hintSlide .3s ease;}
+@keyframes hintSlide{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.hint-strip-num{font-weight:800;flex-shrink:0;color:#b45309;}
+.attempts-badge{display:inline-block;background:#fef3c7;border:1px solid #d97706;color:#92400e;font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:999px;margin-bottom:8px;}
+/* kc */
+.kc-question{background:#f9fafb;border-radius:10px;padding:16px 18px;border:1px solid #dde3f0;margin-bottom:16px;transition:border-color .2s,background .2s;}
+.kc-question.kc-correct{border-color:var(--green-border);background:var(--green-bg);}
+.kc-qtext{font-size:.95rem;font-weight:600;color:var(--navy);margin-bottom:10px;line-height:1.5;}
+.kc-options{display:flex;flex-direction:column;gap:8px;}
+.kc-opt{border:var(--border);border-radius:8px;padding:11px 14px;cursor:pointer;font-size:.9rem;transition:background .15s,border-color .15s;user-select:none;touch-action:manipulation;}
+.kc-opt:hover:not(.kc-opt-locked){background:var(--accent);}
+.kc-opt:focus{outline:3px solid var(--sky);outline-offset:-2px;}
+.kc-opt.kc-opt-correct{background:var(--green-bg);border-color:var(--green-border);cursor:default;}
+.kc-opt.kc-opt-wrong{background:var(--red-bg);border-color:var(--red-border);}
+.kc-opt.kc-opt-locked{cursor:default;pointer-events:none;}
+.kc-exp{font-size:.85rem;line-height:1.55;color:#333;margin-top:10px;display:none;}
+.kc-exp.visible{display:block;}
+/* two-part banner */
+.two-part-banner{display:flex;align-items:center;gap:10px;background:#f0f5ff;border:1px solid var(--accent);border-radius:8px;padding:10px 14px;margin-bottom:20px;}
+.tpb-icon{font-size:1.4rem;flex-shrink:0;}
+.tpb-badge{display:inline-block;background:var(--blue);color:white;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-right:6px;}
+@keyframes partFadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes partFadeOut{from{opacity:1;}to{opacity:0;}}
+.part-fade-in{animation:partFadeIn .36s ease both;}
+.part-fade-out{animation:partFadeOut .3s ease both;}
+/* hint box */
+.hint-box{background:#fef9c3;border:1px solid #d97706;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:.88rem;color:#78350f;line-height:1.5;display:none;}
+.hint-box.visible{display:block;}
+.hint-btn{background:#fef3c7;border:1px solid #d97706;color:#78350f;padding:7px 14px;border-radius:6px;font-size:.85rem;font-weight:600;cursor:pointer;margin-top:10px;}
+/* reflection */
+.reflection-textarea{width:100%;border:2px solid var(--accent);border-radius:8px;padding:12px;font-size:.93rem;font-family:inherit;resize:vertical;min-height:100px;line-height:1.6;}
+.reflection-textarea:focus{outline:none;border-color:var(--sky);}
+/* modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .25s;}
+.modal-overlay.visible{opacity:1;pointer-events:all;}
+.modal-box{background:white;border-radius:16px;padding:32px;max-width:480px;width:90%;text-align:center;position:relative;border-top:5px solid var(--blue);}
+.modal-box h2{margin:12px 0 10px;font-size:1.3rem;color:var(--navy);}
+.modal-box p{font-size:.95rem;line-height:1.6;color:#444;margin-bottom:16px;}
+.modal-icon{font-size:2.5rem;margin-bottom:8px;}
+.modal-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#666;}
+.modal-close:hover{color:var(--navy)}.modal-close:focus{outline:3px solid var(--sky)}
+.modal-checklist{text-align:left;list-style:none;margin:12px 0;padding:0;font-size:.9rem;color:#333;line-height:1.8;}
+.modal-checklist li::before{content:'✅ ';font-size:.85rem;}
+.download-btn{background:var(--navy);color:white;border:none;padding:13px 30px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;touch-action:manipulation;}
+.download-btn:hover{background:var(--blue)}.download-btn:focus{outline:3px solid var(--sky);outline-offset:3px}
+.confirm-btn-row{display:flex;gap:12px;justify-content:center;margin-top:20px;}
+.confirm-no,.confirm-yes{padding:11px 24px;border-radius:8px;font-weight:700;font-size:.95rem;cursor:pointer;border:none;}
+.confirm-no{background:#e5e7eb;color:#333;}.confirm-no:hover{background:#d1d5db}
+.confirm-yes{background:#dc2626;color:white;}.confirm-yes:hover{background:#b91c1c}
+.instr-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1500;display:flex;align-items:center;justify-content:center;padding:20px;}
+.instr-overlay.hidden{display:none;}
+.instr-box{background:white;border-radius:16px;padding:32px;max-width:500px;width:100%;border-top:5px solid var(--sky);}
+.instr-box h2{color:var(--navy);margin-bottom:14px;font-size:1.3rem;}
+.instr-row{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start;font-size:.9rem;line-height:1.5;color:#333;}
+.instr-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px;}
+.instr-row kbd{background:#f0f0f0;border:1px solid #ccc;border-radius:4px;padding:1px 5px;font-size:.82rem;}
+.activity-locked-overlay{position:absolute;inset:0;background:rgba(255,255,255,.9);backdrop-filter:blur(3px);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;gap:12px;text-align:center;padding:20px;}
+.activity-locked-overlay h3{color:var(--navy);font-size:1.1rem;}
+.lock-countdown{font-size:2.2rem;font-weight:800;color:#dc2626;}
+.completion-card{background:linear-gradient(135deg,var(--navy),var(--blue));color:white;border-radius:14px;padding:28px;margin-top:20px;text-align:center;}
+.completion-card h2{font-size:1.4rem;margin-bottom:10px;}
+.completion-card p{font-size:.95rem;opacity:.9;line-height:1.6;}
+.completion-card ul{text-align:left;list-style:none;margin:16px 0;padding:0;font-size:.9rem;opacity:.9;line-height:1.9;}
+.completion-card ul li::before{content:'✅ ';font-size:.85rem;}
+@media(max-width:640px){
+  .seq-layout{grid-template-columns:1fr;}
+  .drop-zones-row{flex-direction:column;align-items:stretch;}
+  .drop-zone-col{max-width:100%;}
+  .col-sort-grid{flex-direction:column;}
+  .interaction-wrapper{padding:20px 14px 40px;}
+  .flip-card-inner{height:220px;}
+}
+/* step dots */
+.step-dots{display:flex;align-items:center;gap:5px;flex-shrink:0;margin-left:auto;}
+.step-dot{width:13px;height:13px;border-radius:50%;background:#e5e7eb;border:2px solid #d1d5db;transition:background .3s,border-color .3s;flex-shrink:0;cursor:default;}
+.step-dot.done{background:#16a34a;border-color:#15803d;}
+.step-dot.active{background:var(--sky);border-color:#0284c7;}
+.step-dot.locked{background:#e5e7eb;border-color:#d1d5db;}
+.step-label{font-size:.78rem;color:#666;margin-left:4px;white-space:nowrap;}
+/* fullscreen */
+.fs-btn{background:none;border:1px solid rgba(19,41,75,.25);border-radius:6px;padding:6px 10px;font-size:1rem;cursor:pointer;color:var(--navy);line-height:1;flex-shrink:0;transition:background .15s,border-color .15s;touch-action:manipulation;margin-left:8px;}
+.fs-btn:hover{background:var(--accent);border-color:var(--blue);}
+.fs-btn:focus{outline:3px solid var(--sky);outline-offset:2px;}
+body.pseudo-fs{overflow:auto;}
+body.pseudo-fs #app-wrapper{position:fixed;inset:0;max-width:none;height:100%;z-index:9990;box-shadow:none;}
+body.pseudo-fs .modal-overlay,body.pseudo-fs .instr-overlay{z-index:99999;}
+/* reflection block */
+.reflection-block{background:#f0f5ff;border:1px solid var(--accent);border-left:5px solid var(--blue);border-radius:10px;padding:16px 18px;margin:12px 0 18px;text-align:left;}
+.reflection-label{font-size:.78rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--blue);margin-bottom:8px;}
+.reflection-question{font-size:1rem;line-height:1.55;color:var(--navy);font-weight:600;margin:0;}
+/* review page */
+.review-screen{max-width:820px;margin:0 auto;padding:28px 24px 60px;}
+.review-badge{display:inline-block;background:var(--accent);color:var(--blue);font-weight:700;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:14px;}
+.review-section{background:#f9fafb;border-radius:10px;padding:16px 18px;border:1px solid #dde3f0;margin-bottom:14px;}
+.review-section h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:10px;}
+.review-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
+.review-list li{font-size:.88rem;line-height:1.55;color:#333;padding-left:14px;position:relative;}
+.review-list li::before{content:'•';position:absolute;left:0;color:var(--sky);font-weight:700;}
+</style>
+</head>
+<body>
+<div aria-live="polite" aria-atomic="true" id="aria-live" style="position:absolute;left:-9999px;"></div>
+
+<!-- INSTRUCTIONS OVERLAY -->
+<div class="instr-overlay" id="instrOverlay" role="dialog" aria-modal="true" aria-labelledby="instrTitle">
+  <div class="instr-box">
+    <h2 id="instrTitle">📋 How to Use This Module</h2>
+    <div class="instr-row"><span class="instr-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Click or tap to answer. Drag and drop cards for instant feedback.</div></div>
+    <div class="instr-row"><span class="instr-icon">⌨️</span><div><strong>Keyboard:</strong> Use <kbd>Tab</kbd> to move, <kbd>Enter</kbd> or <kbd>Space</kbd> to select.</div></div>
+    <div class="instr-row"><span class="instr-icon">🔒</span><div><strong>Gated Progress:</strong> Each activity unlocks after the previous one is completed.</div></div>
+    <div class="instr-row"><span class="instr-icon">💡</span><div><strong>Progressive Hints:</strong> Wrong answers reveal hints one at a time — the correct answer is never shown outright.</div></div>
+    <div class="instr-row"><span class="instr-icon">📝</span><div><strong>Reflection Question:</strong> When you finish all activities, you will receive a randomly assigned reflection question. <strong>Copy and paste the question into the Canvas text box below this activity</strong> and answer it in your own words (at least one paragraph, five sentences minimum, no AI).</div></div><br>
+    <button class="get-started-btn" style="width:100%" id="instrStartBtn">Got It – Show Me the Module</button>
+  </div>
+</div>
+
+<!-- RESET MODAL -->
+<div class="modal-overlay" id="resetModal" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <h2 id="resetTitle">Reset All Progress?</h2>
+    <p>This will <strong>erase all completed activities</strong> and re-lock everything except Activity 1.</p>
+    <div class="confirm-btn-row">
+      <button class="confirm-no" id="resetCancelBtn">Cancel</button>
+      <button class="confirm-yes" id="resetConfirmBtn">Yes, Reset Everything</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPLETION MODAL -->
+<div class="modal-overlay" id="completionModal" role="dialog" aria-modal="true" aria-labelledby="complTitle">
+  <div class="modal-box" style="max-width:540px;">
+    <button class="modal-close" id="closeCompletion" aria-label="Close">✕</button>
+    <div class="modal-icon">🎉</div>
+    <h2 id="complTitle">Chapter 13 Complete!</h2>
+    <p style="margin-bottom:8px;">Outstanding work — you've mastered psychotherapeutic medications.</p>
+    <div class="reflection-block" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question" id="reflectionQuestion">&nbsp;</p>
+    </div>
+    <p style="font-size:.88rem;color:#555;line-height:1.6;margin-bottom:16px;">
+      <strong>Copy this question</strong> and paste it into the Canvas text box below this activity.
+      Answer in your own words — at least one paragraph of five sentences, no AI.
+    </p>
+    <button class="download-btn" id="downloadGuideBtn">⬇ Download Study Guide</button>
+  </div>
+</div>
+
+<!-- RUSH GUARD MODAL -->
+<div class="modal-overlay" id="rushModal" role="dialog" aria-modal="true" aria-labelledby="rushTitle" style="z-index:2000;">
+  <div class="modal-box" style="border-top:5px solid #f59e0b;">
+    <div class="modal-icon" id="rushIcon">⚠️</div>
+    <h2 id="rushTitle" style="color:#92400e;">Slow Down!</h2>
+    <p id="rushMsg"></p>
+    <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.88rem;color:#78350f;line-height:1.5;" id="rushDetail"></div>
+    <div id="rushCountdown" style="display:none;margin:14px 0;font-size:1.1rem;font-weight:700;color:#dc2626;text-align:center;"></div>
+    <button id="rushDismissBtn" class="ix-continue-btn" style="background:#f59e0b;margin-top:4px;">I'll Read More Carefully</button>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app-wrapper">
+  <aside id="sidebar" aria-label="Activity navigation">
+    <div class="sidebar-header">Chapter 13<small>Psychotherapeutic Medications</small></div>
+    <div class="nav-progress" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="5" id="overallProgressBar">
+      <div class="nav-progress-fill" id="overallProgressFill" style="width:0%"></div>
+    </div>
+    <nav class="nav-list" id="nav-list" aria-label="Activities"></nav>
+    <div class="sidebar-footer" id="sidebar-footer">0 of 3 activities complete</div>
+    <button class="reset-btn" id="resetProgressBtn" aria-label="Reset all progress">↺ Reset Progress</button>
+  </aside>
+  <main id="main-content">
+    <div class="top-bar">
+      <button class="menu-btn" id="toggleBtn" aria-controls="sidebar" aria-expanded="true">☰ Menu</button>
+      <span class="top-bar-title" id="topBarTitle">Chapter 13 – Psychotherapeutic Medications</span>
+      <div class="step-dots" id="stepDots" aria-label="Activity progress" role="status"></div>
+      <button class="fs-btn" id="fsBtn" aria-label="Toggle fullscreen" title="Toggle fullscreen">⤢</button>
+    </div>
+    <div class="content-scroll" id="content-area" tabindex="-1"></div>
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   RUSH GUARD
+============================================================ */
+const rushGuard=(()=>{
+  const WINDOW_MS=12000,THRESHOLD=4,COOLDOWN_S=60,PASSWORD='medications';
+  let wrongTimestamps=[],strikes=0,lockCycles=0,locked=false,hardLocked=false,cooldownTimer=null,currentWrapper=null;
+  const HARD_LOCK_KEY='ch13-hard-locked';
+  const $modal=()=>document.getElementById('rushModal');
+  const $icon=()=>document.getElementById('rushIcon');
+  const $title=()=>document.getElementById('rushTitle');
+  const $msg=()=>document.getElementById('rushMsg');
+  const $detail=()=>document.getElementById('rushDetail');
+  const $countdown=()=>document.getElementById('rushCountdown');
+  const $dismiss=()=>document.getElementById('rushDismissBtn');
+  function setModal(iconTxt,titleTxt,titleColor,borderColor,msgTxt,detailHTML,cdVisible,btnVisible,btnTxt){
+    const m=$modal();m.querySelector('.modal-box').style.borderTopColor=borderColor;
+    $icon().textContent=iconTxt;$title().textContent=titleTxt;$title().style.color=titleColor;
+    $msg().textContent=msgTxt;$detail().innerHTML=detailHTML;
+    $countdown().style.display=cdVisible?'block':'none';
+    $dismiss().style.display=btnVisible?'':'none';
+    if(btnVisible)$dismiss().textContent=btnTxt;
+    m.classList.add('visible');
+    if(btnVisible)setTimeout(()=>$dismiss().focus(),50);
+  }
+  function showWarning(){
+    if(lockCycles===0)setModal('⚠️','Slow Down!','#92400e','#f59e0b',"You're answering too quickly without reading.","Tip: Read each option carefully. One more rush and this activity locks for <strong>60 seconds</strong>.",false,true,"I'll Read More Carefully");
+    else if(lockCycles===1)setModal('🚨','Final Warning','#dc2626','#dc2626',"You're still rushing after a 60-second timeout.","One more rush locks again for <strong>60 seconds</strong>.<br><br>⚠️ <strong>A third lockout permanently locks this assignment.</strong>",false,true,"I Understand — I'll Think First");
+    else setModal('🚨','Final Warning — Last Chance','#7f1d1d','#7f1d1d',"You have already received two 60-second timeouts.","⚠️ <strong>If you rush again, this assignment will be permanently locked.</strong>",false,true,"I Understand — This Is My Last Chance");
+  }
+  function showTimeout(){
+    const afterThis=lockCycles+1;
+    const warn=afterThis>=2?`⚠️ <strong>WARNING:</strong> If you rush again your assignment will be <strong>permanently locked</strong>.`:`You have <strong>${2-afterThis}</strong> timeout${(2-afterThis)!==1?'s':''} remaining before permanent lock.`;
+    setModal('🔒','Activity Locked – 60 Second Timeout','#dc2626','#dc2626',"You rushed again immediately after a warning.",`Use this time to study the content.<br><br>${warn}`,true,false,'');
+    startCooldown();
+  }
+  function showHardLock(){
+    hardLocked=true;locked=true;localStorage.setItem(HARD_LOCK_KEY,'1');
+    setModal('🔑','Assignment Locked','#7f1d1d','#7f1d1d',"This assignment is now permanently locked.",
+      `<p style="margin:0 0 10px;">Contact your instructor to receive the unlock password.</p>
+       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+         <input id="rush-pass-input" type="password" placeholder="Instructor password" style="padding:9px 12px;border:2px solid #fca5a5;border-radius:8px;font-size:.95rem;flex:1;min-width:160px;max-width:220px;box-sizing:border-box;" autocomplete="off"/>
+         <button id="rush-pass-btn" style="background:#7f1d1d;color:white;border:none;padding:9px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.9rem;white-space:nowrap;">Unlock</button>
+       </div>
+       <div id="rush-pass-msg" style="margin-top:8px;font-size:.85rem;color:#dc2626;min-height:18px;"></div>`,false,false,'');
+    setTimeout(()=>{
+      const btn=document.getElementById('rush-pass-btn'),input=document.getElementById('rush-pass-input'),pmsg=document.getElementById('rush-pass-msg');
+      if(!btn||!input)return;
+      function tryUnlock(){
+        if(input.value.trim().toLowerCase()===PASSWORD){localStorage.removeItem(HARD_LOCK_KEY);hardLocked=false;locked=false;lockCycles=0;strikes=0;wrongTimestamps=[];$modal().classList.remove('visible');if(typeof currentView==='number')showActivity(currentView,currentPart);}
+        else{pmsg.textContent='Incorrect password.';input.value='';input.focus();}
+      }
+      btn.addEventListener('click',tryUnlock);input.addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();});input.focus();
+    },100);
+  }
+  function startCooldown(){
+    locked=true;let secs=COOLDOWN_S;$countdown().textContent=secs+'s';
+    if(currentWrapper){currentWrapper.style.position='relative';let ov=document.getElementById('rush-lock-overlay');
+      if(!ov){ov=document.createElement('div');ov.className='activity-locked-overlay';ov.id='rush-lock-overlay';currentWrapper.appendChild(ov);}
+      ov.innerHTML=`<h3>🔒 Activity Locked</h3><p>Take ${COOLDOWN_S} seconds to review the content.</p><div class="lock-countdown" id="lock-secs">${secs}s</div>`;}
+    cooldownTimer=setInterval(()=>{secs--;const cd=$countdown(),ls=document.getElementById('lock-secs');if(cd)cd.textContent=secs+'s';if(ls)ls.textContent=secs+'s';
+      if(secs<=0){clearInterval(cooldownTimer);lockCycles++;locked=false;strikes=0;wrongTimestamps=[];$modal().classList.remove('visible');const ov=document.getElementById('rush-lock-overlay');if(ov)ov.remove();if(typeof currentView==='number')showActivity(currentView,currentPart);}},1000);
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    if(localStorage.getItem(HARD_LOCK_KEY)==='1'){hardLocked=true;locked=true;setTimeout(()=>showHardLock(),300);}
+    document.getElementById('rushDismissBtn').addEventListener('click',()=>{if(hardLocked)return;$modal().classList.remove('visible');wrongTimestamps=[];});
+  });
+  return{
+    reset(){if(hardLocked)return;wrongTimestamps=[];strikes=0;locked=false;if(cooldownTimer){clearInterval(cooldownTimer);cooldownTimer=null;}const ov=document.getElementById('rush-lock-overlay');if(ov)ov.remove();},
+    recordWrong(wrapper){if(locked||hardLocked)return;currentWrapper=wrapper;const now=Date.now();wrongTimestamps.push(now);wrongTimestamps=wrongTimestamps.filter(t=>now-t<WINDOW_MS);if(wrongTimestamps.length<THRESHOLD)return;wrongTimestamps=[];strikes++;if(strikes===1)showWarning();else{strikes=0;if(lockCycles>=2)showHardLock();else showTimeout();}},
+    isLocked(){return locked||hardLocked;}
+  };
+})();
+
+/* ============================================================
+   UTILITY
+============================================================ */
+function announce(msg){const el=document.getElementById('aria-live');el.textContent='';setTimeout(()=>el.textContent=msg,60);}
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function qs(sel,root=document){return root.querySelector(sel);}
+function qsa(sel,root=document){return [...root.querySelectorAll(sel)];}
+
+function shakeAndReturn(cardEl,returnTarget){
+  cardEl.classList.add('shake');
+  cardEl.addEventListener('animationend',()=>{cardEl.classList.remove('shake');returnTarget.appendChild(cardEl);},{once:true});
+}
+function lockCardInZone(cardEl,zoneEl){
+  cardEl.classList.add('card-locked','correct-pop');cardEl.draggable=false;zoneEl.appendChild(cardEl);
+  cardEl.addEventListener('animationend',()=>cardEl.classList.remove('correct-pop'),{once:true});
+}
+function scheduleCardRemoval(cardEl,ms){
+  setTimeout(()=>{
+    cardEl.style.animation='fadeOutCard .5s ease forwards';
+    cardEl.addEventListener('animationend',()=>{if(cardEl.parentNode)cardEl.parentNode.removeChild(cardEl);},{once:true});
+  },ms);
+}
+function createHintEngine(hints){
+  let level=0;
+  return{
+    recordWrong(container){
+      if(level>=hints.length)return;
+      let strip=qs('.hint-strip',container);
+      if(!strip){strip=document.createElement('div');strip.className='hint-strip';container.appendChild(strip);}
+      const item=document.createElement('div');item.className='hint-strip-item';
+      item.innerHTML=`<span class="hint-strip-num">Hint ${level+1}:</span><span>${hints[level]}</span>`;
+      strip.appendChild(item);level++;announce(`Hint ${level} revealed.`);
+    },
+    reset(){level=0;}
+  };
+}
+
+/* ============================================================
+   PART-AWARE NAVIGATION STATE
+   currentView  = activity index (0-4) or 'cover'
+   currentPart  = 'A' | 'B' | 'case0' | 'case1' | 'case2' | 'scen0'…'scen2' | 'reflection'
+============================================================ */
+let currentView='cover';
+let currentPart='A'; // default starting part
+
+/* ============================================================
+   ACTIVITIES METADATA
+   subs: array of {label, part} — part key used by showActivity(idx, part)
+============================================================ */
+const ACTIVITIES=[
+  {id:'act1',title:'Activity 1',subtitle:'Historical Foundations',locked:false,done:false,
+   subs:[{label:'Part A – Timeline Ordering',part:'A'},{label:'Part B – Knowledge Check',part:'B'}]},
+  {id:'act2',title:'Activity 2',subtitle:'Drug Classes & Mechanisms',locked:true,done:false,
+   subs:[{label:'Part A – Flip Cards',part:'A'},{label:'Part B – Classification Sort',part:'B'}]},
+  {id:'act3',title:'Activity 3',subtitle:'Clinical Application',locked:true,done:false,
+   subs:[{label:'Case 1 – Antipsychotics',part:'case0'},{label:'Case 2 – Antidepressants',part:'case1'},{label:'Case 3 – Antianxiety',part:'case2'}]}
+];
+
+const STORAGE_KEY='ch13-v5';
+const partADone=new Array(3).fill(false);
+let savedReflectionQuestion='';
+
+const REFLECTION_QUESTIONS=[
+  'What was the most important concept in this chapter? Describe the concept in your own words and why it matters.',
+  'How does this chapter connect to something you already know? Explain both the new idea and the old idea and how they connect.',
+  'What part of the chapter seemed most useful or relevant to real life? Explain the idea or concept in your own words. How is it relevant or useful?',
+  'How could the information in this chapter apply to your future coursework or your future career? Select at least 1 idea or concept and describe it in your own words. How does it apply to your future?',
+  'What is one takeaway from this chapter that you will remember later? Describe the takeaway in your own words. Why will you remember it later?'
+];
+
+function saveProgress(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({currentView,currentPart,done:ACTIVITIES.map(a=>a.done),locked:ACTIVITIES.map(a=>a.locked),partADone:[...partADone],reflectionQ:savedReflectionQuestion}));
+}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(!d||!Array.isArray(d.done)||d.done.length!==ACTIVITIES.length)return;
+    currentView=d.currentView!==undefined?d.currentView:'cover';
+    currentPart=d.currentPart||'A';
+    ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
+    ACTIVITIES[0].locked=false;
+    if(Array.isArray(d.partADone))d.partADone.forEach((v,i)=>{if(i<partADone.length)partADone[i]=!!v;});
+    savedReflectionQuestion=d.reflectionQ||'';
+    announce('Your previous progress has been restored.');
+  }catch(e){}
+}
+function doneCount(){return ACTIVITIES.filter(a=>a.done).length;}
+
+/* ============================================================
+   SIDEBAR — submenus now pass the correct part key
+============================================================ */
+function renderSidebar(){
+  const nav=document.getElementById('nav-list');nav.innerHTML='';
+  const done=doneCount(),pct=Math.round((done/ACTIVITIES.length)*100);
+  document.getElementById('overallProgressFill').style.width=pct+'%';
+  document.getElementById('overallProgressBar').setAttribute('aria-valuenow',done);
+  document.getElementById('sidebar-footer').textContent=`${done} of ${ACTIVITIES.length} activities complete`;
+
+  // Step dots in top bar
+  const dotsEl=document.getElementById('stepDots');
+  if(dotsEl){
+    dotsEl.innerHTML=ACTIVITIES.map((a,i)=>{
+      let cls='step-dot';
+      if(a.done)cls+=' done';
+      else if(currentView===i)cls+=' active';
+      else if(a.locked)cls+=' locked';
+      return `<div class="${cls}" title="${a.title}: ${a.subtitle}" aria-label="${a.title}${a.done?' complete':a.locked?' locked':' in progress'}"></div>`;
+    }).join('')+`<span class="step-label">${done}/${ACTIVITIES.length}</span>`;
+  }
+
+  // Cover
+  const cover=document.createElement('div');
+  cover.className='nav-item'+(currentView==='cover'?' active':'');
+  cover.tabIndex=0;cover.setAttribute('role','button');cover.setAttribute('aria-label','Cover page');
+  cover.innerHTML=`<span class="nav-title">📋 Cover Page</span>`;
+  cover.onclick=()=>showCover();
+  cover.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cover.click();}};
+  nav.appendChild(cover);
+
+  ACTIVITIES.forEach((a,i)=>{
+    // Group header
+    const grp=document.createElement('div');grp.className='nav-group-header';grp.textContent=a.title;nav.appendChild(grp);
+
+    // Main activity row
+    const item=document.createElement('div');
+    const isActiveMain=currentView===i&&!a.locked;
+    item.className=`nav-item${isActiveMain?' active':''}${a.locked?' locked':''}${a.done?' done':''}`;
+    item.tabIndex=a.locked?-1:0;
+    item.setAttribute('role','button');
+    item.setAttribute('aria-disabled',a.locked?'true':'false');
+    item.setAttribute('aria-label',`${a.title}: ${a.subtitle}${a.done?' – Completed':a.locked?' – Locked':''}`);
+    item.innerHTML=`<span class="nav-title">${a.subtitle}</span>${a.locked?'<span class="lock-icon" aria-hidden="true">🔒</span>':''}`;
+    item.onclick=()=>{
+      if(!a.locked){showActivity(i,'A');}
+      else announce('Complete the previous activity first.');
+    };
+    item.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();item.click();}};
+    nav.appendChild(item);
+
+    // Sub-items — each passes its own part key
+    if(!a.locked&&a.subs){
+      a.subs.forEach(sub=>{
+        // Only show Part B sub-items if Part A is done (or activity is fully done)
+        const partBLocked=(sub.part==='B'||sub.part==='reflection')&&!partADone[i]&&!a.done;
+        const isActiveSub=currentView===i&&currentPart===sub.part;
+        const subItem=document.createElement('div');
+        subItem.className=`nav-item sub-item${isActiveSub?' active':''}${partBLocked?' locked':''}`;
+        subItem.tabIndex=partBLocked?-1:0;
+        subItem.setAttribute('role','button');
+        subItem.setAttribute('aria-label',`${a.title}: ${sub.label}${partBLocked?' – Complete Part A first':''}`);
+        subItem.innerHTML=`<span class="nav-title">↳ ${sub.label}</span>${partBLocked?'<span class="lock-icon" aria-hidden="true">🔒</span>':''}`;
+        subItem.onclick=()=>{
+          if(partBLocked){announce('Complete Part A first.');return;}
+          showActivity(i,sub.part);
+        };
+        subItem.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();subItem.click();}};
+        nav.appendChild(subItem);
+      });
+    }
+  });
+
+  // Review & Study Guide — only visible once all activities are done
+  if(ACTIVITIES.every(a=>a.done)){
+    const reviewItem=document.createElement('div');
+    reviewItem.className='nav-item'+(currentView==='review'?' active':'');
+    reviewItem.tabIndex=0;reviewItem.setAttribute('role','button');reviewItem.setAttribute('aria-label','Review and Study Guide');
+    reviewItem.innerHTML='<span class="nav-title">📋 Review & Study Guide</span>';
+    reviewItem.onclick=()=>showReview();
+    reviewItem.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();reviewItem.click();}};
+    nav.appendChild(reviewItem);
+  }
+}
+
+document.getElementById('toggleBtn').addEventListener('click',()=>{
+  const collapsed=document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('toggleBtn').setAttribute('aria-expanded',!collapsed);
+  announce(collapsed?'Navigation hidden':'Navigation shown');
+});
+
+/* ============================================================
+   COVER
+============================================================ */
+const actDescriptions=[
+  {num:1,name:'Historical Foundations',desc:'Drag four psychopharmacology eras into chronological order. Then answer 3 knowledge check questions.',tag:'Timeline Ordering + Knowledge Check · Remember'},
+  {num:2,name:'Drug Classes & Mechanisms',desc:'Study 10 vocabulary flip cards. Then drag eight drug examples into their correct class columns.',tag:'Flip Cards + Classification Sort · Apply'},
+  {num:3,name:'Clinical Application',desc:'Work through three clinical cases. Wrong answers reveal progressive hints.',tag:'Branching Case Scenarios · Analyze'}
+];
+function showCover(){
+  currentView='cover';currentPart='A';
+  document.getElementById('topBarTitle').textContent='Chapter 13 – Psychotherapeutic Medications';
+  renderSidebar();
+  const area=document.getElementById('content-area');area.innerHTML='';
+  const pg=document.createElement('div');pg.id='cover-page';
+  pg.innerHTML=`
+    <div class="cover-badge">PSYC 333 · Chapter 13</div>
+    <h1 class="cover-title">Psychotherapeutic Medications</h1>
+    <p class="cover-subtitle">This chapter explores how medications are used to treat psychological disorders — from historical milestones to drug class mechanisms, epidemiology, clinical applications, and ethical dimensions.</p>
+    <div class="cover-instructions"><strong>How to use this module:</strong> Complete each activity in order. Wrong answers reveal progressive hints. Your progress saves automatically.</div>
+    <div class="cover-cards">${actDescriptions.map(a=>`<div class="cover-card"><div class="cover-card-num">${a.num}</div><div class="cover-card-body"><h3>${a.name}</h3><p>${a.desc}</p><span class="cover-tag">${a.tag}</span></div></div>`).join('')}</div>
+    <button class="get-started-btn" id="coverStartBtn">▶ Begin Activity 1</button>`;
+  area.appendChild(pg);
+  qs('#coverStartBtn').addEventListener('click',()=>showActivity(0,'A'));
+  saveProgress();
+}
+
+/* ============================================================
+   SHOW ACTIVITY — now accepts a part parameter
+   part: 'A' | 'B' | 'case0'–'case2' | 'scen0'–'scen2' | 'reflection'
+============================================================ */
+function showActivity(index, part='A'){
+  rushGuard.reset();
+  currentView=index;
+  currentPart=part;
+  const a=ACTIVITIES[index];
+  document.getElementById('topBarTitle').textContent=`${a.title} – ${a.subtitle}`;
+  renderSidebar();
+  const area=document.getElementById('content-area');area.innerHTML='';area.scrollTop=0;
+  if(a.locked){
+    area.innerHTML=`<div class="interaction-wrapper"><div style="text-align:center;padding:60px 20px;color:#666;"><div style="font-size:3rem;">🔒</div><p style="margin-top:16px;font-size:1rem;">This activity is locked. Complete the previous activity first.</p></div></div>`;
+    return;
+  }
+  const renderers=[renderAct1,renderAct3,renderAct4];
+  renderers[index](area, part);
+  saveProgress();
+}
+
+function completeActivity(index){
+  ACTIVITIES[index].done=true;
+  if(index+1<ACTIVITIES.length)ACTIVITIES[index+1].locked=false;
+  if(index===ACTIVITIES.length-1){
+    savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+  }
+  saveProgress();renderSidebar();
+  if(index===ACTIVITIES.length-1){
+    const qEl=document.getElementById('reflectionQuestion');
+    if(qEl)qEl.textContent=savedReflectionQuestion;
+    setTimeout(()=>document.getElementById('completionModal').classList.add('visible'),800);
+  }
+}
+
+function appendNextActivityBtn(container,nextIndex){
+  const nextAct=ACTIVITIES[nextIndex];if(!nextAct)return;
+  const btn=document.createElement('button');btn.className='next-activity-btn';
+  btn.setAttribute('aria-label',`Go to Activity ${nextIndex+1}: ${nextAct.subtitle}`);
+  btn.innerHTML=`▶ Next: Activity ${nextIndex+1} – ${nextAct.subtitle}`;
+  btn.addEventListener('click',()=>showActivity(nextIndex,'A'));
+  container.appendChild(btn);
+}
+
+/* ============================================================
+   ACTIVITY 1 — part-aware: 'A' = timeline, 'B' = knowledge check
+============================================================ */
+function renderAct1(area, part){
+  const w=document.createElement('div');w.className='interaction-wrapper';
+  area.appendChild(w);
+
+  if(part==='B'&&partADone[0]){
+    // Jump straight to Part B
+    const partB=document.createElement('div');partB.id='act1-partB';
+    buildAct1PartB(partB,w);w.appendChild(partB);
+  } else {
+    // Part A
+    const partA=document.createElement('div');partA.id='act1-partA';
+    buildAct1PartA(partA,w);w.appendChild(partA);
+    // If Part A already done, also render Part B below it (hidden until transition)
+    // But if navigating directly to B and A not done, show A
+  }
+}
+
+function buildAct1PartA(partA,w){
+  const timelineCards=[
+    {id:'tl1',text:'Early approaches used speculative, often harmful practices to control behavior rather than treat underlying disorders.',correct:1},
+    {id:'tl2',text:'Cannabis and other substances were experimented with as early treatments for mood and psychotic symptoms.',correct:2},
+    {id:'tl3',text:'Chlorpromazine was introduced and dramatically transformed the treatment of severe psychological disorders.',correct:3},
+    {id:'tl4',text:'Long-term psychiatric hospitalization declined as medication-based treatment and deinstitutionalization spread.',correct:4}
+  ];
+  const shuffled=shuffle(timelineCards);
+  partA.innerHTML=`
+    <h1>Activity 1 – Historical Foundations</h1>
+    <div class="two-part-banner"><span class="tpb-icon">📅</span><div><span class="tpb-badge">Part A of 2</span>Drag each event card into the correct numbered slot — earliest first.</div></div>
+    <p class="sort-progress" id="tl-progress">0 of 4 placed correctly</p>
+    <div class="seq-layout">
+      <div>
+        <div class="seq-col-title">📦 Event Cards</div>
+        <div class="seq-pool-cards" id="tl-pool">${shuffled.map(c=>`<div class="ix-card" id="${c.id}" draggable="true" tabindex="0" aria-label="${c.text}">${c.text}</div>`).join('')}</div>
+      </div>
+      <div>
+        <div class="seq-col-title">🗂 Timeline (1 = Earliest)</div>
+        <div class="seq-slots" id="tl-slots">
+          ${[1,2,3,4].map(n=>`<div class="seq-slot-row"><span class="seq-num">${n}</span><div class="seq-drop" data-pos="${n}" id="tl-slot-${n}"></div></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div id="tl-hint" class="hint-box"></div>
+    <button class="hint-btn" id="tl-hint-btn">💡 Show Hint</button>`;
+  let tlPlaced=0,tlHintLevel=0;
+  const hints=['Think about what treatment looked like before modern psychiatry.','Cannabis experiments preceded chlorpromazine by a century.','Chlorpromazine (1950s) came before the major deinstitutionalization movement.'];
+  qs('#tl-hint-btn',partA).addEventListener('click',()=>{const hb=qs('#tl-hint',partA);if(tlHintLevel<hints.length){hb.textContent=hints[tlHintLevel++];hb.classList.add('visible');}});
+  const pool=qs('#tl-pool',partA);
+  qsa('.ix-card',partA).forEach(card=>{
+    card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',card.id);card.classList.add('dragging');});
+    card.addEventListener('dragend',()=>card.classList.remove('dragging'));
+  });
+  qsa('.seq-drop',partA).forEach(slot=>{
+    const pos=parseInt(slot.dataset.pos);
+    slot.addEventListener('dragover',e=>{e.preventDefault();slot.classList.add('drag-over');});
+    slot.addEventListener('dragleave',()=>slot.classList.remove('drag-over'));
+    slot.addEventListener('drop',e=>{
+      e.preventDefault();slot.classList.remove('drag-over');
+      if(slot.classList.contains('slot-correct'))return;
+      const id=e.dataTransfer.getData('text/plain');const card=document.getElementById(id);if(!card)return;
+      const tc=shuffled.find(c=>c.id===id);
+      if(slot.firstElementChild&&!slot.firstElementChild.classList.contains('card-locked'))pool.appendChild(slot.firstElementChild);
+      if(tc.correct===pos){
+        lockCardInZone(card,slot);slot.classList.add('slot-correct');tlPlaced++;
+        qs('#tl-progress',partA).textContent=`${tlPlaced} of 4 placed correctly`;announce(`Correct! Position ${pos}.`);
+        if(tlPlaced===4){
+          setTimeout(()=>{
+            partADone[0]=true;currentPart='B';saveProgress();
+            const partB=document.createElement('div');partB.id='act1-partB';partB.style.display='none';
+            buildAct1PartB(partB,w);w.appendChild(partB);
+            partA.classList.add('part-fade-out');
+            setTimeout(()=>{partA.style.display='none';partB.style.display='block';partB.classList.add('part-fade-in');document.getElementById('content-area').scrollTop=0;renderSidebar();},360);
+          },500);
+        }
+      }else{
+        slot.appendChild(card);setTimeout(()=>{shakeAndReturn(card,pool);rushGuard.recordWrong(w);announce('Not quite — try a different position.');},50);
+      }
+    });
+  });
+  pool.addEventListener('dragover',e=>e.preventDefault());
+  pool.addEventListener('drop',e=>{e.preventDefault();const id=e.dataTransfer.getData('text/plain');const card=document.getElementById(id);if(card&&!card.classList.contains('card-locked'))pool.appendChild(card);});
+}
+
+function buildAct1PartB(partB,w){
+  const questions=[
+    {q:'Which development is considered the major turning point in the history of psychotherapeutic medications?',opts:['Increased use of psychotherapy','The discovery of chlorpromazine','The classification of psychological disorders','The rise of over-the-counter remedies'],correct:1,
+     feedback:'✅ Correct. Chlorpromazine marked a decisive shift in psychiatric treatment.',wrongFb:'Not quite — which discovery directly transformed psychiatric hospitals?',hint:'This drug allowed many individuals with severe disorders to live outside long-term institutions.'},
+    {q:'Before widespread psychotherapeutic medications, treatments for psychological disorders were often:',opts:['Precisely biologically targeted','Evidence-based medication trials','Speculative and sometimes harmful practices','Short-term outpatient care'],correct:2,
+     feedback:'✅ Correct. Early treatments lacked scientific support and focused on control rather than care.',wrongFb:'Not quite — think about how limited scientific understanding shaped early approaches.',hint:'Many early practices occurred before neuroscience and pharmacology were well developed.'},
+    {q:'One major consequence of effective psychotherapeutic medications was:',opts:['An increase in long-term psychiatric hospitalization','Reduced reliance on all other forms of treatment','Greater ability for individuals to live outside institutions','The elimination of ethical concerns in treatment'],correct:2,
+     feedback:'✅ Correct. Medication made community-based living possible for many individuals.',wrongFb:'Not quite — consider how medication changed where people received care.',hint:'Think about the connection between medication effectiveness and deinstitutionalization.'}
+  ];
+  let correctCount=0;
+  partB.innerHTML=`
+    <h1>Activity 1 – Part B: Knowledge Check</h1>
+    <div class="two-part-banner"><span class="tpb-icon">✅</span><div><span class="tpb-badge">Part B of 2</span>Click an answer for instant feedback. Answer all 3 correctly to unlock Activity 2.</div></div>
+    ${questions.map((q,i)=>`
+      <div class="kc-question" id="kc1-q${i}">
+        <div class="kc-qtext">${i+1}. ${q.q}</div>
+        <div class="kc-options" id="kc1-opts${i}"></div>
+        <div class="kc-exp" id="kc1-fb${i}"></div>
+        <div class="hint-box" id="kc1-hint${i}"></div>
+        <button class="hint-btn" id="kc1-hbtn${i}" style="margin-top:8px;">💡 Show Hint</button>
+      </div>`).join('')}
+    <div id="act1-next-wrap"></div>`;
+  questions.forEach((q,i)=>{
+    const shuffledOpts=shuffle(q.opts.map((o,j)=>({text:o,origIdx:j})));
+    const optsEl=qs(`#kc1-opts${i}`,partB);
+    shuffledOpts.forEach(opt=>{
+      const el=document.createElement('div');el.className='kc-opt';el.tabIndex=0;el.setAttribute('role','button');el.textContent=opt.text;
+      el.addEventListener('click',()=>{
+        const qel=qs(`#kc1-q${i}`,partB);if(qel.classList.contains('kc-correct'))return;
+        const fb=qs(`#kc1-fb${i}`,partB);
+        if(opt.origIdx===q.correct){
+          el.classList.add('kc-opt-correct');qel.classList.add('kc-correct');
+          qsa('.kc-opt',qel).forEach(o=>o.classList.add('kc-opt-locked'));
+          fb.textContent=q.feedback;fb.className='kc-exp visible';
+          qs(`#kc1-hbtn${i}`,partB).style.display='none';
+          correctCount++;announce(`Correct! ${correctCount} of ${questions.length} answered.`);
+          if(correctCount===questions.length){setTimeout(()=>{completeActivity(0);appendNextActivityBtn(qs('#act1-next-wrap',partB),1);},400);}
+        }else{
+          el.classList.add('kc-opt-wrong','shake');fb.textContent=q.wrongFb;fb.className='kc-exp visible';
+          el.addEventListener('animationend',()=>el.classList.remove('shake','kc-opt-wrong'),{once:true});
+          rushGuard.recordWrong(partB);
+        }
+      });
+      el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}});
+      optsEl.appendChild(el);
+    });
+    qs(`#kc1-hbtn${i}`,partB).addEventListener('click',()=>{const hb=qs(`#kc1-hint${i}`,partB);hb.textContent=q.hint;hb.classList.add('visible');});
+  });
+}
+
+/* ============================================================
+   ACTIVITY 2 — Drug Classes & Mechanisms (was Activity 3)
+============================================================ */
+
+function renderAct3(area, part){
+  const w=document.createElement('div');w.className='interaction-wrapper';
+  area.appendChild(w);
+  if(part==='B'&&partADone[1]){
+    const partB=document.createElement('div');partB.id='act3-partB';
+    buildAct3PartB(partB,w);w.appendChild(partB);
+  } else {
+    const partA=document.createElement('div');partA.id='act3-partA';
+    buildAct3PartA(partA,w);w.appendChild(partA);
+  }
+}
+
+function buildAct3PartA(partA,w){
+  const vocabCards=[
+    {term:'Antipsychotics (Neuroleptics)',def:'Drugs used primarily to treat schizophrenia. They block dopamine D2 receptors, reducing hallucinations, delusions, and agitation.'},
+    {term:'Dopamine Hypothesis',def:'Theory that psychosis results from excess dopaminergic activity. Antipsychotics work by blocking postsynaptic dopamine receptors.'},
+    {term:'Tardive Dyskinesia',def:'A serious long-term side effect of antipsychotics (after 2+ years). Involves repetitive, involuntary movements of the mouth, tongue, trunk, and extremities. Often permanent.'},
+    {term:'SSRIs / SNRIs',def:'Antidepressants that block reuptake of serotonin (SSRIs) or serotonin + norepinephrine (SNRIs). Take 2–3 weeks for full therapeutic effect despite rapid absorption.'},
+    {term:'MAOIs',def:'Monoamine oxidase inhibitors — prevent breakdown of monoamines. Require dietary restriction: avoid tyramine-containing foods to prevent hypertensive crisis.'},
+    {term:'Benzodiazepines',def:'Most important anxiolytic drug class (e.g., Valium, Xanax). Enhance GABA-mediated neural inhibition. Effective for anxiety and insomnia but carry dependence risk.'},
+    {term:'Barbiturates',def:'Older CNS depressants formerly used as sleeping pills. Largely replaced by benzodiazepines due to high overdose risk and severe withdrawal (including seizures).'},
+    {term:'Rebound Insomnia',def:'Inability to sleep occurring as a withdrawal symptom when stopping depressant sleeping pills. Can perpetuate dependence cycles.'},
+    {term:'Lithium',def:'Alkaline metal used to treat and prevent manic episodes in bipolar disorder. The only psychotherapeutic drug with effective prophylaxis against disease recurrence.'},
+    {term:'Buspirone (BuSpar)',def:'Non-benzodiazepine anxiolytic affecting serotonin rather than GABA. No withdrawal symptoms or misuse potential, but requires 3–4 weeks to work.'}
+  ];
+  let stackIdx=0;const viewedCards=new Set();let isFlipped=false;
+  partA.innerHTML=`
+    <h1>Activity 2 – Drug Classes & Mechanisms</h1>
+    <div class="two-part-banner"><span class="tpb-icon">💊</span><div><span class="tpb-badge">Part A of 2</span>
+      <strong>Mouse/Touch:</strong> Click or tap the card to flip it.<br>
+      <strong>Keyboard:</strong> <kbd>Tab</kbd> to the card, <kbd>Enter</kbd>/<kbd>Space</kbd> to flip, <kbd>←</kbd> <kbd>→</kbd> to navigate.
+    </div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:8px;">
+      <div class="flip-progress-row" style="max-width:460px;width:100%;">
+        <div class="flip-progress-bar"><div class="flip-progress-fill" id="a3-fp-fill" style="width:10%"></div></div>
+        <span class="flip-counter" id="a3-fp-counter">1 / ${vocabCards.length}</span>
+      </div>
+      <div style="position:relative;width:100%;max-width:460px;height:200px;" id="a3-stack-scene">
+        <div style="position:absolute;top:10px;left:8px;width:100%;height:180px;background:linear-gradient(135deg,#0f3a6e,#0082b3);border-radius:14px;opacity:.35;pointer-events:none;"></div>
+        <div style="position:absolute;top:5px;left:4px;width:100%;height:180px;background:linear-gradient(135deg,#163f7a,#0092c8);border-radius:14px;opacity:.6;pointer-events:none;"></div>
+        <div class="flip-card-wrap" id="fc-wrap" tabindex="0" role="button"
+             aria-label="Flip card — click or press Enter to reveal definition" aria-pressed="false"
+             style="position:absolute;top:0;left:0;width:100%;height:180px;">
+          <div class="flip-card-inner" id="fc-inner" style="height:180px;">
+            <div class="flip-face flip-front">
+              <div class="flip-label">Term</div>
+              <div class="flip-term" id="fc-front-term">${vocabCards[0].term}</div>
+              <div class="flip-tap-hint">Click / tap / Enter to flip</div>
+            </div>
+            <div class="flip-face flip-back">
+              <div class="flip-label">Definition</div>
+              <div class="flip-def" id="fc-back-def">${vocabCards[0].def}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flip-nav">
+        <button class="flip-nav-btn" id="fc-prev" disabled aria-label="Previous card">◀ Prev</button>
+        <div class="viewed-badge" id="fc-viewed">0 / ${vocabCards.length} viewed</div>
+        <button class="flip-nav-btn" id="fc-next" aria-label="Next card">Next ▶</button>
+      </div>
+    </div>
+    <button class="ix-continue-btn" id="fc-continue" disabled style="margin-top:20px;">Continue to Part B (view all cards first)</button>`;
+  const fcWrap=qs('#fc-wrap',partA);
+  function updateViewedBadge(){
+    const vb=qs('#fc-viewed',partA);
+    if(viewedCards.size===vocabCards.length){vb.textContent='✅ All cards viewed!';qs('#fc-continue',partA).disabled=false;}
+    else vb.textContent=`${viewedCards.size} / ${vocabCards.length} viewed`;
+  }
+  function goToCard(idx){
+    stackIdx=idx;isFlipped=false;fcWrap.classList.remove('flipped');fcWrap.setAttribute('aria-pressed','false');
+    const c=vocabCards[stackIdx];
+    qs('#fc-front-term',partA).textContent=c.term;qs('#fc-back-def',partA).textContent=c.def;
+    qs('#a3-fp-counter',partA).textContent=`${stackIdx+1} / ${vocabCards.length}`;
+    qs('#a3-fp-fill',partA).style.width=`${((stackIdx+1)/vocabCards.length)*100}%`;
+    qs('#fc-prev',partA).disabled=stackIdx===0;qs('#fc-next',partA).disabled=stackIdx===vocabCards.length-1;
+    fcWrap.setAttribute('aria-label',`Card ${stackIdx+1} of ${vocabCards.length}: ${c.term} — press Enter to flip`);
+    updateViewedBadge();announce(`Card ${stackIdx+1}: ${c.term}`);
+  }
+  function flipCard(){
+    isFlipped=!isFlipped;
+    if(isFlipped){fcWrap.classList.add('flipped');fcWrap.setAttribute('aria-pressed','true');viewedCards.add(stackIdx);updateViewedBadge();announce(`Definition: ${vocabCards[stackIdx].def}`);}
+    else{fcWrap.classList.remove('flipped');fcWrap.setAttribute('aria-pressed','false');announce(`Term: ${vocabCards[stackIdx].term}`);}
+  }
+  fcWrap.addEventListener('click',()=>flipCard());
+  fcWrap.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();flipCard();}
+    else if(e.key==='ArrowRight'&&stackIdx<vocabCards.length-1){e.preventDefault();goToCard(stackIdx+1);}
+    else if(e.key==='ArrowLeft'&&stackIdx>0){e.preventDefault();goToCard(stackIdx-1);}
+  });
+  qs('#fc-prev',partA).addEventListener('click',()=>{if(stackIdx>0)goToCard(stackIdx-1);});
+  qs('#fc-next',partA).addEventListener('click',()=>{if(stackIdx<vocabCards.length-1)goToCard(stackIdx+1);});
+  qs('#fc-continue',partA).addEventListener('click',()=>{
+    partADone[1]=true;currentPart='B';saveProgress();
+    const partB=document.createElement('div');partB.id='act3-partB';partB.style.display='none';
+    buildAct3PartB(partB,w);w.appendChild(partB);
+    partA.classList.add('part-fade-out');
+    setTimeout(()=>{partA.style.display='none';partB.style.display='block';partB.classList.add('part-fade-in');document.getElementById('content-area').scrollTop=0;renderSidebar();},360);
+  });
+}
+
+function buildAct3PartB(partB,w){
+  const sortCards=[
+    {id:'s3a',text:'Chlorpromazine, Haloperidol, Clozapine',col:'antipsychotic'},
+    {id:'s3b',text:'Fluoxetine (Prozac), Paroxetine (Paxil) — SSRIs',col:'antidepressant'},
+    {id:'s3c',text:'Diazepam (Valium), Alprazolam (Xanax)',col:'antianxiety'},
+    {id:'s3d',text:'Phenelzine (Nardil) — MAOI',col:'antidepressant'},
+    {id:'s3e',text:'Lithium Carbonate (Eskalith)',col:'moodstabilizer'},
+    {id:'s3f',text:'Phenobarbital, Secobarbital',col:'antianxiety'},
+    {id:'s3g',text:'Carbamazepine (Tegretol), Valproic Acid (Depakote)',col:'moodstabilizer'},
+    {id:'s3h',text:'Amitriptyline (Elavil) — Tricyclic antidepressant',col:'antidepressant'}
+  ];
+  const shuffled=shuffle(sortCards);
+  const cols=[{key:'antipsychotic',label:'Antipsychotics'},{key:'antidepressant',label:'Antidepressants'},{key:'antianxiety',label:'Antianxiety Agents'},{key:'moodstabilizer',label:'Mood Stabilizers'}];
+  const expected={antipsychotic:1,antidepressant:3,antianxiety:2,moodstabilizer:2};
+  partB.innerHTML=`
+    <h1>Activity 2 – Part B: Drug Classification Sort</h1>
+    <div class="two-part-banner"><span class="tpb-icon">🗂</span><div><span class="tpb-badge">Part B of 2</span>Drag each drug into the correct class column.</div></div>
+    <p class="sort-progress" id="a3-progress">0 of 8 placed correctly</p>
+    <div class="col-sort-bank" id="a3-bank">${shuffled.map(c=>`<div class="ix-card" id="${c.id}" draggable="true" tabindex="0" data-col="${c.col}">${c.text}</div>`).join('')}</div>
+    <div class="col-sort-grid">
+      ${cols.map(col=>`<div class="col-sort-col"><div class="col-sort-head">${col.label}</div><div class="col-sort-zone" data-col="${col.key}" id="a3-zone-${col.key}"></div></div>`).join('')}
+    </div>
+    <div class="hint-box" id="a3-hint"></div>
+    <button class="hint-btn" id="a3-hbtn">💡 Show Hint</button>
+    <div id="act3-next-wrap"></div>`;
+  let a3Placed=0,a3HintLevel=0;
+  const a3Hints=['Antipsychotics block dopamine. Mood stabilizers are used for bipolar disorder.','MAOIs and tricyclics are antidepressants. Benzodiazepines and barbiturates are antianxiety agents.'];
+  qs('#a3-hbtn',partB).addEventListener('click',()=>{const hb=qs('#a3-hint',partB);if(a3HintLevel<a3Hints.length){hb.textContent=a3Hints[a3HintLevel++];hb.classList.add('visible');}});
+  const bank=qs('#a3-bank',partB);
+  qsa('.ix-card',partB).forEach(card=>{
+    card.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',card.id);card.classList.add('dragging');});
+    card.addEventListener('dragend',()=>card.classList.remove('dragging'));
+  });
+  qsa('.col-sort-zone',partB).forEach(zone=>{
+    const zoneKey=zone.dataset.col;
+    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+    zone.addEventListener('drop',e=>{
+      e.preventDefault();zone.classList.remove('drag-over');
+      const id=e.dataTransfer.getData('text/plain');const card=document.getElementById(id);if(!card||card.classList.contains('card-locked'))return;
+      if(card.dataset.col===zoneKey){
+        lockCardInZone(card,zone);a3Placed++;qs('#a3-progress',partB).textContent=`${a3Placed} of 8 placed correctly`;announce('Correct!');
+        if(qsa('.ix-card',zone).length===expected[zoneKey])zone.classList.add('all-correct');
+        if(a3Placed===8){setTimeout(()=>{completeActivity(1);appendNextActivityBtn(qs('#act3-next-wrap',partB),2);},500);}
+      }else{
+        zone.appendChild(card);setTimeout(()=>{shakeAndReturn(card,bank);rushGuard.recordWrong(partB);announce('Not quite — try another class.');},50);
+      }
+    });
+  });
+  bank.addEventListener('dragover',e=>e.preventDefault());
+  bank.addEventListener('drop',e=>{e.preventDefault();const id=e.dataTransfer.getData('text/plain');const card=document.getElementById(id);if(card&&!card.classList.contains('card-locked'))bank.appendChild(card);});
+}
+
+/* ============================================================
+   ACTIVITY 4 — part-aware: 'case0', 'case1', 'case2'
+============================================================ */
+function renderAct4(area, part){
+  const w=document.createElement('div');w.className='interaction-wrapper';
+  w.innerHTML=`<h1>Activity 3 – Clinical Application</h1>
+    <p class="ix-explanation visible" style="display:block;margin-bottom:16px;">Click an answer to see feedback. Wrong answers reveal progressive hints. Answers are shuffled each time.</p>`;
+  area.appendChild(w);
+
+  const cases=[
+    {caseTitle:'Case 1: Antipsychotics & Schizophrenia',
+     caseText:'A 44-year-old man presents with persistent hallucinations, delusions, agitation, and disorganized thinking consistent with a schizophrenic disorder.',
+     checkpoints:[
+       {q:'Which medication class is the primary pharmacological treatment for schizophrenia?',opts:['Antidepressants','Antipsychotics','Mood stabilizers','Benzodiazepines'],correct:1,feedback:'✅ Correct. Antipsychotics are the major treatment for psychotic symptoms.',hints:['Think about which class is specifically designed to reduce psychotic symptoms.','This class works by blocking dopamine D2 receptors.','The class name literally describes its primary use — treating psychosis.']},
+       {q:'The acute extrapyramidal side-effect pattern of antipsychotics named in the chapter is:',opts:['Headache + rash','Dyskinesia + akinesia','Hearing loss + tinnitus','Fever + dehydration'],correct:1,feedback:'✅ Correct. Dyskinesia and akinesia are the named extrapyramidal symptoms.',hints:['Extrapyramidal side effects are movement-related, not sensory.','Think about motor control — one symptom involves too much movement, the other too little.','Dyskinesia = disordered movement. Akinesia = absence/slowness of movement.']},
+       {q:'After 2+ years of antipsychotic use, which permanent condition may develop?',opts:['Seasonal allergies','Tardive dyskinesia','Common cold symptoms','Acute appendicitis'],correct:1,feedback:'✅ Correct. Tardive dyskinesia involves repetitive involuntary movements and may be permanent.',hints:['This is a long-term motor side effect, not an illness or allergy.','The word "tardive" means late-appearing — it develops after years of use.','It involves repetitive, involuntary movements of the face, tongue, and limbs.']}
+     ]},
+    {caseTitle:'Case 2: Antidepressants & Major Depression',
+     caseText:'A 33-year-old woman presents with persistent depressed mood, loss of interest, sleep disturbance, fatigue, withdrawal, difficulty concentrating, and thoughts of suicide.',
+     checkpoints:[
+       {q:'Which medication class is most directly aligned with treating this patient?',opts:['Antidepressants','Antipsychotics','General anesthetics','Barbiturate hypnotics'],correct:0,feedback:'✅ Correct. The chapter details five antidepressant classes for treating depressive disorders.',hints:['Focus on the class designed specifically to lift depressed mood.','The five classes include tricyclics, MAOIs, SSRIs, SNRIs, and atypical antidepressants.','The class name directly describes what it treats.']},
+       {q:'Even though antidepressants are absorbed rapidly, clinical action typically takes:',opts:['A few minutes','2–3 weeks','24 hours','6 months'],correct:1,feedback:'✅ Correct. Clinical action frequently takes 2 to 3 weeks despite rapid absorption.',hints:['There is a significant delay between when the drug is absorbed and when it starts working.','This delay is why patients sometimes stop taking medication too early.','Think in terms of weeks, not hours or months.']},
+       {q:'A patient prescribed an MAOI must avoid which dietary risk?',opts:['Tyramine-containing foods (e.g., cheeses, Chianti wine) due to hypertensive reactions','All water intake','Sunlight completely','All exercise permanently'],correct:0,feedback:'✅ Correct. MAOIs require avoiding tyramine — the interaction can cause severe hypertensive reactions.',hints:['This is a food-drug interaction, not a lifestyle restriction.','MAOIs prevent the breakdown of certain compounds — including one found in aged foods.','Tyramine is found in aged cheeses, cured meats, and certain wines.']}
+     ]},
+    {caseTitle:'Case 3: Antianxiety Agents & Dangerous Combinations',
+     caseText:'A person is prescribed a benzodiazepine for anxiety. That evening they consider having alcohol with dinner.',
+     checkpoints:[
+       {q:'The chapter identifies which class as the most important for treating anxiety and sleeping disorders?',opts:['Benzodiazepines','Antipsychotics','MAOIs','Stimulants'],correct:0,feedback:'✅ Correct. Benzodiazepines are the most important anxiolytic/sleeping-pill class.',hints:['This class includes well-known drugs like Valium and Xanax.','It works by enhancing GABA — the brain\'s main inhibitory neurotransmitter.','The class name ends in "-azepines."']},
+       {q:'What is the key danger of combining alcohol with benzodiazepines?',opts:['It makes drugs ineffective','Additive/potentiating effects that increase overdose risk','Only mild dehydration','No meaningful effect'],correct:1,feedback:'✅ Correct. Depressant combinations produce potentiating/additive effects.',hints:['Both alcohol and benzodiazepines are CNS depressants — combining them multiplies the effect.','The chapter uses the term "potentiation" to describe this interaction.','The combined effect can suppress breathing and lead to overdose.']},
+       {q:'After chronic barbiturate use, stopping the drug can cause rebound insomnia and in severe cases:',opts:['Guaranteed painless sleep','Convulsions/seizures (5%–20% of cases)','Only improved cognitive function','No withdrawal symptoms at all'],correct:1,feedback:'✅ Correct. Barbiturate withdrawal can include convulsions/seizures in 5%–20% of cases.',hints:['Barbiturate withdrawal is medically serious.','The chapter mentions two main withdrawal effects: one involves sleep, the other the nervous system.','Seizures occur in 5–20% of cases during barbiturate withdrawal.']}
+     ]}
+  ];
+
+  // Determine starting case from part key
+  const caseMap={'case0':0,'case1':1,'case2':2};
+  let caseIdx=caseMap[part]!==undefined?caseMap[part]:0;
+  let cpIdx=0;
+
+  function renderCase(){
+    const existing=qs('#case-area',w);if(existing)existing.remove();
+    if(caseIdx>=cases.length){
+      const fb=document.createElement('div');fb.className='completion-card';
+      fb.innerHTML=`<h2>🎉 Activity 3 Complete!</h2><p>You applied clinical knowledge across all three cases.</p><ul><li>Case 1: Antipsychotics & Schizophrenia</li><li>Case 2: Antidepressants & Major Depression</li><li>Case 3: Antianxiety Agents & Depressant Combinations</li></ul>`;
+      w.appendChild(fb);completeActivity(2);return;
+    }
+    // Update currentPart as user progresses through cases
+    currentPart='case'+caseIdx;saveProgress();renderSidebar();
+    const caseArea=document.createElement('div');caseArea.id='case-area';
+    const c=cases[caseIdx],cp=c.checkpoints[cpIdx];
+    const totalCPs=cases.reduce((s,c)=>s+c.checkpoints.length,0);
+    const doneCPs=cases.slice(0,caseIdx).reduce((s,c)=>s+c.checkpoints.length,0)+cpIdx;
+    const shuffledOpts=shuffle(cp.opts.map((o,j)=>({text:o,origIdx:j})));
+    const hintEngine=createHintEngine(cp.hints);
+    let attempts=0;
+    caseArea.innerHTML=`
+      <div class="scenario-progress">Case ${caseIdx+1} of ${cases.length} | Checkpoint ${cpIdx+1} of ${c.checkpoints.length} | Overall: ${doneCPs} of ${totalCPs}</div>
+      <div class="scenario-box"><strong>${c.caseTitle}</strong><br><br>${c.caseText}</div>
+      <p class="ix-prompt">${cp.q}</p>
+      <div id="attempts-display"></div>
+      <div class="branch-choices" id="cp-choices"></div>
+      <div class="branch-result" id="cp-result" style="display:none;"></div>
+      <div id="cp-hint-area"></div>
+      <button class="ix-continue-btn" id="cp-next" style="display:none;">Continue →</button>`;
+    w.appendChild(caseArea);
+    const choicesEl=qs('#cp-choices',caseArea);
+    shuffledOpts.forEach(opt=>{
+      const el=document.createElement('div');el.className='branch-choice';el.tabIndex=0;el.setAttribute('role','button');el.textContent=opt.text;
+      el.addEventListener('click',()=>{
+        if(el.classList.contains('choice-locked'))return;
+        if(opt.origIdx===cp.correct){
+          qsa('.branch-choice',caseArea).forEach(c=>c.classList.add('choice-locked'));
+          el.style.cssText='background:var(--green-bg);border-color:var(--green-border);cursor:default;';
+          const res=qs('#cp-result',caseArea);res.className='branch-result optimal';res.textContent=cp.feedback;res.style.display='block';
+          qs('#cp-next',caseArea).style.display='block';announce('Correct!');
+        }else{
+          attempts++;el.classList.add('choice-wrong','shake');
+          el.addEventListener('animationend',()=>el.classList.remove('shake','choice-wrong'),{once:true});
+          qs('#attempts-display',caseArea).innerHTML=`<span class="attempts-badge">❌ ${attempts} incorrect attempt${attempts>1?'s':''} — read the hints below</span>`;
+          hintEngine.recordWrong(qs('#cp-hint-area',caseArea));rushGuard.recordWrong(w);
+          announce(`Incorrect. Hint ${Math.min(attempts,cp.hints.length)} revealed.`);
+        }
+      });
+      el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}});
+      choicesEl.appendChild(el);
+    });
+    qs('#cp-next',caseArea).addEventListener('click',()=>{
+      cpIdx++;if(cpIdx>=cases[caseIdx].checkpoints.length){caseIdx++;cpIdx=0;}renderCase();
+    });
+  }
+  renderCase();
+}
+
+/* ============================================================
+   REVIEW & STUDY GUIDE
+============================================================ */
+function showReview(){
+  currentView='review';
+  document.getElementById('topBarTitle').textContent='Chapter 13 – Review & Study Guide';
+  renderSidebar();
+  const area=document.getElementById('content-area');area.innerHTML='';area.scrollTop=0;
+  const pg=document.createElement('div');pg.className='review-screen';
+
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
+
+  pg.innerHTML=`
+    <div class="review-badge">✅ All Activities Complete</div>
+    <h2 style="color:var(--navy);margin-bottom:6px;">Chapter 13 Review</h2>
+    <p style="font-size:.9rem;color:#555;margin-bottom:20px;line-height:1.6;">Key concepts from all three activities. Use this page to study for the Chapter 13 quiz.</p>
+    ${reflectionBlock}
+    <div style="text-align:center;margin:16px 0 28px;">
+      <button class="download-btn" id="reviewDownloadBtn">⬇ Download Study Notes</button>
+    </div>
+    <div class="review-section">
+      <h3>📜 Activity 1 – Historical Foundations</h3>
+      <ul class="review-list">
+        <li>Early treatments were speculative and often harmful — focused on control, not care.</li>
+        <li>Experimentation with cannabis and other substances preceded modern pharmacology.</li>
+        <li><strong>Chlorpromazine (1950s)</strong> = the major turning point in psychopharmacology.</li>
+        <li>Widespread medication use led to <strong>deinstitutionalization</strong> — long-term hospitalization declined.</li>
+      </ul>
+    </div>
+    <div class="review-section">
+      <h3>💊 Activity 2 – Drug Classes & Mechanisms</h3>
+      <ul class="review-list">
+        <li><strong>Antipsychotics (Neuroleptics):</strong> Block dopamine D2 receptors. Long-term risk = <em>tardive dyskinesia</em> (permanent involuntary movements).</li>
+        <li><strong>Antidepressants:</strong> SSRIs/SNRIs block reuptake. Rapid absorption but 2–3 weeks to work. MAOIs require avoiding tyramine foods (hypertensive crisis risk).</li>
+        <li><strong>Benzodiazepines:</strong> Enhance GABA inhibition. Effective for anxiety/insomnia. Carry dependence risk.</li>
+        <li><strong>Barbiturates:</strong> High overdose risk; withdrawal can cause seizures in 5–20% of cases.</li>
+        <li><strong>Lithium:</strong> Treats and prevents mania; the only psychotherapeutic drug with effective prophylaxis against disease recurrence.</li>
+        <li><strong>Buspirone:</strong> Non-benzodiazepine anxiolytic; no withdrawal or misuse potential; 3–4 weeks to work.</li>
+      </ul>
+    </div>
+    <div class="review-section">
+      <h3>🏥 Activity 3 – Clinical Application</h3>
+      <ul class="review-list">
+        <li>Antipsychotics → acute extrapyramidal effects: <strong>dyskinesia + akinesia</strong>.</li>
+        <li>Antidepressants take <strong>2–3 weeks</strong> for clinical action despite rapid absorption.</li>
+        <li>MAOIs + tyramine-containing foods = severe <strong>hypertensive reaction</strong>.</li>
+        <li>Benzodiazepines are the most important anxiolytic class (Valium, Xanax).</li>
+        <li>Alcohol + benzodiazepines = <strong>additive/potentiating CNS depression</strong> = overdose risk.</li>
+        <li>Barbiturate withdrawal: rebound insomnia + possible seizures (5–20% of cases).</li>
+      </ul>
+    </div>`;
+  area.appendChild(pg);
+  qs('#reviewDownloadBtn',pg).addEventListener('click',()=>downloadStudyGuide());
+  saveProgress();
+  announce('Review and Study Guide loaded.');
+}
+
+
+/* ============================================================
+   INIT
+============================================================ */
+document.getElementById('instrStartBtn').addEventListener('click',()=>document.getElementById('instrOverlay').classList.add('hidden'));
+document.getElementById('resetProgressBtn').addEventListener('click',()=>document.getElementById('resetModal').classList.add('visible'));
+document.getElementById('resetCancelBtn').addEventListener('click',()=>document.getElementById('resetModal').classList.remove('visible'));
+document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
+  ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=i>0;});partADone.fill(false);savedReflectionQuestion='';localStorage.removeItem(STORAGE_KEY);
+  document.getElementById('resetModal').classList.remove('visible');showCover();announce('Progress reset.');
+});
+document.getElementById('closeCompletion').addEventListener('click',()=>document.getElementById('completionModal').classList.remove('visible'));
+
+/* Fullscreen */
+const fsBtn=document.getElementById('fsBtn');
+fsBtn.addEventListener('click',()=>{
+  if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen().catch(()=>{document.body.classList.add('pseudo-fs');fsBtn.textContent='⤡';});
+  } else {
+    document.exitFullscreen();
+  }
+});
+document.addEventListener('fullscreenchange',()=>{
+  const inFS=!!document.fullscreenElement;
+  fsBtn.textContent=inFS?'⤡':'⤢';
+  if(!inFS)document.body.classList.remove('pseudo-fs');
+});
+
+document.getElementById('downloadGuideBtn').addEventListener('click',()=>downloadStudyGuide());
+loadProgress();
+if(currentView==='cover')showCover();
+else if(currentView==='review')showReview();
+else if(typeof currentView==='number')showActivity(currentView,currentPart||'A');
+else showCover();
+
+function downloadStudyGuide(){
+  const lines=['Chapter 13 Study Guide — Psychotherapeutic Medications','',
+    'KEY CONCEPTS:','• Chlorpromazine (1950s) = major turning point','• Pre-chlorpromazine: speculative, harmful practices','• Deinstitutionalization followed widespread antipsychotic use','',
+    'DRUG CLASSES:','• Antipsychotics: block dopamine D2; tardive dyskinesia after long-term use',
+    '• Antidepressants: take 2–3 weeks to work','• MAOIs: avoid tyramine-containing foods → hypertensive crisis',
+    '• Benzodiazepines: enhance GABA; dependence risk; rebound insomnia on withdrawal',
+    '• Barbiturates: high overdose risk; seizures in 5–20% on withdrawal',
+    '• Buspirone: no withdrawal/misuse potential; 3–4 week onset',
+    '• Lithium: treats/prevents mania; only Rx with effective prophylaxis','',
+    'POTENTIATION: Depressants + alcohol = additive/synergistic effects = overdose risk'];
+  const blob=new Blob([lines.join('\n')],{type:'text/plain'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='Chapter_13_Study_Guide.txt';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
