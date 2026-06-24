@@ -838,6 +838,7 @@ const ACTIVITIES=[
 ];
 
 let currentView='cover';
+let savedReflectionQuestion='';
 
 /* ==========================================================
    STORAGE
@@ -850,7 +851,8 @@ function saveProgress(){
     currentView,
     done:ACTIVITIES.map(a=>a.done),
     locked:ACTIVITIES.map(a=>a.locked),
-    partADone:[...partADone]
+    partADone:[...partADone],
+    reflectionQ:savedReflectionQuestion
   }));
 }
 function loadProgress(){
@@ -861,6 +863,7 @@ function loadProgress(){
     ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
     ACTIVITIES[0].locked=false;
     if(Array.isArray(d.partADone)) d.partADone.forEach((v,i)=>{if(i<partADone.length) partADone[i]=!!v;});
+    savedReflectionQuestion=d.reflectionQ||'';
     announce('Your previous progress has been restored.');
   }catch(e){}
 }
@@ -1010,6 +1013,8 @@ function completeActivity(index){
   saveProgress();
   renderSidebar();
   if(index===ACTIVITIES.length-1){
+    savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+    saveProgress();
     setTimeout(()=>showCompletionModal(),800);
   }
 }
@@ -2608,7 +2613,7 @@ const REFLECTION_QUESTIONS=[
 ];
 
 function showCompletionModal(){
-  const q=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+  const q=savedReflectionQuestion;
   const qEl=document.getElementById('reflectionQuestion');
   if(qEl) qEl.textContent=q;
   const _cm=document.getElementById('completionModal');
@@ -2629,12 +2634,23 @@ function showReview(){
   const area=document.getElementById('content-area');
   area.innerHTML='';
   area.scrollTop=0;
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
+
   const pg=document.createElement('div');
   pg.id='cover-page';
   pg.innerHTML=`
     <div class="cover-badge">PSYC 333 · Chapter 5</div>
     <h1 class="cover-title">Review &amp; Study Guide</h1>
     <p class="cover-subtitle">Key concepts from all five activities. Use this to study for the Chapter 5 quiz.</p>
+    ${reflectionBlock}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;">
       <div class="cover-card" style="flex-direction:column;gap:10px;">
         <div style="display:flex;gap:12px;align-items:center;">
@@ -2742,6 +2758,7 @@ document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
   ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i>0);});
   partADone.fill(false);
   currentView='cover';
+  savedReflectionQuestion='';
   localStorage.removeItem(STORAGE_KEY);
   rushGuard.hardReset();
   renderSidebar();

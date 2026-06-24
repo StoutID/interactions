@@ -724,6 +724,7 @@ const ACTIVITIES=[
 ];
 
 let currentView='cover';
+let savedReflectionQuestion='';
 
 /* ==========================================================
    STORAGE
@@ -736,7 +737,8 @@ function saveProgress(){
     currentView,
     done:ACTIVITIES.map(a=>a.done),
     locked:ACTIVITIES.map(a=>a.locked),
-    partADone:[...partADone]
+    partADone:[...partADone],
+    reflectionQ:savedReflectionQuestion
   }));
 }
 function loadProgress(){
@@ -747,6 +749,7 @@ function loadProgress(){
     ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
     ACTIVITIES[0].locked=false;
     if(Array.isArray(d.partADone)) d.partADone.forEach((v,i)=>{if(i<partADone.length) partADone[i]=!!v;});
+    savedReflectionQuestion=d.reflectionQ||'';
     announce('Your previous progress has been restored.');
   }catch(e){}
 }
@@ -829,13 +832,23 @@ function showReviewSummary(){
   saveProgress();
   const area=document.getElementById('content-area');
   area.innerHTML='';
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
+
   const page=document.createElement('div');
   page.className='review-screen';
   page.innerHTML=`
     <div class="review-badge">⭐ All Activities Complete</div>
     <h2>Chapter 8 – Caffeine & the Xanthines: Study Guide</h2>
     <p style="font-size:.9rem;color:#555;margin-bottom:20px;line-height:1.6;">Review the key concepts from each activity. Use this page to prepare for the Chapter 8 quiz.</p>
-
+    ${reflectionBlock}
     <div class="review-section">
       <h3>✓ Activity 1 – Caffeine: True or False</h3>
       <ul class="review-list">
@@ -967,7 +980,7 @@ const REFLECTION_QUESTIONS=[
 ];
 
 function showCompletionModal(){
-  const q=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+  const q=savedReflectionQuestion;
   const qEl=document.getElementById('reflectionQuestion');
   if(qEl) qEl.textContent=q;
   document.getElementById('completionModal').classList.add('visible');
@@ -981,6 +994,8 @@ function completeActivity(index){
   saveProgress();
   renderSidebar();
   if(index===ACTIVITIES.length-1){
+    savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+    saveProgress();
     setTimeout(()=>showCompletionModal(),800);
   }
 }
@@ -1545,6 +1560,7 @@ document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
   ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i>0);});
   partADone.fill(false);
   currentView='cover';
+  savedReflectionQuestion='';
   localStorage.removeItem(STORAGE_KEY);
   rushGuard.hardReset();
   renderSidebar();

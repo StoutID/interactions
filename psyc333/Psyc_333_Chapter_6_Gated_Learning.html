@@ -931,6 +931,7 @@ const ACTIVITIES=[
 ];
 
 let currentView='cover';
+let savedReflectionQuestion='';
 
 /* ==========================================================
    STORAGE
@@ -943,7 +944,8 @@ function saveProgress(){
     currentView,
     done:ACTIVITIES.map(a=>a.done),
     locked:ACTIVITIES.map(a=>a.locked),
-    partADone:[...partADone]
+    partADone:[...partADone],
+    reflectionQ:savedReflectionQuestion
   }));
 }
 function loadProgress(){
@@ -954,6 +956,7 @@ function loadProgress(){
     ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
     ACTIVITIES[0].locked=false;
     if(Array.isArray(d.partADone)) d.partADone.forEach((v,i)=>{if(i<partADone.length) partADone[i]=!!v;});
+    savedReflectionQuestion=d.reflectionQ||'';
     announce('Your previous progress has been restored.');
   }catch(e){}
 }
@@ -1128,11 +1131,21 @@ function showReview(){
     'Bath salts are synthetic cathinones, not methcathinone salts used in bathing',
   ];
 
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
+
   area.innerHTML=`
     <div style="max-width:820px;margin:40px auto;padding:20px 20px 60px;">
       <h1 style="color:var(--navy);font-size:1.5rem;margin-bottom:4px;">&#x1F4CB; Chapter 6 Review &amp; Study Guide</h1>
       <p style="color:#666;margin-bottom:32px;font-size:.95rem;">Cocaine, Amphetamines, and Related Stimulants</p>
-
+      ${reflectionBlock}
       <section style="margin-bottom:32px;">
         <h2 style="color:var(--navy);font-size:1.05rem;border-bottom:2px solid var(--sky);padding-bottom:6px;margin-bottom:14px;">Key Terms</h2>
         <div style="display:grid;gap:10px;">
@@ -1228,6 +1241,8 @@ function completeActivity(index){
   saveProgress();
   renderSidebar();
   if(index===ACTIVITIES.length-1){
+    savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+    saveProgress();
     setTimeout(()=>showCompletionModal(),800);
   }
 }
@@ -1244,10 +1259,7 @@ const REFLECTION_QUESTIONS=[
 ];
 
 function showCompletionModal(){
-  // Pick a random question and inject it into the modal
-  const q = REFLECTION_QUESTIONS[
-    Math.floor(Math.random() * REFLECTION_QUESTIONS.length)
-  ];
+  const q=savedReflectionQuestion;
   const qEl = document.getElementById('reflectionQuestion');
   if(qEl) qEl.textContent = q;
 
@@ -2307,6 +2319,7 @@ document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
   ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=(i>0);});
   partADone.fill(false);
   currentView='cover';
+  savedReflectionQuestion='';
   localStorage.removeItem(STORAGE_KEY);
   rushGuard.hardReset();
   renderSidebar();

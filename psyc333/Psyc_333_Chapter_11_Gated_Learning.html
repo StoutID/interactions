@@ -981,10 +981,11 @@ const ACTIVITIES=[
    parts:['Part A: Multiple Choice','Part B: Chapter Wrap-Up']}
 ];
 let currentView='cover';
+let savedReflectionQuestion='';
 const STORAGE_KEY='ch11-gated-v2';
 function saveProgress(){
   localStorage.setItem(STORAGE_KEY,JSON.stringify({
-    currentView,done:ACTIVITIES.map(a=>a.done),locked:ACTIVITIES.map(a=>a.locked)
+    currentView,done:ACTIVITIES.map(a=>a.done),locked:ACTIVITIES.map(a=>a.locked),reflectionQ:savedReflectionQuestion
   }));
 }
 function loadProgress(){
@@ -994,6 +995,7 @@ function loadProgress(){
     currentView=d.currentView!==undefined?d.currentView:'cover';
     ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
     ACTIVITIES[0].locked=false;
+    savedReflectionQuestion=d.reflectionQ||'';
     announce('Your previous progress has been restored.');
   }catch(e){}
 }
@@ -1150,11 +1152,22 @@ function showReviewSummary(){
   renderSidebar();
   const area=document.getElementById('content-area');
   area.innerHTML='';
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
+
   const pg=document.createElement('div');
   pg.className='review-screen';
   pg.innerHTML=`
     <div class="review-badge">✅ All Activities Complete</div>
     <h2>Chapter 11 – Marijuana: Review &amp; Study Guide</h2>
+    ${reflectionBlock}
     <div class="review-section">
       <h3>🧪 Active Components &amp; Potency</h3>
       <ul class="review-list">
@@ -1236,8 +1249,9 @@ function completeActivity(index){
   if(index+1<ACTIVITIES.length)ACTIVITIES[index+1].locked=false;
   saveProgress();renderSidebar();
   if(index===ACTIVITIES.length-1){
-    const q=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
-    document.getElementById('reflectionQuestion').textContent=q;
+    savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+    document.getElementById('reflectionQuestion').textContent=savedReflectionQuestion;
+    saveProgress();
     setTimeout(()=>document.getElementById('completionModal').classList.add('visible'),800);
   }
 }
@@ -1944,6 +1958,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
     localStorage.removeItem(STORAGE_KEY);
     ACTIVITIES.forEach((a,i)=>{a.done=false;a.locked=i!==0;});
+    savedReflectionQuestion='';
     document.getElementById('resetModal').classList.remove('visible');
     showCover();announce('Progress has been reset.');
   });
