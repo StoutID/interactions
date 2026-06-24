@@ -1669,6 +1669,7 @@ const ACTIVITIES=[
 
 /* current view: 'cover' or index 0-7 */
 let currentView='cover';
+let savedReflectionQuestion='';
 
 /* ==========================================================
    PROGRESS / PERSISTENCE
@@ -1682,7 +1683,8 @@ function saveProgress(){
     currentView,
     done:ACTIVITIES.map(a=>a.done),
     locked:ACTIVITIES.map(a=>a.locked),
-    partADone:[...partADone]
+    partADone:[...partADone],
+    reflectionQ:savedReflectionQuestion
   }));
 }
 function loadProgress(){
@@ -1695,6 +1697,7 @@ function loadProgress(){
     ACTIVITIES.forEach((a,i)=>{a.done=!!d.done[i];a.locked=!!d.locked[i];});
     ACTIVITIES[0].locked=false;
     if(Array.isArray(d.partADone)) d.partADone.forEach((v,i)=>{ if(i<partADone.length) partADone[i]=!!v; });
+    savedReflectionQuestion=d.reflectionQ||'';
     announce('Your previous progress has been restored.');
   }catch(e){}
 }
@@ -1972,6 +1975,16 @@ function showReviewSummary(){
       </div>`;
   }).join('');
 
+  const reflectionBlock=savedReflectionQuestion?`
+    <div class="reflection-block" style="margin-bottom:24px;" role="note" aria-label="Your reflection question">
+      <div class="reflection-label">📝 Your Reflection Question</div>
+      <p class="reflection-question">${savedReflectionQuestion}</p>
+      <p style="margin-top:10px;font-size:.86rem;color:#555;line-height:1.5;">
+        Copy and paste this question into the Canvas text box below this activity and answer in your
+        own words — at least one paragraph of five sentences, no AI.
+      </p>
+    </div>`:'';
+
   page.innerHTML=`
     <div class="review-badge" style="display:inline-block;margin-bottom:10px;">✅ Chapter Complete</div>
     <h1>Chapter 3 Review</h1>
@@ -1979,6 +1992,7 @@ function showReviewSummary(){
       You've completed all ${ACTIVITIES.length} activities. Use this page to review the key concepts from each activity,
       and download the study guide for later reference.
     </p>
+    ${reflectionBlock}
     <div style="text-align:center;margin:18px 0 28px;">
       <button class="download-btn" id="reviewPageDownloadBtn">⬇ Download Study Guide</button>
     </div>
@@ -2071,8 +2085,10 @@ function completeActivity(index){
   renderSidebar();
   saveProgress();
   if(index===ACTIVITIES.length-1){
-    // Last activity (Activity 7) — render the review summary page and
-    // automatically open the reflection pop-up on top of it.
+    // Last activity — pick & persist the reflection question BEFORE rendering
+    // the review page so showReviewSummary() can display it immediately.
+    savedReflectionQuestion=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+    saveProgress();
     showReviewSummary();
     setTimeout(()=>showCompletionModal(),400);
   } else {
@@ -2091,8 +2107,7 @@ const REFLECTION_QUESTIONS=[
   'What is one takeaway from this chapter that you will remember later? Describe the takeaway in your own words. Why will you remember it later?'
 ];
 function showCompletionModal(){
-  // Randomly select one reflection question to display
-  const q=REFLECTION_QUESTIONS[Math.floor(Math.random()*REFLECTION_QUESTIONS.length)];
+  const q=savedReflectionQuestion;
   const qEl=document.getElementById('reflectionQuestion');
   if(qEl) qEl.textContent=q;
   document.getElementById('completionModal').classList.add('visible');
@@ -2193,6 +2208,7 @@ document.getElementById('resetConfirmBtn').addEventListener('click',()=>{
     a.locked=(i>0);
   });
   currentView='cover';
+  savedReflectionQuestion='';
   localStorage.removeItem(STORAGE_KEY);
   rushGuard.hardReset();
   renderSidebar();
